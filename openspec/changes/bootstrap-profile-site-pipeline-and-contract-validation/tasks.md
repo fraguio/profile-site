@@ -1,10 +1,10 @@
 ## 1. Pipeline trigger baseline
 
-- [ ] 1.1 Create CI workflow scaffold for `profile-site` publish flow
-- [ ] 1.2 Add trigger support for `push` on `main` and `workflow_dispatch`
-- [ ] 1.3 Add `repository_dispatch` trigger with `profile-data-updated` event type handling
-- [ ] 1.4 Implement parameter resolution for `profile_data_ref` and `profile_data_path` with defaults
-- [ ] 1.5 Ensure workflow and docs reference only shared contract concepts (no concrete peer consumer coupling)
+- [x] 1.1 Create CI workflow scaffold for `profile-site` publish flow
+- [x] 1.2 Add trigger support for `push` on `main` and `workflow_dispatch`
+- [x] 1.3 Add `repository_dispatch` trigger with `profile-data-updated` event type handling
+- [x] 1.4 Implement parameter resolution for `profile_data_ref` and `profile_data_path` with defaults
+- [x] 1.5 Ensure workflow and docs reference only shared contract concepts (no concrete peer consumer coupling)
 
 ## 2. Source acquisition and contract validation
 

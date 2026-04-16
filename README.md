@@ -24,6 +24,14 @@ El objetivo del repositorio es publicar un HTML reproducible y mantenible median
 - Entrada esperada: `data/resume.json`.
 - Integración por referencia y ruta (`ref/path`) para ejecuciones reproducibles.
 
+### Contrato de triggers CI (baseline)
+
+- Triggers soportados: `push` en `main`, `workflow_dispatch` y `repository_dispatch`.
+- Evento de dispatch esperado: `profile-data-updated`.
+- Coordenadas de entrada compartidas: `profile_data_ref` y `profile_data_path`.
+- Defaults del baseline: `profile_data_ref=main` y `profile_data_path=data/resume.json`.
+- El flujo se define por contrato compartido; no depende de implementaciones concretas de otros consumidores.
+
 ## Proceso OpenSpec
 
 - Propuesta de cambio: `/opsx-propose`

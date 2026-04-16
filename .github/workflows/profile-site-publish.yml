@@ -1,0 +1,59 @@
+name: profile-site publish
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      profile_data_ref:
+        description: "Source reference for profile data"
+        required: false
+      profile_data_path:
+        description: "Path to JSON Resume payload"
+        required: false
+  repository_dispatch:
+    types:
+      - profile-data-updated
+
+jobs:
+  trigger-baseline:
+    name: Trigger baseline and parameter resolution
+    runs-on: ubuntu-latest
+    outputs:
+      profile_data_ref: ${{ steps.resolve.outputs.profile_data_ref }}
+      profile_data_path: ${{ steps.resolve.outputs.profile_data_path }}
+      trigger_type: ${{ steps.resolve.outputs.trigger_type }}
+    steps:
+      - name: Resolve source parameters
+        id: resolve
+        shell: bash
+        run: |
+          PROFILE_DATA_REF=""
+          PROFILE_DATA_PATH=""
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PROFILE_DATA_REF="${{ github.event.inputs.profile_data_ref }}"
+            PROFILE_DATA_PATH="${{ github.event.inputs.profile_data_path }}"
+          elif [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            PROFILE_DATA_REF="${{ github.event.client_payload.profile_data_ref }}"
+            PROFILE_DATA_PATH="${{ github.event.client_payload.profile_data_path }}"
+          fi
+
+          if [ -z "$PROFILE_DATA_REF" ]; then
+            PROFILE_DATA_REF="main"
+          fi
+
+          if [ -z "$PROFILE_DATA_PATH" ]; then
+            PROFILE_DATA_PATH="data/resume.json"
+          fi
+
+          echo "profile_data_ref=$PROFILE_DATA_REF" >> "$GITHUB_OUTPUT"
+          echo "profile_data_path=$PROFILE_DATA_PATH" >> "$GITHUB_OUTPUT"
+          echo "trigger_type=${{ github.event_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Report resolved parameters
+        run: |
+          echo "Trigger: ${{ steps.resolve.outputs.trigger_type }}"
+          echo "profile_data_ref: ${{ steps.resolve.outputs.profile_data_ref }}"
+          echo "profile_data_path: ${{ steps.resolve.outputs.profile_data_path }}"
