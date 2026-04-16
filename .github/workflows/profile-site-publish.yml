@@ -64,6 +64,11 @@ jobs:
     needs:
       - trigger-baseline
     steps:
+      - name: Checkout profile-site repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Check profile-data access configuration
         shell: bash
         env:
@@ -148,3 +153,18 @@ jobs:
 
           print("JSON Resume v1.2.1 validation passed.")
           PY
+
+      - name: Render profile site from validated resume
+        shell: bash
+        run: |
+          python scripts/render_resume_html.py --input data/resume.json --output dist/index.html
+
+      - name: Verify rendered output exists before deployment
+        shell: bash
+        run: |
+          if [ ! -s dist/index.html ]; then
+            echo "::error::Expected rendered output dist/index.html was not generated or is empty."
+            exit 1
+          fi
+
+          echo "Rendered output check passed: dist/index.html"
