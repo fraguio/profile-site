@@ -32,6 +32,13 @@ El objetivo del repositorio es publicar un HTML reproducible y mantenible median
 - Defaults del baseline: `profile_data_ref=main` y `profile_data_path=data/resume.json`.
 - El flujo se define por contrato compartido; no depende de implementaciones concretas de otros consumidores.
 
+### Acceso autenticado a `profile-data` (privado)
+
+- Variable de repositorio requerida: `PROFILE_DATA_REPOSITORY` con formato `owner/profile-data`.
+- Secreto requerido: `PROFILE_DATA_READ_TOKEN` con permisos de lectura sobre `Contents` del repositorio privado.
+- El pipeline falla de forma temprana y explícita si falta configuración de acceso o si la ruta del JSON no existe en el `ref/path` resuelto.
+- El archivo origen resuelto se copia a `data/resume.json` y se valida de forma estricta contra JSON Resume `v1.2.1` antes de cualquier etapa de render.
+
 ## Proceso OpenSpec
 
 - Propuesta de cambio: `/opsx-propose`

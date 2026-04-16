@@ -57,3 +57,94 @@ jobs:
           echo "Trigger: ${{ steps.resolve.outputs.trigger_type }}"
           echo "profile_data_ref: ${{ steps.resolve.outputs.profile_data_ref }}"
           echo "profile_data_path: ${{ steps.resolve.outputs.profile_data_path }}"
+
+  source-and-validate:
+    name: Source acquisition and contract validation
+    runs-on: ubuntu-latest
+    needs:
+      - trigger-baseline
+    steps:
+      - name: Check profile-data access configuration
+        shell: bash
+        env:
+          PROFILE_DATA_REPOSITORY: ${{ vars.PROFILE_DATA_REPOSITORY }}
+          PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
+        run: |
+          if [ -z "$PROFILE_DATA_REPOSITORY" ]; then
+            echo "::error::Missing repository variable PROFILE_DATA_REPOSITORY (expected format: owner/profile-data)."
+            exit 1
+          fi
+
+          if [ -z "$PROFILE_DATA_READ_TOKEN" ]; then
+            echo "::error::Missing secret PROFILE_DATA_READ_TOKEN with read access to the private profile-data repository."
+            exit 1
+          fi
+
+      - name: Checkout profile-data source
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.PROFILE_DATA_REPOSITORY }}
+          ref: ${{ needs.trigger-baseline.outputs.profile_data_ref }}
+          token: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
+          path: profile-data
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Resolve resume source file
+        shell: bash
+        run: |
+          SOURCE_FILE="profile-data/${{ needs.trigger-baseline.outputs.profile_data_path }}"
+
+          if [ ! -f "$SOURCE_FILE" ]; then
+            echo "::error::Expected resume file not found at '$SOURCE_FILE'."
+            echo "::error::Resolved coordinates ref='${{ needs.trigger-baseline.outputs.profile_data_ref }}' path='${{ needs.trigger-baseline.outputs.profile_data_path }}'."
+            exit 1
+          fi
+
+          mkdir -p data
+          cp "$SOURCE_FILE" data/resume.json
+
+      - name: Install JSON schema validation dependency
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --quiet jsonschema==4.23.0
+
+      - name: Download JSON Resume schema v1.2.1
+        shell: bash
+        run: |
+          mkdir -p schema
+          curl -fsSL "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.2.1/schema.json" -o schema/resume-schema-v1.2.1.json
+
+      - name: Validate resume contract (JSON Resume v1.2.1)
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          from jsonschema import Draft7Validator
+
+          schema_path = Path("schema/resume-schema-v1.2.1.json")
+          resume_path = Path("data/resume.json")
+
+          schema = json.loads(schema_path.read_text(encoding="utf-8"))
+          resume = json.loads(resume_path.read_text(encoding="utf-8"))
+
+          validator = Draft7Validator(schema)
+          errors = sorted(validator.iter_errors(resume), key=lambda err: list(err.absolute_path))
+
+          if errors:
+              print("::error::JSON Resume v1.2.1 validation failed. Rendering and deploy are blocked.")
+              for index, error in enumerate(errors, start=1):
+                  field = ".".join(str(part) for part in error.absolute_path) or "<root>"
+                  rule = error.validator or "<unknown>"
+                  schema_rule = ".".join(str(part) for part in error.schema_path) or "<root>"
+                  print(f"[{index}] field={field}")
+                  print(f"    rule={rule}")
+                  print(f"    schema_rule={schema_rule}")
+                  print(f"    root_cause={error.message}")
+              sys.exit(1)
+
+          print("JSON Resume v1.2.1 validation passed.")
+          PY
