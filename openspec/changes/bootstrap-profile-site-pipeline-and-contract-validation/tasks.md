@@ -16,10 +16,10 @@
 
 ## 3. Rendering baseline behavior
 
-- [ ] 3.1 Implement initial rendering flow consuming validated `data/resume.json`
-- [ ] 3.2 Implement rule to omit sections with missing or empty data
-- [ ] 3.3 Ensure no placeholder/fallback copy is emitted for omitted sections
-- [ ] 3.4 Add output existence check before deployment stage
+- [x] 3.1 Implement initial rendering flow consuming validated `data/resume.json`
+- [x] 3.2 Implement rule to omit sections with missing or empty data
+- [x] 3.3 Ensure no placeholder/fallback copy is emitted for omitted sections
+- [x] 3.4 Add output existence check before deployment stage
 
 ## 4. Deployment and observability hardening
 
