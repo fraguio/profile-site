@@ -30,6 +30,8 @@ El objetivo del repositorio es publicar un HTML reproducible y mantenible median
 - Evento de dispatch esperado: `profile-data-updated`.
 - Coordenadas de entrada compartidas: `profile_data_ref` y `profile_data_path`.
 - Defaults del baseline: `profile_data_ref=main` y `profile_data_path=data/resume.json`.
+- La pipeline registra en resumen de ejecución (`GITHUB_STEP_SUMMARY`) el trigger, coordenadas de origen, estado del build y estado del deploy.
+- La resolución de coordenadas incluye verificación automatizada de casos reproducibles: `workflow_dispatch` con `profile_data_ref` no default, y `repository_dispatch` con payload default/explícito.
 - El flujo se define por contrato compartido; no depende de implementaciones concretas de otros consumidores.
 
 ### Acceso autenticado a `profile-data` (privado)

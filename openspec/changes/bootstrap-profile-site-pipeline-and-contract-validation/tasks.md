@@ -23,10 +23,10 @@
 
 ## 4. Deployment and observability hardening
 
-- [ ] 4.1 Wire deployment artifact upload and deploy steps for GitHub Pages (v1 target)
-- [ ] 4.2 Add logging for trigger type, source ref/path, and build outcome summary
-- [ ] 4.3 Verify manual run path using non-default `profile_data_ref` for reproducibility
-- [ ] 4.4 Verify dispatch run path from `profile-data` payload with default and explicit values
+- [x] 4.1 Wire deployment artifact upload and deploy steps for GitHub Pages (v1 target)
+- [x] 4.2 Add logging for trigger type, source ref/path, and build outcome summary
+- [x] 4.3 Verify manual run path using non-default `profile_data_ref` for reproducibility
+- [x] 4.4 Verify dispatch run path from `profile-data` payload with default and explicit values
 
 ## 5. SEO minimum baseline
 
