@@ -4,7 +4,24 @@ description: Implement tasks from an OpenSpec change (Experimental)
 
 Implement tasks from an OpenSpec change.
 
+**Command arguments received**
+
+- Raw arguments: `$ARGUMENTS`
+- Positional mapping (when present):
+  - `$1` -> change name (optional)
+  - Remaining tokens -> optional execution hints (`scope=...`, `review_gate=...`, etc.)
+
 **Input**: Optionally specify a change name (e.g., `/opsx-apply add-auth`). If omitted, check if it can be inferred from conversation context. If vague or ambiguous you MUST prompt for available changes.
+
+Optional execution hints can be included in plain text after the command. Supported hints:
+- `scope=<major>.<minor>` (example: `scope=1.2`)
+- `scope=<major>.x` (example: `scope=1.x`)
+- `stop_after_scope=true|false` (default: `true` when `scope` is provided)
+- `review_gate=true|false` (default: `true`)
+- `commit_prep=true|false` (default: `true`)
+- `forbid_next_blocks=true|false` (default: `true`)
+
+If hints are omitted, continue with normal multi-task apply behavior.
 
 **Steps**
 
@@ -59,12 +76,23 @@ Implement tasks from an OpenSpec change.
 
 6. **Implement tasks (loop until done or blocked)**
 
+   If `scope` is provided:
+   - Implement only tasks matching that scope.
+     - `scope=1.2` -> only task `1.2`
+     - `scope=1.x` -> only tasks under `1.*`
+   - Do not start tasks outside the scope.
+   - If `forbid_next_blocks=true`, stop immediately before any task from a different major block.
+
    For each pending task:
    - Show which task is being worked on
    - Make the code changes required
    - Keep changes minimal and focused
    - Mark task complete in the tasks file: `- [ ]` → `- [x]`
-   - Continue to next task
+   - Continue to next task only if it is still inside scope (when scope mode is active)
+
+   If `stop_after_scope=true` in scope mode:
+   - Pause immediately after scope completion.
+   - Do not continue to next pending task.
 
    **Pause if:**
    - Task is unclear → ask for clarification
@@ -72,11 +100,33 @@ Implement tasks from an OpenSpec change.
    - Error or blocker encountered → report and wait for guidance
    - User interrupts
 
-7. **On completion or pause, show status**
+7. **Run review gate (if enabled)**
+
+   If `review_gate=true`, run and present:
+   ```bash
+   openspec status --change "<name>"
+   git status
+   git diff
+   ```
+
+   Then provide an explicit verdict:
+   - `MERECE COMMIT`
+   - `FALTA ALGO`
+
+8. **Prepare commit details (if enabled)**
+
+   If `commit_prep=true` and verdict is `MERECE COMMIT`:
+   - Propose a concise commit message (short title, optional body).
+   - Provide exact commit commands.
+   - Stop session after preparing commit details.
+
+9. **On completion or pause, show status**
 
    Display:
    - Tasks completed this session
    - Overall progress: "N/M tasks complete"
+   - Active scope and whether scope guardrails were respected (when scope mode is used)
+   - Review gate result (when enabled)
    - If all done: suggest archive
    - If paused: explain why and wait for guidance
 
@@ -140,6 +190,8 @@ What would you like to do?
 - Update task checkbox immediately after completing each task
 - Pause on errors, blockers, or unclear requirements - don't guess
 - Use contextFiles from CLI output, don't assume specific file names
+- In scope mode, never implement tasks outside the declared scope
+- In scope mode with `forbid_next_blocks=true`, stop before entering a different major block (example: stop before `2.x` when scope is `1.x`)
 
 **Fluid Workflow Integration**
 
