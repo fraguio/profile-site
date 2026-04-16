@@ -8,11 +8,11 @@
 
 ## 2. Source acquisition and contract validation
 
-- [ ] 2.1 Add step to fetch `profile-data` source using resolved ref/path inputs
-- [ ] 2.2 Add strict JSON Resume `v1.2.1` schema validation stage before rendering
-- [ ] 2.3 Enforce fail-hard behavior so validation failure aborts pipeline
-- [ ] 2.4 Emit detailed validation diagnostics (field/rule/root-cause) in CI logs
-- [ ] 2.5 Document and configure authenticated access requirements for private `profile-data` checkout in CI
+- [x] 2.1 Add step to fetch `profile-data` source using resolved ref/path inputs
+- [x] 2.2 Add strict JSON Resume `v1.2.1` schema validation stage before rendering
+- [x] 2.3 Enforce fail-hard behavior so validation failure aborts pipeline
+- [x] 2.4 Emit detailed validation diagnostics (field/rule/root-cause) in CI logs
+- [x] 2.5 Document and configure authenticated access requirements for private `profile-data` checkout in CI
 
 ## 3. Rendering baseline behavior
 
