@@ -34,6 +34,11 @@ jobs:
       profile_data_path: ${{ steps.resolve.outputs.profile_data_path }}
       trigger_type: ${{ steps.resolve.outputs.trigger_type }}
     steps:
+      - name: Checkout profile-site repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Resolve source parameters
         id: resolve
         shell: bash
