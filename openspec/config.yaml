@@ -1,0 +1,5 @@
+schema: spec-driven
+
+context: |
+  Language: English
+  All OpenSpec artifacts must be written in English.
