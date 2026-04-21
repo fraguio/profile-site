@@ -1,6 +1,7 @@
 import argparse
 import html
 import json
+import os
 from pathlib import Path
 
 
@@ -20,6 +21,45 @@ def has_displayable_content(value):
 
 def text(value):
     return html.escape(str(value), quote=True)
+
+
+def first_displayable(*values):
+    for value in values:
+        if has_displayable_content(value):
+            return str(value).strip()
+    return ""
+
+
+def normalize_site_base_url(site_base_url):
+    normalized = (site_base_url or "").strip()
+    if not normalized:
+        raise ValueError("A non-empty site base URL is required to generate canonical metadata.")
+    return normalized.rstrip("/")
+
+
+def build_seo_metadata(resume, site_base_url):
+    basics = resume.get("basics") or {}
+    name = first_displayable(basics.get("name"))
+    label = first_displayable(basics.get("label"))
+    summary = first_displayable(basics.get("summary"))
+
+    title = " - ".join(part for part in (name, label) if part)
+    if not title:
+        title = first_displayable(name, label, "Professional Profile")
+
+    description = summary
+    if not description:
+        description = " | ".join(part for part in (label, name) if part)
+    if not description:
+        description = first_displayable(name, label, "Professional profile and experience")
+
+    canonical = normalize_site_base_url(site_base_url) + "/"
+
+    return {
+        "title": title,
+        "description": description,
+        "canonical": canonical,
+    }
 
 
 def render_header(resume):
@@ -137,7 +177,7 @@ def render_simple_list(title, items):
     return f"<section><h2>{text(title)}</h2><ul>{listing}</ul></section>"
 
 
-def render_resume(resume):
+def render_resume(resume, site_base_url):
     sections = [
         render_header(resume),
         render_timeline_section(
@@ -162,6 +202,7 @@ def render_resume(resume):
 
     visible_sections = [section for section in sections if section]
     body_content = "".join(visible_sections)
+    seo = build_seo_metadata(resume, site_base_url)
 
     return (
         "<!doctype html>"
@@ -169,7 +210,9 @@ def render_resume(resume):
         "<head>"
         "<meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-        "<title>profile-site</title>"
+        f"<title>{text(seo['title'])}</title>"
+        f"<meta name=\"description\" content=\"{text(seo['description'])}\">"
+        f"<link rel=\"canonical\" href=\"{text(seo['canonical'])}\">"
         "<style>"
         "body{font-family:Georgia,serif;margin:2rem auto;max-width:900px;line-height:1.55;padding:0 1rem;color:#1f2933;}"
         "h1,h2,h3{line-height:1.2;margin-bottom:0.5rem;}"
@@ -189,13 +232,18 @@ def main():
     parser = argparse.ArgumentParser(description="Render a simple profile-site HTML from JSON Resume data.")
     parser.add_argument("--input", required=True, help="Path to validated JSON Resume file")
     parser.add_argument("--output", required=True, help="Output HTML path")
+    parser.add_argument(
+        "--site-base-url",
+        default=os.getenv("PROFILE_SITE_BASE_URL", ""),
+        help="Canonical site base URL (can also be set via PROFILE_SITE_BASE_URL)",
+    )
     args = parser.parse_args()
 
     input_path = Path(args.input)
     output_path = Path(args.output)
 
     resume = json.loads(input_path.read_text(encoding="utf-8"))
-    rendered_html = render_resume(resume)
+    rendered_html = render_resume(resume, args.site_base_url)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(rendered_html, encoding="utf-8")

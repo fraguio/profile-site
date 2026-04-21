@@ -93,6 +93,7 @@ jobs:
         env:
           PROFILE_DATA_REPOSITORY: ${{ vars.PROFILE_DATA_REPOSITORY }}
           PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
+          PROFILE_SITE_BASE_URL: ${{ vars.PROFILE_SITE_BASE_URL }}
         run: |
           if [ -z "$PROFILE_DATA_REPOSITORY" ]; then
             echo "::error::Missing repository variable PROFILE_DATA_REPOSITORY (expected format: owner/profile-data)."
@@ -101,6 +102,11 @@ jobs:
 
           if [ -z "$PROFILE_DATA_READ_TOKEN" ]; then
             echo "::error::Missing secret PROFILE_DATA_READ_TOKEN with read access to the private profile-data repository."
+            exit 1
+          fi
+
+          if [ -z "$PROFILE_SITE_BASE_URL" ]; then
+            echo "::error::Missing repository variable PROFILE_SITE_BASE_URL with the public site base URL."
             exit 1
           fi
 
@@ -175,8 +181,43 @@ jobs:
 
       - name: Render profile site from validated resume
         shell: bash
+        env:
+          PROFILE_SITE_BASE_URL: ${{ vars.PROFILE_SITE_BASE_URL }}
         run: |
-          python scripts/render_resume_html.py --input data/resume.json --output dist/index.html
+          python scripts/render_resume_html.py --input data/resume.json --output dist/index.html --site-base-url "$PROFILE_SITE_BASE_URL"
+
+      - name: Verify required SEO tags in rendered output
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          html = Path("dist/index.html").read_text(encoding="utf-8")
+
+          checks = {
+              "title": re.search(r"<title>\s*[^<]+\s*</title>", html, flags=re.IGNORECASE),
+              "meta description": re.search(
+                  r"<meta\s+name=[\"']description[\"']\s+content=[\"'][^\"']+[\"']\s*/?>",
+                  html,
+                  flags=re.IGNORECASE,
+              ),
+              "canonical": re.search(
+                  r"<link\s+rel=[\"']canonical[\"']\s+href=[\"'][^\"']+[\"']\s*/?>",
+                  html,
+                  flags=re.IGNORECASE,
+              ),
+          }
+
+          missing = [name for name, matched in checks.items() if not matched]
+          if missing:
+              for tag_name in missing:
+                  print(f"::error::Missing required SEO tag: {tag_name}")
+              sys.exit(1)
+
+          print("SEO tag verification passed.")
+          PY
 
       - name: Verify rendered output exists before deployment
         shell: bash

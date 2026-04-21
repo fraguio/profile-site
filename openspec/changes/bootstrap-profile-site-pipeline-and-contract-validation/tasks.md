@@ -30,6 +30,6 @@
 
 ## 5. SEO minimum baseline
 
-- [ ] 5.1 Add render logic/config to output non-empty `title` and `meta description`
-- [ ] 5.2 Add canonical URL generation based on configured site base URL
-- [ ] 5.3 Verify generated HTML includes required SEO tags in successful builds
+- [x] 5.1 Add render logic/config to output non-empty `title` and `meta description`
+- [x] 5.2 Add canonical URL generation based on configured site base URL
+- [x] 5.3 Verify generated HTML includes required SEO tags in successful builds
