@@ -44,10 +44,9 @@ El objetivo del repositorio es publicar un HTML reproducible y mantenible median
 
 ## Proceso OpenSpec
 
-- Propuesta de cambio: `/opsx-propose`
-- Implementación de tareas: `/opsx-apply`
+- Propuesta de cambio: `/ospec-propose`
+- Implementación de tareas: `/ospec-apply`
 - Archivo y cierre: `/opsx-archive`
-- Orquestación por alcance (scope + gate + commit prep): `/flow-run-step`
 
 Guía de evolución del flujo con agentes:
 - `docs/workflow/openspec-opencode.md`
