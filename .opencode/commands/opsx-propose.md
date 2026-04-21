@@ -15,20 +15,6 @@ When ready to implement, run /opsx-apply
 
 **Input**: The argument after `/opsx-propose` is the change name (kebab-case), OR a description of what the user wants to build.
 
-**Command arguments received**
-
-- Raw arguments: `$ARGUMENTS`
-- Positional mapping (when present):
-  - `$1` -> change name or short description seed
-  - Remaining tokens -> optional execution hints (`task_granularity=...`, `commit_unit=...`, `task_timebox=...`)
-
-Optional execution hints can be included in plain text after the command. Supported hints:
-- `task_granularity=atomic` (default)
-- `commit_unit=task` or `commit_unit=block`
-- `task_timebox=15-45m` (target size per task)
-
-If hints are omitted, default to atomic tasks and `commit_unit=task`.
-
 **Steps**
 
 1. **If no input provided, ask what they want to build**
@@ -60,7 +46,7 @@ If hints are omitted, default to atomic tasks and `commit_unit=task`.
 
    Loop through artifacts in dependency order (artifacts with no pending dependencies first):
 
-    a. **For each artifact that is `ready` (dependencies satisfied)**:
+   a. **For each artifact that is `ready` (dependencies satisfied)**:
       - Get instructions:
         ```bash
         openspec instructions <artifact-id> --change "<name>" --json
@@ -76,14 +62,6 @@ If hints are omitted, default to atomic tasks and `commit_unit=task`.
       - Create the artifact file using `template` as the structure
       - Apply `context` and `rules` as constraints - but do NOT copy them into the file
       - Show brief progress: "Created <artifact-id>"
-
-      - If creating `tasks.md`, enforce the atomic planning protocol:
-        - Break work into small, independently executable tasks.
-        - Each task should map to one coherent commit intent.
-        - Avoid mixing concerns from different blocks in a single task.
-        - Include clear boundaries so `/opsx-apply` can execute one task or one block and stop.
-        - Prefer explicit IDs such as `1.1`, `1.2`, etc., with scope-aligned descriptions.
-        - Use a target complexity that can normally be completed within the declared timebox.
 
    b. **Continue until all `applyRequires` artifacts are complete**
       - After creating each artifact, re-run `openspec status --change "<name>" --json`
@@ -116,11 +94,6 @@ After completing all artifacts, summarize:
 - **IMPORTANT**: `context` and `rules` are constraints for YOU, not content for the file
   - Do NOT copy `<context>`, `<rules>`, `<project_context>` blocks into the artifact
   - These guide what you write, but should never appear in the output
-- For `tasks.md`, default to atomic and reviewable units:
-  - One task should have one primary objective and one clear definition of done.
-  - Keep tasks independently verifiable from repository evidence (files, tests, checks).
-  - Make it obvious where to pause for commit/PR preparation.
-  - Prefer wording that signals intent, not implementation noise.
 
 **Guardrails**
 - Create ALL artifacts needed for implementation (as defined by schema's `apply.requires`)
@@ -128,4 +101,3 @@ After completing all artifacts, summarize:
 - If context is critically unclear, ask the user - but prefer making reasonable decisions to keep momentum
 - If a change with that name already exists, ask if user wants to continue it or create a new one
 - Verify each artifact file exists after writing before proceeding to next
-- Do not produce oversized tasks that force multi-purpose commits when atomic alternatives are feasible

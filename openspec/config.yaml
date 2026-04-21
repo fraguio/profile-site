@@ -3,3 +3,11 @@ schema: spec-driven
 context: |
   Language: English
   All OpenSpec artifacts must be written in English.
+
+rules:
+  tasks:
+    - Use explicit major.minor task IDs in descriptions (for example, 1.1, 1.2, 2.1).
+    - Keep tasks atomic and independently executable.
+    - Prefer one task per coherent commit intent.
+    - Do not mix concerns from different major blocks in a single task.
+    - Make each task verifiable from repository evidence (files, tests, checks).
