@@ -4,6 +4,12 @@ Este documento fija el flujo de trabajo acordado para `profile-site`.
 
 Objetivo: mantener el proceso simple para un proyecto pequeno, sin perder calidad tecnica ni ritmo de entrega.
 
+## Estado del documento
+
+- Este es el documento canonico para la operativa diaria.
+- Si hay conflicto con otros documentos de workflow, prevalece este archivo.
+- El documento `docs/workflow/openspec-opencode.md` se mantiene como contexto historico de evolucion.
+
 ## Decisiones de uso de skills
 
 - `grill-me`: usar (alto valor) para aclarar ideas y decisiones antes de implementar.
