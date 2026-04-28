@@ -6,17 +6,26 @@ El objetivo del repositorio es publicar un HTML reproducible y mantenible median
 
 ## Estado
 
-- Fase actual: bootstrap de v1.
-- Planificación activa con OpenSpec.
-- Foco: base técnica (pipeline, validación de contrato, render inicial y despliegue).
+- Baseline implementado y estable sobre pipeline estático en GitHub Pages.
+- Roadmap objetivo definido y versionado en `docs/contracts/*` y `docs/research/*`.
+- Evolución gestionada con OpenSpec y commits atómicos en ramas de trabajo.
 
-## Decisiones de arquitectura (v1)
+## Baseline implementado (as-is)
 
 - Contrato de entrada estricto: JSON Resume `v1.2.1`.
 - Validación obligatoria antes del render.
 - Política `fail hard`: si falla validación, se aborta build y deploy.
 - Render sin ruido: las secciones vacías no se muestran.
 - Independencia de consumidor: `profile-site` se define por contrato compartido, no por dependencias con otros consumidores.
+- Salida actual publicada: `dist/index.html`.
+
+## Roadmap objetivo vigente (target)
+
+- Contrato funcional objetivo de salida: `docs/contracts/resume-output-template.md`.
+- Decisiones maestras de evolución:
+  - `docs/research/profile-data-to-profile-site-communication-master.md`
+  - `docs/research/astro-renderer-migration-master.md`
+- Este roadmap está acordado y versionado, pero no está implementado por completo todavía.
 
 ## Fuente de datos
 
@@ -48,18 +57,16 @@ El objetivo del repositorio es publicar un HTML reproducible y mantenible median
 - Implementación de tareas: `/ospec-apply`
 - Archivo y cierre: `/opsx-archive`
 
-Guía de evolución del flujo con agentes:
+Guía operativa canónica del flujo:
+- `docs/workflow/openspec-simple-skills-flow.md`
+
+Contexto histórico del flujo y overlays:
 - `docs/workflow/openspec-opencode.md`
+
+Indice de documentación del proyecto:
+- `docs/README.md`
 
 ### Política de idioma
 
 - Artefactos OpenSpec (`proposal.md`, `design.md`, `tasks.md`, `specs`) en inglés.
 - Documentación de contexto del repositorio en español.
-
-## Roadmap v1
-
-- Pipeline con `push`, `workflow_dispatch` y `repository_dispatch`.
-- Ingesta de `profile-data` por `profile_data_ref` y `profile_data_path`.
-- Validación estricta de contrato con logs diagnósticos.
-- Render inicial de HTML con reglas de ocultación de secciones vacías.
-- Despliegue base en GitHub Pages.
