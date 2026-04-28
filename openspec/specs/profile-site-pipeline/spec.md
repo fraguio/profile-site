@@ -1,7 +1,9 @@
 # profile-site-pipeline Specification
 
 ## Purpose
-TBD - created by archiving change bootstrap-profile-site-pipeline-and-contract-validation. Update Purpose after archive.
+Define the baseline CI/CD contract for `profile-site`: trigger model, source coordinate resolution, and authenticated private-source ingestion.
+
+This spec was promoted from archived change `2026-04-22-bootstrap-pipeline` (shortened name due to Windows path-length constraints).
 ## Requirements
 ### Requirement: Consumer pipeline supports dual ingestion triggers
 The system MUST execute the `profile-site` build pipeline from both local repository triggers and external source-of-truth dispatch events.
@@ -50,4 +52,3 @@ The system MUST treat `profile-data` as a private repository and MUST require au
 #### Scenario: Credentials are missing or invalid
 - **WHEN** CI cannot authenticate to private `profile-data`
 - **THEN** the pipeline fails before validation/render with explicit access diagnostics in logs
-
