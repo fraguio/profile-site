@@ -29,3 +29,6 @@ htmlcov/
 
 # OpenCode local dependencies/cache
 .opencode/node_modules/
+
+# Local research drafts (not versioned)
+docs/research/**/*.local.md
