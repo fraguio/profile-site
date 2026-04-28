@@ -1,4 +1,12 @@
 # Contexto
+
+## Metadata
+
+- Status: roadmap decision set (baseline integration contract).
+- Scope: bloque 1 de comunicacion cross-repo `profile-data -> profile-site`.
+- Implementation state: contrato definido; aplicacion completa depende tambien del workflow emisor en `profile-data`.
+- Last updated: 2026-04-28.
+
 `profile-site` y `profile-engine` consumen información de `profile-data`, cuyo archivo fuente de verdad es `data/resume.json`.
 Hasta ahora, `profile-data` ya dispara a `profile-engine` mediante `repository_dispatch`.
 Para `profile-site`, se define un bloque específico de comunicación cross-repo, independiente de la migración de renderer a Astro.

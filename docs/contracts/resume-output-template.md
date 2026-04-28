@@ -1,8 +1,15 @@
 # Resume Output Template
 
+## Metadata
+
+- Status: target contract (approved, pending full implementation).
+- Scope: definition of expected output formats for `/`, `/read/`, and stable PDF delivery.
+- Source of truth for target output behavior.
+- Last updated: 2026-04-28.
+
 Este documento fija la plantilla acordada para los formatos de salida del CV.
 
-**Estado**: Draft v1 (versionado en Git como contrato funcional de salida).
+**Estado**: contrato funcional objetivo vigente para la evolucion del proyecto.
 
 ## Plantilla final (sin cambios)
 
