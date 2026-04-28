@@ -1,7 +1,9 @@
 # resume-contract-validation Specification
 
 ## Purpose
-TBD - created by archiving change bootstrap-profile-site-pipeline-and-contract-validation. Update Purpose after archive.
+Define strict input-validation guarantees for `profile-site`: JSON Resume `v1.2.1` schema enforcement, fail-hard behavior, and actionable diagnostics.
+
+This spec was promoted from archived change `2026-04-22-bootstrap-pipeline` (shortened name due to Windows path-length constraints).
 ## Requirements
 ### Requirement: Input data is validated against JSON Resume v1.2.1
 The system MUST validate the input resume data against JSON Resume schema version `v1.2.1` before rendering.
@@ -24,4 +26,3 @@ The system MUST fail hard on validation errors and MUST provide detailed diagnos
 #### Scenario: No partial output is published after validation failure
 - **WHEN** validation fails at any point in the pipeline
 - **THEN** no deployment artifact is published and the run is marked failed
-

@@ -1,7 +1,9 @@
 # profile-site-rendering-rules Specification
 
 ## Purpose
-TBD - created by archiving change bootstrap-profile-site-pipeline-and-contract-validation. Update Purpose after archive.
+Define baseline rendering behavior for `profile-site`: silent omission of empty sections and required minimum SEO metadata.
+
+This spec was promoted from archived change `2026-04-22-bootstrap-pipeline` (shortened name due to Windows path-length constraints).
 ## Requirements
 ### Requirement: Empty sections are hidden in rendered output
 The system MUST omit sections from rendered output when the corresponding data is missing or empty.
@@ -31,4 +33,3 @@ The system MUST include minimum SEO metadata in rendered output.
 #### Scenario: SEO metadata values derive from available profile data
 - **WHEN** rendering computes SEO metadata values
 - **THEN** values are deterministically derived from validated resume data and configured site base URL
-
