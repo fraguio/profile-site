@@ -1,5 +1,5 @@
 ---
-description: Project overlay for OpenSpec apply with scoped execution and review gate
+description: Project overlay for OpenSpec apply with scoped execution, TDD loop, and review gate
 ---
 
 Extend the stock apply workflow with strict scoped execution and commit-readiness checks.
@@ -38,6 +38,7 @@ Optional plain-text hints after the command:
 - `review_gate=true|false` (default: `true`)
 - `commit_prep=true|false` (default: `true`)
 - `forbid_next_blocks=true|false` (default: `true`)
+- `tdd=true|false` (default: `true`)
 
 If no hints are provided, proceed with normal multi-task apply.
 
@@ -50,6 +51,16 @@ When `scope` is provided:
 - Do not begin tasks outside scope.
 - If `forbid_next_blocks=true`, stop before entering a different major block.
 - If `stop_after_scope=true`, stop immediately after completing in-scope tasks.
+
+When `tdd=true`:
+- Execute each in-scope task as a vertical TDD mini-cycle aligned with `/tdd`.
+- Per cycle, follow this order:
+  1. Define one observable behavior for the current task.
+  2. Write one failing test (RED).
+  3. Implement the minimum code to pass (GREEN).
+  4. Refactor safely while keeping tests green (REFACTOR).
+- Do not advance to the next task until the current task reaches GREEN with stable tests.
+- Prefer behavior-level tests through public interfaces; avoid implementation-coupled assertions.
 
 For every completed task:
 - Mark task checkbox immediately (`- [ ]` -> `- [x]`).
@@ -76,6 +87,10 @@ Stop and ask when:
 - Scope is ambiguous or invalid
 - Execution would cross scope boundaries unintentionally
 - A blocker or design issue prevents safe progress
+
+If implementation repeatedly shows architectural friction (for example: duplication across call sites, modules hard to test, or frequent cross-file ripple effects):
+- Pause in place, finish with `Not ready to commit`, and recommend a focused architecture review using `/improve-codebase-architecture`.
+- If confirmed, continue through a separate OpenSpec change dedicated to architecture improvements.
 
 **Output**
 
