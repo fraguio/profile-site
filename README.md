@@ -63,7 +63,7 @@ Guía operativa canónica del flujo:
 Contexto histórico del flujo y overlays:
 - `docs/workflow/openspec-opencode.md`
 
-Indice de documentación del proyecto:
+Índice de documentación del proyecto:
 - `docs/README.md`
 
 ### Política de idioma

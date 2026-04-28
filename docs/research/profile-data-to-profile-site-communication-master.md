@@ -3,8 +3,8 @@
 ## Metadata
 
 - Status: roadmap decision set (baseline integration contract).
-- Scope: bloque 1 de comunicacion cross-repo `profile-data -> profile-site`.
-- Implementation state: contrato definido; aplicacion completa depende tambien del workflow emisor en `profile-data`.
+- Scope: bloque 1 de comunicación cross-repo `profile-data -> profile-site`.
+- Implementation state: contrato definido; aplicación completa depende también del workflow emisor en `profile-data`.
 - Last updated: 2026-04-28.
 
 `profile-site` y `profile-engine` consumen información de `profile-data`, cuyo archivo fuente de verdad es `data/resume.json`.

@@ -3,8 +3,8 @@
 ## Metadata
 
 - Status: roadmap decision set (planned, pending implementation).
-- Scope: bloque 2 de evolucion, migracion del renderer actual a Astro.
-- Implementation state: no implementado aun en este repositorio.
+- Scope: bloque 2 de evolución, migración del renderer actual a Astro.
+- Implementation state: no implementado aún en este repositorio.
 - Last updated: 2026-04-28.
 
 `profile-site` ya opera con un pipeline estático orientado a contrato: adquiere `data/resume.json` desde `profile-data`, valida JSON Resume `v1.2.1`, renderiza HTML y despliega en GitHub Pages.
