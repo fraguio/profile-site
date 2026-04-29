@@ -8,7 +8,7 @@
 ## 2. Contract validation migration
 
 - [x] 2.1 Vendor JSON Resume `v1.2.1` schema in-repo for offline validation use
-- [ ] 2.2 Implement Node validation command with fail-hard behavior and actionable field/rule/root-cause diagnostics
+- [x] 2.2 Implement Node validation command with fail-hard behavior and actionable field/rule/root-cause diagnostics
 - [ ] 2.3 Gate build execution so validation runs before Astro build on every supported event path
 
 ## 3. Rendering parity in Astro (Phase A)
