@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "astro": "astro"
+    "astro": "astro",
+    "build": "astro build",
+    "validate:contract": "node ./scripts/validate-resume-contract.mjs",
+    "deps:ci": "npm ci"
   },
   "devDependencies": {
     "astro": "^5.13.5"
