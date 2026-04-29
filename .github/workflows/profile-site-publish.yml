@@ -88,6 +88,11 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup Node 20.19.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.x
+
       - name: Check profile-data access configuration
         shell: bash
         env:
