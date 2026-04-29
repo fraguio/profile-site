@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "astro dev",
     "astro": "astro",
-    "build": "astro build",
+    "build": "npm run validate:contract && astro build",
     "validate:contract": "node ./scripts/validate-resume-contract.mjs",
     "deps:ci": "npm ci"
   },
