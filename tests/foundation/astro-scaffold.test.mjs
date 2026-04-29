@@ -57,3 +57,15 @@ test("astro config and route skeletons exist for root and read routes", () => {
   assert.equal(existsSync(rootRoutePath), true, "src/pages/index.astro should exist");
   assert.equal(existsSync(readRoutePath), true, "src/pages/read/index.astro should exist");
 });
+
+test("runtime constraints pin Node 20.19.x in CI and package metadata", () => {
+  const packageJson = readJson("package.json");
+  assert.equal(packageJson.engines?.node, ">=20.19 <21");
+
+  const workflowPath = path.join(rootDir, ".github", "workflows", "profile-site-publish.yml");
+  assert.equal(existsSync(workflowPath), true, "profile-site publish workflow should exist");
+
+  const workflowContent = readFileSync(workflowPath, "utf8");
+  assert.match(workflowContent, /uses:\s*actions\/setup-node@v4/);
+  assert.match(workflowContent, /node-version:\s*20\.19\.x/);
+});
