@@ -43,3 +43,17 @@ test("root npm scaffold exposes build, validation, and lockfile install scripts"
   assert.equal(packageJson.scripts?.["validate:contract"], "node ./scripts/validate-resume-contract.mjs");
   assert.equal(packageJson.scripts?.["deps:ci"], "npm ci");
 });
+
+test("astro config and route skeletons exist for root and read routes", () => {
+  const astroConfigPath = path.join(rootDir, "astro.config.mjs");
+  assert.equal(existsSync(astroConfigPath), true, "astro.config.mjs should exist at repository root");
+
+  const astroConfig = readFileSync(astroConfigPath, "utf8");
+  assert.match(astroConfig, /output\s*:\s*["']static["']/);
+
+  const rootRoutePath = path.join(rootDir, "src", "pages", "index.astro");
+  const readRoutePath = path.join(rootDir, "src", "pages", "read", "index.astro");
+
+  assert.equal(existsSync(rootRoutePath), true, "src/pages/index.astro should exist");
+  assert.equal(existsSync(readRoutePath), true, "src/pages/read/index.astro should exist");
+});
