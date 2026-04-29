@@ -18,6 +18,9 @@ dist/
 build/
 out/
 
+# Node dependencies
+node_modules/
+
 # Python cache/artifacts
 __pycache__/
 *.py[cod]

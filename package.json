@@ -1,0 +1,13 @@
+{
+  "name": "profile-site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "astro": "astro"
+  },
+  "devDependencies": {
+    "astro": "^5.13.5"
+  }
+}
