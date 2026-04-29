@@ -69,3 +69,13 @@ test("runtime constraints pin Node 20.19.x in CI and package metadata", () => {
   assert.match(workflowContent, /uses:\s*actions\/setup-node@v4/);
   assert.match(workflowContent, /node-version:\s*20\.19\.x/);
 });
+
+test("json resume v1.2.1 schema is vendored for offline validation", () => {
+  const schemaPath = path.join(rootDir, "schema", "resume-schema-v1.2.1.json");
+  assert.equal(existsSync(schemaPath), true, "vendored schema file should exist");
+
+  const schema = readJson("schema/resume-schema-v1.2.1.json");
+  assert.equal(schema.$schema, "http://json-schema.org/draft-07/schema#");
+  assert.equal(schema.title, "Resume Schema");
+  assert.equal(schema.type, "object");
+});
