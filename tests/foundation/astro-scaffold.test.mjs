@@ -35,3 +35,11 @@ test("root npm scaffold includes lockfile with Astro dependency", () => {
   const rootPackage = lockfile.packages?.[""];
   assert.equal(typeof rootPackage?.devDependencies?.astro, "string");
 });
+
+test("root npm scaffold exposes build, validation, and lockfile install scripts", () => {
+  const packageJson = readJson("package.json");
+
+  assert.equal(packageJson.scripts?.build, "astro build");
+  assert.equal(packageJson.scripts?.["validate:contract"], "node ./scripts/validate-resume-contract.mjs");
+  assert.equal(packageJson.scripts?.["deps:ci"], "npm ci");
+});

@@ -1,7 +1,7 @@
 ## 1. Astro and Node foundation
 
 - [x] 1.1 Add Astro + npm project scaffolding at repository root
-- [ ] 1.2 Add package scripts for build and contract validation with lockfile-driven dependency resolution
+- [x] 1.2 Add package scripts for build and contract validation with lockfile-driven dependency resolution
 - [ ] 1.3 Add static Astro configuration and route skeletons for `/` and `/read/`
 - [ ] 1.4 Align runtime constraints to Node `20.19.x` in CI and `engines.node >=20.19 <21` in project metadata
 
