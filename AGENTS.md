@@ -14,7 +14,20 @@ Este repositorio utiliza una estructura de contexto único. Consulta `docs/agent
 
 ## Idioma
 
-Utiliza español de forma predeterminada en toda la documentación del repositorio, incluidos issues, PRs, especificaciones, ADRs, comentarios de código y docstrings. Utiliza inglés para el código, los identificadores, los nombres de tipos, funciones y variables, y los elementos técnicos literales como comandos, rutas, etiquetas canónicas y nombres propios de herramientas o skills. Una instrucción explícita para usar otro idioma prevalece sobre esta regla.
+Redacta en español la prosa de toda la documentación del repositorio, incluidos issues, PRs, especificaciones, ADRs, comentarios de código y docstrings.
+
+Mantén en inglés:
+
+- El código y los identificadores.
+- Los nombres de tipos, funciones y variables.
+- Los comandos, rutas, etiquetas canónicas y nombres propios de herramientas o skills.
+- Los términos técnicos asentados cuando sean más precisos o naturales para el equipo, por ejemplo `build`, `SHA`, `home`, `landing`, `placeholder`, `fixture`, `smoke test`, `workflow`, `dispatch`, `schema`, `render` y `output`.
+
+Traduce la prosa explicativa, pero no sustituyas un término técnico asentado por una perífrasis española si pierde precisión, resulta menos natural o altera el significado. Las correcciones de idioma deben preservar los hechos, las relaciones, las rutas y las restricciones del dominio.
+
+Usa los términos definidos en `CONTEXT.md` con su forma canónica, aunque combinen español e inglés.
+
+Una instrucción explícita para usar otro idioma prevalece sobre estas reglas.
 
 ## Commits
 
