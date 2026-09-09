@@ -5,15 +5,15 @@ Contexto único para presentar y publicar una trayectoria profesional a partir d
 ## Superficies
 
 **Experiencia interactiva**:
-La presentación pública que permite explorar la trayectoria de forma narrativa e interactiva.
-_Evitar_: Premium, página principal, página de aterrizaje
+La superficie pública de exploración narrativa en `/`, con timeline y mejoras progresivas.
+_Evitar_: Premium, home, landing
 
 **CV web**:
-La representación lineal y ATS-oriented de la trayectoria para lectura y evaluación documental.
+La representación lineal y ATS-oriented de la trayectoria publicada en `/read/`.
 _Evitar_: Modo lectura, versión simplificada
 
 **CV PDF**:
-La representación estable y descargable de la trayectoria.
+La representación estable y descargable generada desde el CV web.
 _Evitar_: Plantilla PDF, CV alternativo
 
 **Documento ATS-oriented**:
@@ -27,8 +27,8 @@ El archivo JSON Resume que contiene los hechos profesionales usados por el sitio
 _Evitar_: Datos del sitio, contenido duplicado
 
 **Revisión curricular efectiva**:
-La versión exacta de la fuente curricular identificada para construir o publicar el perfil.
-_Evitar_: Rama principal actual, última versión
+El SHA exacto de la fuente curricular que un build consume y registra.
+_Evitar_: Main actual, última versión
 
 **Timeline**:
 La secuencia cronológica unificada de hitos de experiencia profesional, formación y proyectos.
@@ -40,8 +40,8 @@ _Evitar_: Tarjeta, evento genérico
 
 **Habilidad asociada**:
 Una tecnología, práctica o capacidad vinculada a un hito concreto.
-_Evitar_: Catálogo global, habilidad transversal
+_Evitar_: Catálogo global, skill transversal
 
 **Publicación supersedida**:
-Una publicación planificada que deja de ser vigente porque una revisión curricular posterior la reemplaza antes de hacerse pública.
+Una ejecución automática que construyó una revisión curricular exacta pero no la publica porque existe una revisión más reciente.
 _Evitar_: Build fallido, despliegue cancelado

@@ -22,7 +22,7 @@ Principios no negociables:
 - Datos reales antes que marketing.
 - Interacción solo cuando mejora comprensión o exploración.
 - Accesibilidad, rendimiento y degradación progresiva como requisitos de producto.
-- Ninguna sección o campo vacío se muestra como marcador de posición.
+- Ninguna sección o campo vacío se muestra como placeholder.
 
 ## Superficies y salidas
 
