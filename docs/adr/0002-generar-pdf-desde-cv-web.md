@@ -1,6 +1,6 @@
 # Generar el PDF desde el CV web
 
-Aceptado. El PDF estable se genera desde `/read/` renderizado en un servidor temporal con Playwright y Chromium; no existe una plantilla PDF paralela. Una única fuente documental evita divergencias entre lectura web, impresión y descarga, a cambio de tratar el render del navegador como parte obligatoria del build.
+Aceptado. El PDF estable se genera desde el CV web y no existe una plantilla PDF paralela. Una única fuente documental evita divergencias entre lectura web, impresión y descarga, a cambio de tratar el render del navegador como parte obligatoria del build.
 
 ## Alternativas consideradas
 

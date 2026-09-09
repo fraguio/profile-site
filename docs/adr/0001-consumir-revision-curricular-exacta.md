@@ -1,6 +1,6 @@
 # Consumir una revisión curricular exacta
 
-Aceptado. Cada build de publicación resuelve y registra un SHA curricular efectivo; los dispatch consumen el SHA recibido y las demás ejecuciones resuelven su referencia antes de validar. Esto evita que una actualización posterior cambie silenciosamente el contenido asociado a un evento y permite aplicar `latest-wins` solo antes de publicar una revisión ya reproducible.
+Aceptado. Todo build que consume `profile-data` usa y registra una revisión curricular exacta; los pull requests usan un fixture ficticio. Esto evita que una actualización posterior cambie silenciosamente el contenido asociado a un evento y permite decidir la publicación sobre una revisión reproducible.
 
 ## Alternativas consideradas
 

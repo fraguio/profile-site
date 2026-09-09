@@ -14,7 +14,7 @@ Los documentos de investigación que precedieron a esta especificación son cont
 
 El sitio es el activo público de marca profesional. Su resultado principal es generar contactos y oportunidades profesionales; exponer la trayectoria con profundidad es el resultado secundario.
 
-La audiencia primaria son recruiters y responsables de contratación. Engineering managers y perfiles técnicos son audiencia secundaria. El sitio debe transmitir credibilidad, seniority técnico, claridad comunicativa y orientación a resultados mediante hechos curriculares verificables, no claims vacíos.
+La audiencia primaria son profesionales de selección y responsables de contratación. Responsables de ingeniería y perfiles técnicos son audiencia secundaria. El sitio debe transmitir credibilidad, experiencia técnica senior, claridad comunicativa y orientación a resultados mediante hechos curriculares verificables, no afirmaciones vacías.
 
 Principios no negociables:
 
@@ -22,7 +22,7 @@ Principios no negociables:
 - Datos reales antes que marketing.
 - Interacción solo cuando mejora comprensión o exploración.
 - Accesibilidad, rendimiento y degradación progresiva como requisitos de producto.
-- Ninguna sección o campo vacío se muestra como placeholder.
+- Ninguna sección o campo vacío se muestra como marcador de posición.
 
 ## Superficies y salidas
 
@@ -61,7 +61,7 @@ La sección superior `skills` puede existir en la fuente, pero no se muestra ni 
 
 Las reglas locales se validan antes del render y fallan con diagnóstico que incluya ruta del campo, valor y regla incumplida. Además de las extensiones, las reglas incluyen fechas válidas, `endDate >= startDate` cuando exista y campos requeridos por la presentación.
 
-### Informacion personal
+### Información personal
 
 Se muestran email profesional, web y perfiles profesionales disponibles. El teléfono es configurable pero queda oculto por defecto. La ubicación se limita a ciudad, región y país localizado; no se muestra dirección postal ni código postal. No se muestra fotografía en ninguna superficie inicial.
 
@@ -210,7 +210,7 @@ GitHub Pages es el destino inicial. Ningún fallo contractual sustituye o public
 
 `workflow_dispatch` ofrece `profile_data_ref` con default `main`, `profile_data_path` con default `data/resume.json` y `deploy` booleano con default `false`. Puede validar cualquier rama, tag o commit accesible. Para desplegar manualmente requiere `deploy=true`, entorno protegido de GitHub y logs visibles con referencia solicitada y SHA efectivo.
 
-Todos los builds contractuales ejecutan pasos atómicos y diagnosticables para adquisición, schema, reglas locales, render HTML, rutas, SEO, CTAs, accesibilidad automatizable, PDF y outputs. Cualquier fallo bloquea el despliegue.
+Cada fase ejecuta pasos contractuales atómicos y diagnosticables para su alcance. La fase Base valida adquisición, schema, reglas locales, render HTML, rutas, SEO, CTAs y accesibilidad automatizable. La fase PDF añade generación, validación y output PDF. Cualquier fallo aplicable a la fase bloquea el despliegue.
 
 Tras un deploy se ejecutan smoke tests sobre la URL pública para `/`, `/read/` y el PDF. Un fallo marca la publicación como fallida y deja diagnóstico; el rollback automático queda fuera de alcance.
 

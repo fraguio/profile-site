@@ -6,42 +6,42 @@ Contexto único para presentar y publicar una trayectoria profesional a partir d
 
 **Experiencia interactiva**:
 La superficie pública de exploración narrativa en `/`, con timeline y mejoras progresivas.
-_Avoid_: Premium, home, landing
+_Evitar_: Premium, página principal, página de aterrizaje
 
 **CV web**:
 La representación lineal y ATS-oriented de la trayectoria publicada en `/read/`.
-_Avoid_: Modo lectura, versión simplificada
+_Evitar_: Modo lectura, versión simplificada
 
 **CV PDF**:
 La representación estable descargable generada desde el CV web.
-_Avoid_: Plantilla PDF, CV alternativo
+_Evitar_: Plantilla PDF, CV alternativo
 
 **Documento ATS-oriented**:
 Un documento curricular lineal, semántico y legible, orientado a extracción automatizada sin prometer compatibilidad universal con terceros.
-_Avoid_: ATS-friendly
+_Evitar_: ATS-friendly
 
 ## Trayectoria
 
 **Fuente curricular**:
 El archivo JSON Resume que contiene los hechos profesionales usados por el sitio.
-_Avoid_: Datos del sitio, contenido duplicado
+_Evitar_: Datos del sitio, contenido duplicado
 
 **Revisión curricular efectiva**:
-El SHA exacto de la fuente curricular que un build consume y registra.
-_Avoid_: Main actual, última versión
+La versión exacta de la fuente curricular identificada para construir o publicar el perfil.
+_Evitar_: Rama principal actual, última versión
 
 **Timeline**:
 La secuencia cronológica unificada de hitos de experiencia profesional, formación y proyectos.
-_Avoid_: Lista de empleos, carrusel
+_Evitar_: Lista de empleos, carrusel
 
 **Hito**:
 Un elemento fechado de experiencia profesional, formación o proyecto que aparece en el timeline.
-_Avoid_: Tarjeta, evento genérico
+_Evitar_: Tarjeta, evento genérico
 
 **Habilidad asociada**:
 Una tecnología, práctica o capacidad vinculada a un hito concreto.
-_Avoid_: Catálogo global, skill transversal
+_Evitar_: Catálogo global, habilidad transversal
 
 **Publicación supersedida**:
-Una ejecución automática que construyó una revisión curricular exacta pero no la publica porque existe una revisión más reciente.
-_Avoid_: Build fallido, despliegue cancelado
+Una publicación planificada que deja de ser vigente porque una revisión curricular posterior la reemplaza antes de hacerse pública.
+_Evitar_: Build fallido, despliegue cancelado
