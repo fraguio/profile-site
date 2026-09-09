@@ -5,15 +5,15 @@ Contexto único para presentar y publicar una trayectoria profesional a partir d
 ## Superficies
 
 **Experiencia interactiva**:
-La superficie pública de exploración narrativa en `/`, con timeline y mejoras progresivas.
+La presentación pública que permite explorar la trayectoria de forma narrativa e interactiva.
 _Evitar_: Premium, página principal, página de aterrizaje
 
 **CV web**:
-La representación lineal y ATS-oriented de la trayectoria publicada en `/read/`.
+La representación lineal y ATS-oriented de la trayectoria para lectura y evaluación documental.
 _Evitar_: Modo lectura, versión simplificada
 
 **CV PDF**:
-La representación estable descargable generada desde el CV web.
+La representación estable y descargable de la trayectoria.
 _Evitar_: Plantilla PDF, CV alternativo
 
 **Documento ATS-oriented**:
