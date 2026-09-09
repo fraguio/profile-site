@@ -212,7 +212,7 @@ GitHub Pages es el destino inicial. Ningún fallo contractual sustituye o public
 
 Cada fase ejecuta pasos contractuales atómicos y diagnosticables para su alcance. La fase Base valida adquisición, schema, reglas locales, render HTML, rutas, SEO, CTAs y accesibilidad automatizable. La fase PDF añade generación, validación y output PDF. Cualquier fallo aplicable a la fase bloquea el despliegue.
 
-Tras un deploy se ejecutan smoke tests sobre la URL pública para `/`, `/read/` y el PDF. Un fallo marca la publicación como fallida y deja diagnóstico; el rollback automático queda fuera de alcance.
+Tras un deploy se ejecutan smoke tests sobre la URL pública para `/` y `/read/`; desde la fase PDF también verifican el PDF. Un fallo marca la publicación como fallida y deja diagnóstico; el rollback automático queda fuera de alcance.
 
 ### Rendimiento
 
