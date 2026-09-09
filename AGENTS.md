@@ -2,7 +2,7 @@
 
 ### Gestor de issues
 
-Los issues se gestionan en GitHub Issues para `fraguio/profile-site-v1`. Consulta `docs/agents/issue-tracker.md`.
+Los issues se gestionan en GitHub Issues para `fraguio/profile-site`. Consulta `docs/agents/issue-tracker.md`.
 
 ### Etiquetas de triage
 

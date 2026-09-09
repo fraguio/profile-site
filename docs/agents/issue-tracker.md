@@ -1,6 +1,6 @@
 # Gestor de issues: GitHub
 
-Los issues y specs de este repo viven en GitHub Issues para `fraguio/profile-site-v1`. Usa la CLI `gh` para todas las operaciones.
+Los issues y specs de este repo viven en GitHub Issues para `fraguio/profile-site`. Usa la CLI `gh` para todas las operaciones.
 
 ## Convenciones
 
