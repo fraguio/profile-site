@@ -30,6 +30,10 @@ _Evitar_: Datos del sitio, contenido duplicado
 El SHA exacto de la fuente curricular que un build consume y registra.
 _Evitar_: Main actual, última versión
 
+**Revisión curricular vigente**:
+El SHA del commit más reciente alcanzable desde `profile-data/main` que modificó la fuente curricular canónica.
+_Evitar_: HEAD de main, último commit del repositorio
+
 **Timeline**:
 La secuencia cronológica unificada de hitos de experiencia profesional, formación y proyectos.
 _Evitar_: Lista de empleos, carrusel
