@@ -10,6 +10,8 @@
 
 Los documentos de investigación que precedieron a esta especificación son contexto histórico y no fuentes normativas. Cualquier decisión incompatible queda supersedida por este documento.
 
+El prototipo publicado en [`5c53cc1cf27aa93c745237179290649d741eb891`](https://github.com/fraguio/profile-site/tree/5c53cc1cf27aa93c745237179290649d741eb891/prototype/premium-timeline) aporta evidencia de investigación para la interacción del timeline. Su [README](https://github.com/fraguio/profile-site/blob/5c53cc1cf27aa93c745237179290649d741eb891/prototype/premium-timeline/README.md) contiene el veredicto, la evidencia y las limitaciones; el prototipo no es código de producción ni fuente normativa.
+
 ## Objetivo de producto
 
 El sitio es el activo público de marca profesional. Su resultado principal es generar contactos y oportunidades profesionales; exponer la trayectoria con profundidad es el resultado secundario.
@@ -26,13 +28,15 @@ Principios no negociables:
 
 ## Superficies y salidas
 
-| Superficie | Ruta pública canónica | Artefacto | Propósito | JavaScript |
-| --- | --- | --- | --- | --- |
-| Experiencia interactiva | `/` | `dist/index.html` | Presentar y explorar la trayectoria | Progresivo; GSAP core solo aquí |
-| CV web | `/read/` | `dist/read/index.html` | Lectura lineal, ATS-oriented e impresión | Solo `window.print()` |
-| CV PDF | `/cv/eduardo-nogueira-fraguio-cv.pdf` | `dist/cv/eduardo-nogueira-fraguio-cv.pdf` | Documento estable para descarga y distribución | No aplica |
+| Superficie | Ruta interna | Artefacto en `dist` | URL pública de la v1 | Propósito | JavaScript |
+| --- | --- | --- | --- | --- | --- |
+| Experiencia interactiva | `/` | `dist/index.html` | `https://fraguio.github.io/profile-site/` | Presentar y explorar la trayectoria | Progresivo; GSAP core solo aquí |
+| CV web | `/read/` | `dist/read/index.html` | `https://fraguio.github.io/profile-site/read/` | Lectura lineal, ATS-oriented e impresión | Solo `window.print()` |
+| CV PDF | `/cv/eduardo-nogueira-fraguio-cv.pdf` | `dist/cv/eduardo-nogueira-fraguio-cv.pdf` | `https://fraguio.github.io/profile-site/cv/eduardo-nogueira-fraguio-cv.pdf` | Documento estable para descarga y distribución | No aplica |
 
-Astro debe usar `trailingSlash: "always"`. Los enlaces, canonical y pruebas usan `/read/`, nunca `/read` ni el nombre físico `index.html` como URL pública.
+Las rutas internas expresan la navegación dentro de la aplicación y los artefactos expresan el output físico del build. Las URLs públicas anteponen el base path `/profile-site/` del project site; ninguna comprobación debe confundir esos tres niveles ni asumir que la publicación vive en la raíz del origin.
+
+Astro debe usar `trailingSlash: "always"`. Los contratos internos usan `/read/`, nunca `/read` ni el nombre físico `index.html`; los enlaces renderizados, canonical, recursos y smoke tests incorporan además el base path público.
 
 El CV web es el documento ATS-oriented canónico. Imprimir y descargar PDF comparten su contenido factual; solo pueden diferir por composición física, paginación, márgenes y representación de URLs.
 
@@ -69,7 +73,7 @@ Se muestran email profesional, web y perfiles profesionales disponibles. El tel�
 
 ### Hero y navegación
 
-El hero muestra nombre, rol profesional, el contenido íntegro de `basics.summary` y CTAs a CV web, PDF y contacto. Nombre, rol y CTAs deben ser visibles antes del scroll; el resumen no se trunca ni se reescribe para forzar ese límite.
+El hero muestra nombre, rol profesional, el contenido íntegro de `basics.summary` y CTAs a CV web y contacto. Desde la fase PDF añade también el CTA al PDF. Nombre, rol y los CTAs aplicables a la fase deben ser visibles antes del scroll; el resumen no se trunca ni se reescribe para forzar ese límite.
 
 El CTA de contacto abre `mailto:` hacia el email profesional. LinkedIn y GitHub, si existen en `basics.profiles`, son enlaces secundarios prioritarios. No se muestra fecha de actualización en la primera versión.
 
@@ -79,7 +83,7 @@ El timeline combina `work`, `education` y `projects` en una secuencia cronológi
 
 El filtro inicial definitivo es `all`: muestra la trayectoria combinada. El valor `work` fue una propuesta provisional histórica y no forma parte del contrato. Los filtros disponibles corresponden a categorías con elementos; una categoría vacía no muestra control.
 
-El cambio de filtro reinicia suavemente el carril en el hito más reciente del nuevo conjunto y anuncia el resultado mediante una región viva. No conserva una posición aproximada entre conjuntos distintos.
+El cambio de filtro cierra cualquier detalle, limpia la selección, reinicia suavemente el carril en el hito más reciente del nuevo conjunto y anuncia el resultado mediante una región viva. No conserva una posición aproximada entre conjuntos distintos. La pausa activada mediante el control visible se conserva; las pausas transitorias por hover, foco, touch o selección se recalculan según la interacción vigente.
 
 El estado inicial no selecciona ningún hito. El estado de filtro, selección, pausa y posición vive solo en memoria del cliente y no se persiste ni se refleja en URL.
 
@@ -89,7 +93,7 @@ El patrón es `single-open`: solo puede existir un detalle abierto.
 
 En desktop, el timeline es un carril vertical continuo y el detalle aparece en un lector lateral estable. El lector tiene cabecera fija con categoría, título, entidad, periodo y cierre; su cuerpo desplazable contiene prosa y habilidades asociadas.
 
-En mobile, al seleccionar un hito el carril se congela y es sustituido temporalmente por un panel de detalle. El cuerpo del panel es desplazable; no es un modal ni una expansión inline. Al cerrarlo, se restaura el carril en la posición congelada y se reanuda su movimiento según el estado anterior.
+En mobile, al seleccionar un hito el carril se congela y es sustituido temporalmente por un panel de detalle. El cuerpo del panel es desplazable; no es un modal ni una expansión inline. Al cerrarlo, se restaura el carril en la posición congelada y se reanuda su movimiento según el estado anterior. El retorno programático de foco al hito activador no crea por sí mismo una nueva pausa que invalide esa restauración.
 
 Se abre o alterna un hito por clic, `Enter` o `Space`. Abrir otro cierra el anterior. Un botón de cierre y `Esc` cierran el detalle. En mobile, al abrir el foco pasa al encabezado del detalle y, al cerrar, vuelve al hito activador.
 
@@ -119,12 +123,15 @@ El orden es:
 4. Proyectos.
 5. Formación.
 
-`/read/` ofrece:
+Desde la fase Base, `/read/` ofrece:
 
 - `data-contract="read-print-action"` para imprimir mediante `window.print()`.
+
+Desde la fase PDF añade:
+
 - `data-contract="read-download-pdf"` para el enlace PDF estable con atributo `download`.
 
-Sin JavaScript, la acción de imprimir se oculta y la descarga permanece visible. Las acciones se marcan como no imprimibles y no aparecen ni en impresión ni en PDF.
+Sin JavaScript, la acción de imprimir se oculta. Antes de la fase PDF no se muestra un enlace de descarga roto; desde esa fase, la descarga permanece visible sin JavaScript. Las acciones se marcan como no imprimibles y no aparecen ni en impresión ni en PDF.
 
 El PDF se genera exclusivamente desde `/read/` ya renderizado, servido desde `dist` mediante un servidor temporal y abierto con Playwright y Chromium. No existe plantilla PDF paralela. Usa A4, márgenes uniformes de `2 cm` y una pila reproducible para PDF que incluye `Liberation Sans, Arial, Helvetica, sans-serif`.
 
@@ -148,17 +155,17 @@ La aceptación combina Axe, pruebas Playwright de teclado, foco y estados, y una
 
 ## SEO y metadatos
 
-`/` y `/read/` son indexables y poseen `title`, `meta description` y canonical autorreferente no vacíos. Cada ruta tiene texto SEO propio; no se duplica la descripción.
+`/` y `/read/` son indexables y poseen `title`, `meta description` y canonical autorreferente no vacíos. Cada ruta tiene texto SEO propio; no se duplica la descripción. Los canonical son las URLs públicas completas bajo `/profile-site/`, no rutas internas ni URLs relativas al origin.
 
-`PROFILE_SITE_BASE_URL` es obligatorio en builds contractuales. Debe ser HTTPS en producción, no incluir path y alimenta canonicals, Open Graph y datos estructurados. El dominio definitivo queda pendiente.
+`PROFILE_SITE_BASE_URL` es obligatorio en builds contractuales y representa la URL pública completa de la aplicación, incluido su base path y el slash final. En la v1 su valor de producción es `https://fraguio.github.io/profile-site/`. Debe ser una URL HTTPS absoluta, sin query ni fragmento. El build deriva de ella el origin `https://fraguio.github.io` para `site` y `/profile-site` para `base`; la misma fuente alimenta enlaces internos, recursos, canonical, Open Graph, datos estructurados y smoke tests sin concatenaciones raíz ad hoc.
 
 `/` incluye JSON-LD `Person` y `ProfilePage` derivado exclusivamente de datos públicos ya visibles. No expone teléfono, dirección completa ni campos ocultos.
 
-Open Graph inicial exige `og:title`, `og:description`, `og:url`, `og:type` y `og:locale`. `og:image` debe estar disponible antes de la publicación pública, pero no bloquea el bootstrap inicial. La imagen será un recurso estable diseñado, no una captura generada en cada build.
+Open Graph inicial exige `og:title`, `og:description`, `og:url`, `og:type` y `og:locale`; `og:url` usa la URL pública completa de cada superficie. La v1 no incluye `og:image`. Una imagen posterior será un recurso estable, versionado y sin información privada, no una captura generada en cada build.
 
 ## Arquitectura y toolchain
 
-- Astro en la raíz, con salida estática.
+- Astro en la raíz, con salida estática y configuración compatible con el project site de GitHub Pages.
 - Node 24 LTS en CI y rango de engine que acepta la línea 24.
 - pnpm `11.5.2` exacto, declarado en `packageManager`, con lockfile obligatorio.
 - Páginas previstas: `src/pages/index.astro` y `src/pages/read/index.astro`.
@@ -186,6 +193,14 @@ El emisor `profile-data` envía un `repository_dispatch` dedicado al repositorio
 
 En dispatch, los tres campos son obligatorios. `profile_data_sha` es la revisión efectiva: debe existir, pertenecer al repositorio de datos y se usa para leer `profile_data_path`. `profile_data_ref` es contexto humano y puede ser rama, tag o SHA. El build registra referencia, ruta y `resolved_profile_data_sha`.
 
+La integración cross-repo usa dos fine-grained PAT independientes. `profile-site` guarda `PROFILE_DATA_READ_TOKEN`, limitado a `fraguio/profile-data` con `Contents: read`; `profile-data` guarda `PROFILE_SITE_DISPATCH_TOKEN`, limitado a `fraguio/profile-site` con `Contents: write`. El `GITHUB_TOKEN` de `profile-site` no sustituye al primero porque su alcance no incluye otro repositorio privado. Los tokens tienen expiración finita, se rotan de forma operativa y sus valores no aparecen en archivos, payloads ni logs.
+
+Provisionar ambos PAT y secrets, activar Pages y configurar la aprobación del deploy manual son prerrequisitos humanos para habilitar publicaciones; el build y las validaciones locales no dependen de ellos.
+
+El receptor de `profile-site` debe estar publicado en la rama por defecto antes de habilitar el nuevo emisor. Debido a las instrucciones de `profile-data`, el propietario aplica allí el cambio como entrega humana: añade un workflow independiente que emite al cambiar `data/resume.json` en `main` y permite reenviar manualmente la revisión vigente de `main`. El envío manual desde otra ref falla. Ambos triggers envían los tres campos contractuales con el SHA exacto y fallan ante una respuesta HTTP no exitosa.
+
+El emisor existente hacia `profile-engine` se conserva de forma independiente mientras se resuelve [`profile-engine#14`](https://github.com/fraguio/profile-engine/issues/14). Esta coexistencia no convierte `profile-engine` en intermediario: `profile-site` sigue consumiendo directamente la fuente curricular. Retirar el emisor histórico queda fuera de la autoridad de este proyecto.
+
 Una carga ausente, inválida o inaccesible falla con diagnóstico explícito. Un build de publicación que no recibe SHA resuelve primero la referencia configurada a un SHA exacto y usa exclusivamente ese valor después.
 
 En desarrollo local se usa un `RESUME_PATH` explícito. Los pull requests usan un fixture ficticio versionado, sin secretos ni datos personales.
@@ -193,13 +208,13 @@ En desarrollo local se usa un `RESUME_PATH` explícito. Los pull requests usan u
 Las actualizaciones automáticas usan `latest-wins`:
 
 1. Cada ejecución valida y construye el SHA que recibió.
-2. Antes de desplegar, comprueba si sigue siendo la revisión vigente de `profile-data/main`.
+2. Antes de desplegar, comprueba si sigue siendo la revisión curricular vigente: el commit más reciente alcanzable desde `profile-data/main` que modificó `data/resume.json`.
 3. Si hay una revisión posterior, queda marcada como publicación supersedida y no despliega.
 4. Un despliegue que ya comenzó no se interrumpe de forma insegura; una ejecución posterior publica la revisión vigente.
 
 ## CI, despliegue y observabilidad
 
-GitHub Pages es el destino inicial. Ningún fallo contractual sustituye o publica parcialmente sobre la última versión publicada.
+GitHub Pages es el destino inicial como project site en `https://fraguio.github.io/profile-site/`, publicado mediante GitHub Actions. Los fallos contractuales anteriores al deploy conservan la última versión publicada y el despliegue del nuevo artefacto es atómico.
 
 | Evento | Datos | Despliegue | Regla de referencia |
 | --- | --- | --- | --- |
@@ -208,11 +223,11 @@ GitHub Pages es el destino inicial. Ningún fallo contractual sustituye o public
 | `repository_dispatch` | SHA recibido | Sí, si no fue supersedido | Usa el SHA recibido |
 | `workflow_dispatch` | Ref y ruta introducidas por operador | Solo con `deploy=true` | Resuelve la ref a SHA antes de construir |
 
-`workflow_dispatch` ofrece `profile_data_ref` con default `main`, `profile_data_path` con default `data/resume.json` y `deploy` booleano con default `false`. Puede validar cualquier rama, tag o commit accesible. Para desplegar manualmente requiere `deploy=true`, entorno protegido de GitHub y logs visibles con referencia solicitada y SHA efectivo.
+`workflow_dispatch` ofrece `profile_data_ref` con default `main`, `profile_data_path` con default `data/resume.json` y `deploy` booleano con default `false`. Puede validar cualquier rama, tag o commit accesible. Para desplegar manualmente requiere `deploy=true`, aprobación humana mediante un entorno protegido de GitHub y logs visibles con referencia solicitada y SHA efectivo. Esa aprobación adicional solo gobierna el deploy manual; un `push` a `main` o un `repository_dispatch` válido publica automáticamente tras superar sus gates.
 
 Cada fase ejecuta pasos contractuales atómicos y diagnosticables para su alcance. La fase Base valida adquisición, schema, reglas locales, render HTML, rutas, SEO, CTAs y accesibilidad automatizable. La fase PDF añade generación, validación y output PDF. Cualquier fallo aplicable a la fase bloquea el despliegue.
 
-Tras un deploy se ejecutan smoke tests sobre la URL pública para `/` y `/read/`; desde la fase PDF también verifican el PDF. Un fallo marca la publicación como fallida y deja diagnóstico; el rollback automático queda fuera de alcance.
+Tras un deploy se ejecutan smoke tests sobre las URLs públicas completas derivadas de `PROFILE_SITE_BASE_URL` para las rutas internas `/` y `/read/`; desde la fase PDF también verifican el PDF. Un fallo marca la publicación como fallida y deja diagnóstico, pero puede dejar esa versión servida hasta el siguiente deploy porque el rollback automático queda fuera de alcance.
 
 ### Rendimiento
 
@@ -232,18 +247,24 @@ Hay tres protecciones:
 | Límite absoluto de seguridad | Bloquea | Bloquea deploy | Bloquea deploy | Bloquea deploy |
 | Lighthouse desktop | Informa | Informa | Informa | Informa |
 
-Los valores numéricos de budgets y límite absoluto se fijan con la baseline real del primer PR que entregue la experiencia completa. Todos los resultados, warnings y fallos se publican en `GITHUB_STEP_SUMMARY`. Cambiar budgets o perfil de medición exige PR justificada y actualización de checks; no se usan etiquetas de fase para gobernar esos cambios.
+Antes de fijar umbrales, la medición técnica debe terminar correctamente y publicar resultados, pero las comparaciones todavía son informativas. Una vez disponibles datos, metadatos, filtros, detalle y movimiento, un PR posterior y dedicado captura la baseline de la experiencia completa. Se mide el `dist` contractual con el fixture y el perfil versionado que usarán los gates: mediana de tres ejecuciones para Lighthouse y una ejecución para métricas deterministas.
+
+Ese PR registra los valores observados y propone cada budget, objetivo, límite absoluto y margen con una justificación explícita; no se aceptan cifras anteriores a la medición. También demuestra mediante canarios controlados contra el mismo evaluador que cada protección puede fallar: fallo técnico de medición, recurso o métrica determinista sobre presupuesto, objetivo Lighthouse incumplido y límite absoluto incumplido. Los canarios pueden usar fixtures de medición cuando corresponda y no degradan deliberadamente los artefactos de producción ni conservan umbrales imposibles.
+
+Desde que aterrizan la baseline y sus umbrales, se aplica la matriz de bloqueo anterior en todos los eventos. Todos los resultados, warnings, fallos y evidencia de calibración se publican en `GITHUB_STEP_SUMMARY`. Cambiar budgets o perfil de medición exige PR justificada y actualización de checks; no se usan etiquetas de fase para gobernar esos cambios.
 
 ## Entregas incrementales y evidencia
 
 | Fase | Entregable | Cierre con evidencia |
 | --- | --- | --- |
-| Base | Astro, datos, `/`, `/read/`, validación, SEO, a11y base y CI | Build contractual verde con fixture y rutas generadas |
-| PDF | PDF estable derivado del CV web | PDF publicado y checks de archivo, firma y páginas verdes |
+| Base | Astro, datos, los dos HTML, validación, SEO, a11y base y CI | Build contractual verde con fixture y `dist/index.html` y `dist/read/index.html` generados |
+| PDF | Tercer artefacto estable derivado del CV web | PDF publicado y checks de archivo, firma y páginas verdes |
 | Interactividad | Timeline, filtros, lector, movimiento y degradación progresiva | Pruebas de estado, teclado, foco, motion y rendimiento verdes |
 | Mejora | Ajustes posteriores basados en evidencia | Decisión y evidencia específicas |
 
 Una entrega puede avanzar con el timeline estático si conserva el marcado final mejorable, pero la fase de interactividad no queda completada sin movimiento continuo conforme a este contrato.
+
+El build contractual se amplía por fases. En Base produce exactamente los dos HTML y no falla por la ausencia del PDF ni presenta CTAs que apunten a él. Desde la fase PDF exige los tres artefactos y activa los CTAs, la descarga y el smoke test correspondientes.
 
 ## Trazabilidad mínima
 
@@ -258,13 +279,13 @@ Una entrega puede avanzar con el timeline estático si conserva el marcado final
 | INT-002 | Detalle responsive accesible | Pruebas Playwright de foco, teclado y cierre |
 | A11Y-001 | WCAG 2.2 AA como objetivo | Axe, pruebas de interacción y checklist manual |
 | SEO-001 | Metadatos por ruta | Check sobre ambos HTML generados |
-| PERF-001 | Rendimiento con dos niveles | Lighthouse y budgets de build en summary |
+| PERF-001 | Rendimiento con dos niveles | Baseline, canarios negativos, Lighthouse y budgets de build en summary |
 | DEPLOY-001 | Publicación íntegra y smoke test | Workflow y comprobación pública |
 
 ## Decisiones aplazadas
 
-- Dominio final de `PROFILE_SITE_BASE_URL`.
-- Imagen estable de Open Graph.
+- Posible migración futura desde el project site a un dominio propio.
+- Imagen estable de Open Graph posterior a la v1.
 - Familias tipográficas concretas.
 - Valores numéricos de budgets de rendimiento y límite absoluto.
 - Si el loop automático en mobile interfiere con scroll real; puede desactivarse en mobile tras evidencia.
