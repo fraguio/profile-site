@@ -1,0 +1,76 @@
+<!doctype html>
+<!-- PROTOTIPO DESECHABLE: tres estructuras de timeline, intercambiables con ?variant=. -->
+<!-- Pregunta: que estructura equilibra movimiento continuo, detalle, filtros, a11y y mobile? -->
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Prototipo: timeline premium</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main>
+      <header class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Prototipo desechable · Timeline premium</p>
+        <h1 id="page-title">Mara Vela</h1>
+        <p class="role">Diseñadora de sistemas digitales</p>
+        <p class="summary">Diseño productos y plataformas con equipos multidisciplinares. Conecto investigación, sistemas de interfaz y resultados operativos para que las decisiones complejas sean más claras para quienes las usan y quienes las construyen.</p>
+        <nav class="hero-actions" aria-label="Acciones de muestra">
+          <a href="#timeline">Explorar trayectoria</a>
+          <a href="mailto:ejemplo@invalid.test">Contactar</a>
+          <a href="#timeline">Ver interacción</a>
+        </nav>
+      </header>
+
+      <section class="prototype-intro" aria-label="Instrucciones del prototipo">
+        <p>Compare la lectura, la pausa y el detalle. El contenido es ficticio; el estado vive solo en memoria.</p>
+      </section>
+
+      <section id="timeline" class="timeline-shell" aria-labelledby="timeline-title">
+        <div class="timeline-heading">
+          <div>
+            <p class="eyebrow">Trayectoria seleccionable</p>
+            <h2 id="timeline-title">Del recorrido al detalle</h2>
+          </div>
+          <div class="motion-controls">
+            <button id="motion-toggle" class="motion-toggle" type="button" aria-pressed="false">Pausar movimiento</button>
+            <span id="motion-status" aria-live="polite">Movimiento activo</span>
+          </div>
+        </div>
+
+        <div class="filter-row" role="group" aria-label="Filtrar trayectoria">
+          <button type="button" data-filter="all" aria-pressed="true">Todo <span>7</span></button>
+          <button type="button" data-filter="work" aria-pressed="false">Trabajo <span>3</span></button>
+          <button type="button" data-filter="education" aria-pressed="false">Formación <span>2</span></button>
+          <button type="button" data-filter="projects" aria-pressed="false">Proyectos <span>2</span></button>
+        </div>
+
+        <p id="filter-announcement" class="sr-only" aria-live="polite"></p>
+        <div id="variant-root"></div>
+        <noscript>
+          <section class="variant-a" aria-label="Trayectoria estática">
+            <p class="prototype-intro">JavaScript está desactivado: la trayectoria se muestra completa y sin movimiento.</p>
+            <div class="ticker-window" style="height: auto;">
+              <article class="inline-detail"><span class="category">Trabajo</span><h3>Lead de experiencia · Northstar Co.</h3><p class="date">2024 — presente</p><p class="detail">Rediseño del sistema operativo de atención para equipos de servicio.</p></article>
+              <article class="inline-detail"><span class="category">Proyecto</span><h3>Signal Atlas · Proyecto independiente</h3><p class="date">2023 — 2024</p><p class="detail">Mapa de decisiones para servicios públicos.</p></article>
+              <article class="inline-detail"><span class="category">Trabajo</span><h3>Diseñadora de producto · Studio Lumen</h3><p class="date">2021 — 2023</p><p class="detail">Sistema de interfaz para una plataforma B2B.</p></article>
+              <article class="inline-detail"><span class="category">Formación</span><h3>Máster en diseño de interacción · Instituto Delta</h3><p class="date">2020 — 2021</p><p class="detail">Especialización en investigación aplicada y arquitectura de información.</p></article>
+              <article class="inline-detail"><span class="category">Proyecto</span><h3>Field Notes · Laboratorio cívico</h3><p class="date">2019 — 2020</p><p class="detail">Archivo colaborativo para transformar entrevistas de campo en patrones accionables.</p></article>
+              <article class="inline-detail"><span class="category">Trabajo</span><h3>Diseñadora visual · Common Ground</h3><p class="date">2017 — 2019</p><p class="detail">Identidades de producto y prototipos para movilidad y educación.</p></article>
+              <article class="inline-detail"><span class="category">Formación</span><h3>Grado en diseño · Escuela Meridian</h3><p class="date">2013 — 2017</p><p class="detail">Base en comunicación visual, pensamiento de sistemas y métodos de proyecto.</p></article>
+            </div>
+          </section>
+        </noscript>
+      </section>
+    </main>
+
+    <nav class="prototype-switcher" aria-label="Cambiar variante de prototipo">
+      <button id="previous-variant" type="button" aria-label="Variante anterior">←</button>
+      <span id="variant-label" aria-live="polite"></span>
+      <button id="next-variant" type="button" aria-label="Variante siguiente">→</button>
+    </nav>
+
+    <script src="./prototype.js"></script>
+  </body>
+</html>
