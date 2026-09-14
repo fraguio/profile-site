@@ -40,13 +40,12 @@ La comprobación automatizada con Playwright cubrió selección y cierre en desk
 - La prueba mobile se realizó con emulación Chromium; queda pendiente revisión manual en dispositivos reales, lectores de pantalla y navegadores adicionales.
 - La degradación sin JavaScript demuestra el contenido de ejemplo del prototipo, no el render semántico final de Astro.
 - No se han aplicado Axe ni una auditoría WCAG completa; las comprobaciones de accesibilidad son de interacción y foco, no una certificación.
-- Al cerrar el panel mobile, el foco vuelve al hito activador y el carril permanece pausado mientras ese hito conserva el foco. Esto cumple la pausa al foco, pero deja por resolver cómo interpretar la reanudación «según el estado anterior» cuando ese estado era activo.
 
 ## Decisiones para producción
 
 - Conservar un único HTML accesible de timeline que el cliente mejore progresivamente; no crear dos timelines distintos para el loop y el fallback.
 - Implementar el patrón `single-open`: lector lateral estable en desktop y panel sustitutivo en mobile.
-- Al abrir mobile, mover el foco al encabezado del detalle; al cerrar, devolverlo al hito activador y restaurar la posición congelada. Decidir explícitamente la prioridad entre pausa al foco y reanudación del estado anterior.
+- Al abrir mobile, mover el foco al encabezado del detalle; al cerrar, devolverlo al hito activador y restaurar la posición y el estado previo de movimiento. El foco restaurado programáticamente no debe activar una pausa nueva.
 - Mantener filtros en memoria, reiniciar cada nuevo conjunto en el hito más reciente y anunciar el resultado.
 - Iniciar estático con `prefers-reduced-motion` y permitir movimiento solo mediante una acción explícita compatible con la preferencia.
 

@@ -113,6 +113,7 @@ const state = {
   motionConsent: !prefersReducedMotion,
   focusDetailHeading: false,
   returnFocusInstance: null,
+  ignoreNextFocus: false,
 };
 
 const root = document.querySelector("#variant-root");
@@ -225,9 +226,12 @@ function renderVariant(animationTime = null) {
   if (state.returnFocusInstance) {
     const instance = state.returnFocusInstance;
     state.returnFocusInstance = null;
-    requestAnimationFrame(() =>
-      root.querySelector(`[data-instance="${instance}"]`)?.focus(),
-    );
+    requestAnimationFrame(() => {
+      const activator = root.querySelector(`[data-instance="${instance}"]`);
+      if (!activator) return;
+      state.ignoreNextFocus = true;
+      activator.focus();
+    });
   }
 }
 
@@ -264,7 +268,13 @@ function bindTimelineEvents() {
     button.addEventListener("pointercancel", () =>
       setAttention("pointerPressed", false),
     );
-    button.addEventListener("focus", () => setAttention("focused", true));
+    button.addEventListener("focus", () => {
+      if (state.ignoreNextFocus) {
+        state.ignoreNextFocus = false;
+        return;
+      }
+      setAttention("focused", true);
+    });
     button.addEventListener("blur", () => setAttention("focused", false));
   });
   root
