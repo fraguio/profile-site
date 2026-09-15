@@ -1,0 +1,17 @@
+{
+  "basics": {
+    "name": "Alicia Ejemplo",
+    "label": "Especialista en sistemas ficticios",
+    "email": "alicia.ejemplo@example.test",
+    "summary": "Construye sistemas comprensibles a partir de hechos verificables."
+  },
+  "education": [
+    {
+      "institution": "Instituto Ficticio",
+      "area": "Ingeniería",
+      "studyType": "Grado",
+      "startDate": "2020-09-01",
+      "skills": [""]
+    }
+  ]
+}

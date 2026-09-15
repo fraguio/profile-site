@@ -1,0 +1,15 @@
+{
+  "basics": {
+    "name": "Alicia Ejemplo",
+    "label": "Especialista en sistemas ficticios",
+    "email": "alicia.ejemplo@example.test",
+    "summary": "Construye sistemas comprensibles a partir de hechos verificables."
+  },
+  "projects": [
+    {
+      "name": "Proyecto Ficticio",
+      "startDate": "2024-01-01",
+      "endDate": "2023-12-31"
+    }
+  ]
+}

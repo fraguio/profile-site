@@ -1,0 +1,15 @@
+{
+  "basics": {
+    "name": "Alicia Ejemplo",
+    "label": "Especialista en sistemas ficticios",
+    "email": "alicia.ejemplo@example.test",
+    "summary": "Construye sistemas comprensibles a partir de hechos verificables."
+  },
+  "work": [
+    {
+      "name": "Empresa Ficticia",
+      "position": "Ingeniera de sistemas",
+      "startDate": "2024-02-30"
+    }
+  ]
+}
