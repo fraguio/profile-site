@@ -10,6 +10,10 @@ const fixturePath = fileURLToPath(
   new URL("fixtures/fictitious-resume.json", import.meta.url),
 );
 
+function fixturePathFor(name) {
+  return fileURLToPath(new URL(`fixtures/${name}`, import.meta.url));
+}
+
 function build(outputDirectory, environment) {
   const isWindows = process.platform === "win32";
   const outputDirectoryArgument = isWindows
@@ -65,6 +69,68 @@ test("the contractual build produces the Base HTML outputs from the selected fix
     false,
   );
 });
+
+test("the contractual build accepts local work and education skills without top-level skills", (t) => {
+  const outputDirectory = mkdtempSync(join(projectRoot, "test-build-"));
+  t.after(() => rmSync(outputDirectory, { recursive: true, force: true }));
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: fixturePathFor("valid-resume-with-local-skills.json"),
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+for (const [description, fixture, diagnostic] of [
+  [
+    "a schema-invalid source",
+    "invalid-schema.json",
+    'resume.basics: "not an object" violates JSON Resume 1.3.1 schema',
+  ],
+  [
+    "an empty work skill",
+    "invalid-empty-work-skill.json",
+    'resume.work[0].skills[0]: "" violates local rule "must be a non-empty string".',
+  ],
+  [
+    "an empty education skill",
+    "invalid-empty-education-skill.json",
+    'resume.education[0].skills[0]: "" violates local rule "must be a non-empty string".',
+  ],
+  [
+    "an invalid date",
+    "invalid-date.json",
+    'resume.work[0].startDate: "2024-02-30" violates local rule "must be a valid ISO 8601 date".',
+  ],
+  [
+    "an end date before its start date",
+    "invalid-date-range.json",
+    'resume.projects[0].endDate: "2023-12-31" violates local rule "must not be earlier than startDate \"2024-01-01\"".',
+  ],
+  [
+    "a presentation-required field",
+    "invalid-required-presentation-field.json",
+    'resume.basics.name: "" violates local presentation rule "is required and must be a non-empty string".',
+  ],
+]) {
+  test(`the contractual build rejects ${description} before rendering`, (t) => {
+    const outputDirectory = mkdtempSync(join(projectRoot, "test-build-"));
+    t.after(() => rmSync(outputDirectory, { recursive: true, force: true }));
+
+    const result = build(outputDirectory, {
+      PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+      RESUME_PATH: fixturePathFor(fixture),
+    });
+
+    assert.notEqual(result.status, 0);
+    assert.ok(
+      `${result.stdout}\n${result.stderr}`.includes(diagnostic),
+      `Expected diagnostic: ${diagnostic}`,
+    );
+    assert.equal(existsSync(join(outputDirectory, "index.html")), false);
+  });
+}
 
 for (const [description, baseUrl, diagnostic] of [
   ["an absent URL", undefined, "PROFILE_SITE_BASE_URL is required."],
