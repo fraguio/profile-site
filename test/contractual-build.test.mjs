@@ -56,9 +56,10 @@ test("the contractual build produces the Base HTML outputs from the selected fix
   );
   const webCv = readFileSync(join(outputDirectory, "read", "index.html"), "utf8");
 
-  assert.match(interactiveExperience, /Ada Lovelace/);
+  assert.match(interactiveExperience, /Alicia Ejemplo/);
   assert.match(interactiveExperience, /href="\/profile-site\/read\/"/);
-  assert.match(webCv, /Ada Lovelace/);
+  assert.match(webCv, /Alicia Ejemplo/);
+  assert.match(webCv, /href="\/profile-site\/"/);
   assert.equal(
     existsSync(join(outputDirectory, "cv", "eduardo-nogueira-fraguio-cv.pdf")),
     false,
