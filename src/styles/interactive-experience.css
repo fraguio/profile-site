@@ -1,0 +1,338 @@
+@import "@fontsource-variable/manrope/wght.css";
+@import "@fontsource-variable/source-serif-4/wght.css";
+
+:root {
+  color: #f2f0e9;
+  background: #0b0e0f;
+  font-family: "Manrope Variable", Arial, sans-serif;
+  font-synthesis: none;
+}
+
+html {
+  background: #0b0e0f;
+}
+
+body {
+  min-width: 20rem;
+  margin: 0;
+  background:
+    radial-gradient(circle at 79% 12%, rgb(224 185 87 / 12%), transparent 24rem),
+    linear-gradient(140deg, #111617 0%, #0b0e0f 55%, #101313 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.interactive-experience {
+  display: grid;
+  grid-template-columns: minmax(19rem, 0.8fr) minmax(0, 1.7fr);
+  gap: clamp(3rem, 8vw, 10rem);
+  width: min(100%, 100rem);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 4.5rem);
+}
+
+.profile-hero {
+  position: sticky;
+  top: clamp(1.5rem, 4vw, 4.5rem);
+  align-self: start;
+  max-width: 34rem;
+}
+
+.profile-hero__eyebrow,
+.milestone__category {
+  margin: 0;
+  color: #edc767;
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.profile-hero h1,
+.timeline h2,
+.milestone h3 {
+  color: #f8f6ef;
+  font-family: "Source Serif 4 Variable", Georgia, serif;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.profile-hero h1 {
+  max-width: 10ch;
+  margin: 1rem 0 0;
+  font-size: clamp(3rem, 5.2vw, 5.8rem);
+  line-height: 0.9;
+}
+
+.profile-hero__role {
+  margin: 1.25rem 0 0;
+  color: #edc767;
+  font-family: "Source Serif 4 Variable", Georgia, serif;
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+  font-weight: 550;
+  line-height: 1.2;
+}
+
+.profile-hero__actions {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 2.5rem;
+}
+
+.profile-hero__actions a,
+.profile-hero__explore {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #68706c;
+  border-radius: 0.2rem;
+  color: #f8f6ef;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.profile-hero__actions a:first-child {
+  border-color: #edc767;
+  background: #edc767;
+  color: #1a1a16;
+}
+
+.profile-hero__summary {
+  max-width: 32rem;
+  margin: 2.5rem 0 0;
+  color: #d6d7d1;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.profile-hero__location {
+  margin: 1rem 0 0;
+  color: #b6b9b4;
+  font-size: 0.875rem;
+}
+
+.profile-hero__explore {
+  display: none;
+  width: auto;
+  margin-top: 2rem;
+  gap: 1.5rem;
+}
+
+.profile-hero__profiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.25rem;
+  margin-top: 2rem;
+}
+
+.profile-hero__profiles a {
+  color: #d6d7d1;
+  font-size: 0.825rem;
+  font-weight: 650;
+  text-underline-offset: 0.3em;
+}
+
+.timeline {
+  min-width: 0;
+  padding-top: 0.3rem;
+}
+
+.timeline h2 {
+  margin: 0 0 2.5rem;
+  font-size: clamp(2.1rem, 3.5vw, 3.6rem);
+  line-height: 1;
+}
+
+.timeline__list {
+  position: relative;
+  display: grid;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline__list::before {
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 0.45rem;
+  width: 1px;
+  background: linear-gradient(#edc767, #46504c 95%, transparent);
+  content: "";
+}
+
+.timeline__item {
+  position: relative;
+  padding-left: 2.25rem;
+}
+
+.timeline__item::before {
+  position: absolute;
+  top: 1.55rem;
+  left: 0;
+  z-index: 1;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid #0b0e0f;
+  border-radius: 50%;
+  background: #edc767;
+  box-shadow: 0 0 0 1px #edc767;
+  content: "";
+}
+
+.milestone {
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+  border: 1px solid #3b4541;
+  border-radius: 0.5rem;
+  background: rgb(15 20 20 / 82%);
+  box-shadow: 0 1.25rem 3rem rgb(0 0 0 / 15%);
+}
+
+.milestone h3 {
+  margin: 0.6rem 0 0;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  line-height: 1.05;
+}
+
+.milestone__entity,
+.milestone__period,
+.milestone__location {
+  margin: 0.6rem 0 0;
+  color: #b6b9b4;
+  font-size: 0.85rem;
+}
+
+.milestone__period {
+  color: #edc767;
+  font-weight: 700;
+}
+
+.milestone__description,
+.milestone__summary {
+  max-width: 65ch;
+  margin: 1.25rem 0 0;
+  color: #e1e1db;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.milestone h4 {
+  margin: 1.5rem 0 0.65rem;
+  color: #f2f0e9;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+}
+
+.milestone__roles,
+.milestone__highlights {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #d6d7d1;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.milestone__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.milestone__skills li {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #53605a;
+  border-radius: 0.2rem;
+  color: #d6d7d1;
+  font-size: 0.75rem;
+}
+
+a:hover {
+  text-decoration-thickness: 0.15em;
+}
+
+.profile-hero__actions a:hover,
+.profile-hero__explore:hover {
+  border-color: #f8f6ef;
+  box-shadow: 0 0 0 2px rgb(237 199 103 / 38%);
+  text-decoration: none;
+}
+
+.profile-hero__actions a:active,
+.profile-hero__explore:active {
+  box-shadow: inset 0 -0.25rem 0 rgb(248 246 239 / 65%);
+  text-decoration: underline;
+  text-decoration-thickness: 0.18em;
+  text-underline-offset: 0.25em;
+}
+
+a:focus-visible {
+  outline: 3px solid #f8f6ef;
+  outline-offset: 4px;
+}
+
+@media (max-width: 52rem) {
+  .interactive-experience {
+    display: block;
+    min-height: auto;
+    padding: 1.5rem;
+  }
+
+  .profile-hero {
+    position: static;
+    max-width: none;
+    padding-bottom: 3.5rem;
+  }
+
+  .profile-hero h1 {
+    max-width: 12ch;
+    font-size: clamp(3rem, 15vw, 4.5rem);
+  }
+
+  .profile-hero__actions {
+    margin-top: 2rem;
+  }
+
+  .profile-hero__explore {
+    display: inline-flex;
+  }
+
+  .timeline {
+    padding-top: 2rem;
+    border-top: 1px solid #3b4541;
+  }
+
+  .timeline h2 {
+    margin-bottom: 2rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .interactive-experience {
+    padding: 1.25rem;
+  }
+
+  .timeline__item {
+    padding-left: 1.75rem;
+  }
+
+  .timeline__list::before {
+    left: 0.35rem;
+  }
+
+  .timeline__item::before {
+    left: -0.1rem;
+  }
+}
