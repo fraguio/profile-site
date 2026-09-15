@@ -14,6 +14,13 @@ function fixturePathFor(name) {
   return fileURLToPath(new URL(`fixtures/${name}`, import.meta.url));
 }
 
+function temporaryOutputDirectory(t) {
+  const outputDirectory = mkdtempSync(join(projectRoot, "test-build-"));
+  t.after(() => rmSync(outputDirectory, { recursive: true, force: true }));
+
+  return outputDirectory;
+}
+
 function build(outputDirectory, environment) {
   const isWindows = process.platform === "win32";
   const outputDirectoryArgument = isWindows
@@ -44,8 +51,7 @@ function build(outputDirectory, environment) {
 }
 
 test("the contractual build produces the Base HTML outputs from the selected fixture", (t) => {
-  const outputDirectory = mkdtempSync(join(projectRoot, "test-build-"));
-  t.after(() => rmSync(outputDirectory, { recursive: true, force: true }));
+  const outputDirectory = temporaryOutputDirectory(t);
 
   const result = build(outputDirectory, {
     PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
@@ -71,8 +77,7 @@ test("the contractual build produces the Base HTML outputs from the selected fix
 });
 
 test("the contractual build accepts local work and education skills without top-level skills", (t) => {
-  const outputDirectory = mkdtempSync(join(projectRoot, "test-build-"));
-  t.after(() => rmSync(outputDirectory, { recursive: true, force: true }));
+  const outputDirectory = temporaryOutputDirectory(t);
 
   const result = build(outputDirectory, {
     PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
@@ -115,8 +120,7 @@ for (const [description, fixture, diagnostic] of [
   ],
 ]) {
   test(`the contractual build rejects ${description} before rendering`, (t) => {
-    const outputDirectory = mkdtempSync(join(projectRoot, "test-build-"));
-    t.after(() => rmSync(outputDirectory, { recursive: true, force: true }));
+    const outputDirectory = temporaryOutputDirectory(t);
 
     const result = build(outputDirectory, {
       PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
@@ -140,8 +144,7 @@ for (const [description, baseUrl, diagnostic] of [
   ["a URL without a final slash", "https://fraguio.github.io/profile-site", "PROFILE_SITE_BASE_URL must end with a slash."],
 ]) {
   test(`the contractual build rejects ${description}`, (t) => {
-    const outputDirectory = mkdtempSync(join(projectRoot, "test-build-"));
-    t.after(() => rmSync(outputDirectory, { recursive: true, force: true }));
+    const outputDirectory = temporaryOutputDirectory(t);
 
     const result = build(outputDirectory, {
       PROFILE_SITE_BASE_URL: baseUrl,
