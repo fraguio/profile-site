@@ -42,6 +42,7 @@ type Resume = {
     startDate: string;
   }>;
   work?: Array<{
+    description?: string;
     endDate?: string;
     highlights?: string[];
     location?: string;
@@ -56,6 +57,7 @@ type Resume = {
 type TimelineMilestone = {
   category: "education" | "projects" | "work";
   categoryLabel: string;
+  description?: string;
   endDate?: string;
   endDateLabel?: string;
   entity?: string;
@@ -202,6 +204,7 @@ function createTimeline(resume: Resume) {
     milestones.push({
       category: "work",
       categoryLabel: "Experiencia profesional",
+      description: text(work.description),
       endDate: work.endDate,
       endDateLabel: work.endDate ? formatDate(work.endDate) : undefined,
       entity: title === work.name ? undefined : text(work.name),
@@ -223,6 +226,7 @@ function createTimeline(resume: Resume) {
     milestones.push({
       category: "education",
       categoryLabel: "Formación",
+      description: undefined,
       endDate: education.endDate,
       endDateLabel: education.endDate ? formatDate(education.endDate) : undefined,
       entity: title === education.institution ? undefined : text(education.institution),
@@ -242,6 +246,7 @@ function createTimeline(resume: Resume) {
     milestones.push({
       category: "projects",
       categoryLabel: "Proyectos",
+      description: text(project.description),
       endDate: project.endDate,
       endDateLabel: project.endDate ? formatDate(project.endDate) : undefined,
       entity: text(project.entity),
@@ -252,7 +257,7 @@ function createTimeline(resume: Resume) {
       skills: uniqueTexts(project.keywords),
       startDate: project.startDate,
       startDateLabel: formatDate(project.startDate),
-      summary: text(project.description),
+      summary: undefined,
       title: text(project.name),
     });
   }

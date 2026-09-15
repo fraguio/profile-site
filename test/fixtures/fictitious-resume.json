@@ -16,6 +16,11 @@
     },
     "profiles": [
       {
+        "network": "Mastodon",
+        "username": "alicia-ejemplo",
+        "url": "https://mastodon.social/@alicia-ejemplo"
+      },
+      {
         "network": "LinkedIn",
         "username": "alicia-ejemplo",
         "url": "https://www.linkedin.com/in/alicia-ejemplo"
@@ -34,6 +39,7 @@
       "location": "Madrid",
       "url": "https://laboratorio.example.test",
       "startDate": "2025-01",
+      "description": "Empresa dedicada a sistemas de aprendizaje.",
       "summary": "Dirige la evolución de productos con equipos multidisciplinares.",
       "highlights": [
         "Redujo el tiempo de entrega.",
@@ -84,6 +90,13 @@
         "Node.js",
         "Node.js"
       ]
+    },
+    {
+      "name": "Proyecto con inicio posterior",
+      "entity": "Empresa de Origen",
+      "description": "Refinó la plataforma existente.",
+      "startDate": "2022-01-01",
+      "endDate": "2022-12-31"
     },
     {
       "name": "Proyecto de Empate",

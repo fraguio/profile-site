@@ -5,6 +5,8 @@ const readPath = `${import.meta.env.BASE_URL}read/`;
 const location = formatLocation(resume.basics.location);
 const profiles = (resume.basics.profiles ?? []).filter(
   (profile) => profile.network?.trim() && profile.url?.trim(),
+).sort(
+  (left, right) => profilePriority(left.network) - profilePriority(right.network),
 );
 
 function formatLocation(location: typeof resume.basics.location) {
@@ -13,15 +15,32 @@ function formatLocation(location: typeof resume.basics.location) {
   }
 
   const country = location.countryCode
-    ? new Intl.DisplayNames(["es"], { type: "region" }).of(
-        location.countryCode,
-      )
+    ? localizeCountry(location.countryCode)
     : undefined;
   const values = [location.city, location.region, country].filter(
     (value) => value?.trim(),
   );
 
   return values.length > 0 ? values.join(", ") : undefined;
+}
+
+function localizeCountry(countryCode: string) {
+  try {
+    return new Intl.DisplayNames(["es"], { type: "region" }).of(countryCode);
+  } catch {
+    return countryCode;
+  }
+}
+
+function profilePriority(network: string | undefined) {
+  switch (network?.toLowerCase()) {
+    case "linkedin":
+      return 0;
+    case "github":
+      return 1;
+    default:
+      return 2;
+  }
 }
 ---
 
@@ -37,12 +56,12 @@ function formatLocation(location: typeof resume.basics.location) {
       <header>
         <h1>{resume.basics.name}</h1>
         <p>{resume.basics.label}</p>
-        <p>{resume.basics.summary}</p>
-        {location && <p>{location}</p>}
         <nav aria-label="Acciones principales">
           <a href={readPath}>Leer CV web</a>
           <a href={`mailto:${resume.basics.email}`}>Contactar</a>
         </nav>
+        <p>{resume.basics.summary}</p>
+        {location && <p>{location}</p>}
         {(resume.basics.url || profiles.length > 0) && (
           <nav aria-label="Enlaces profesionales">
             {resume.basics.url && (
@@ -54,67 +73,70 @@ function formatLocation(location: typeof resume.basics.location) {
           </nav>
         )}
       </header>
-      <section aria-labelledby="timeline-heading">
-        <h2 id="timeline-heading">Trayectoria</h2>
-        <ol>
-          {timeline.map((milestone) => (
-            <li>
-              <article>
-                <p>{milestone.categoryLabel}</p>
-                {milestone.title && <h3>{milestone.title}</h3>}
-                {milestone.entity && <p>{milestone.entity}</p>}
-                <p>
-                  <time datetime={milestone.startDate}>
-                    {milestone.startDateLabel}
-                  </time>
-                  {milestone.endDate ? (
+      {timeline.length > 0 && (
+        <section aria-labelledby="timeline-heading">
+          <h2 id="timeline-heading">Trayectoria</h2>
+          <ol>
+            {timeline.map((milestone) => (
+              <li>
+                <article>
+                  <p>{milestone.categoryLabel}</p>
+                  {milestone.title && <h3>{milestone.title}</h3>}
+                  {milestone.entity && <p>{milestone.entity}</p>}
+                  <p>
+                    <time datetime={milestone.startDate}>
+                      {milestone.startDateLabel}
+                    </time>
+                    {milestone.endDate ? (
+                      <>
+                        {" - "}
+                        <time datetime={milestone.endDate}>
+                          {milestone.endDateLabel}
+                        </time>
+                      </>
+                    ) : (
+                      " - Actualidad"
+                    )}
+                  </p>
+                  {milestone.location && <p>{milestone.location}</p>}
+                  {milestone.description && <p>{milestone.description}</p>}
+                  {milestone.summary && <p>{milestone.summary}</p>}
+                  {milestone.roles.length > 0 && (
                     <>
-                      {" - "}
-                      <time datetime={milestone.endDate}>
-                        {milestone.endDateLabel}
-                      </time>
+                      <h4>Roles</h4>
+                      <ul>
+                        {milestone.roles.map((role) => (
+                          <li>{role}</li>
+                        ))}
+                      </ul>
                     </>
-                  ) : (
-                    " - Actualidad"
                   )}
-                </p>
-                {milestone.location && <p>{milestone.location}</p>}
-                {milestone.summary && <p>{milestone.summary}</p>}
-                {milestone.roles.length > 0 && (
-                  <>
-                    <h4>Roles</h4>
-                    <ul>
-                      {milestone.roles.map((role) => (
-                        <li>{role}</li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-                {milestone.highlights.length > 0 && (
-                  <>
-                    <h4>Hitos destacados</h4>
-                    <ul>
-                      {milestone.highlights.map((highlight) => (
-                        <li>{highlight}</li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-                {milestone.skills.length > 0 && (
-                  <>
-                    <h4>Habilidades asociadas</h4>
-                    <ul>
-                      {milestone.skills.map((skill) => (
-                        <li>{skill}</li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </article>
-            </li>
-          ))}
-        </ol>
-      </section>
+                  {milestone.highlights.length > 0 && (
+                    <>
+                      <h4>Hitos destacados</h4>
+                      <ul>
+                        {milestone.highlights.map((highlight) => (
+                          <li>{highlight}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {milestone.skills.length > 0 && (
+                    <>
+                      <h4>Habilidades asociadas</h4>
+                      <ul>
+                        {milestone.skills.map((skill) => (
+                          <li>{skill}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </article>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
     </main>
   </body>
 </html>

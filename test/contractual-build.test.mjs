@@ -92,7 +92,11 @@ test("the interactive experience presents the supported trajectory without JavaS
   );
 
   for (const content of [
+    "Alicia Ejemplo",
+    "Especialista en sistemas ficticios",
+    "Construye sistemas comprensibles a partir de hechos verificables.",
     "Arquitecta de software",
+    "Empresa dedicada a sistemas de aprendizaje.",
     "Dirige la evolución de productos con equipos multidisciplinares.",
     "Redujo el tiempo de entrega.",
     "Astro",
@@ -120,6 +124,7 @@ test("the interactive experience presents the supported trajectory without JavaS
     ["https://alicia.example.test", "Sitio web"],
     ["https://www.linkedin.com/in/alicia-ejemplo", "LinkedIn"],
     ["https://github.com/alicia-ejemplo", "GitHub"],
+    ["https://mastodon.social/@alicia-ejemplo", "Mastodon"],
   ]) {
     assert.match(
       interactiveExperience,
@@ -140,6 +145,20 @@ test("the interactive experience presents the supported trajectory without JavaS
   }
 
   assert.ok(
+    interactiveExperience.indexOf("Leer CV web") <
+      interactiveExperience.indexOf(
+        "Construye sistemas comprensibles a partir de hechos verificables.",
+      ),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("LinkedIn") <
+      interactiveExperience.indexOf("Mastodon"),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("GitHub") <
+      interactiveExperience.indexOf("Mastodon"),
+  );
+  assert.ok(
     interactiveExperience.indexOf("Arquitecta de software") <
       interactiveExperience.indexOf("Proyecto Vigente"),
   );
@@ -149,6 +168,10 @@ test("the interactive experience presents the supported trajectory without JavaS
   );
   assert.ok(
     interactiveExperience.indexOf("Instituto Ficticio") <
+      interactiveExperience.indexOf("Empresa de Origen"),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("Proyecto con inicio posterior") <
       interactiveExperience.indexOf("Empresa de Origen"),
   );
   assert.ok(
@@ -165,6 +188,26 @@ test("the interactive experience presents the supported trajectory without JavaS
   assert.doesNotMatch(interactiveExperience, /28000/);
   assert.doesNotMatch(interactiveExperience, /retrato\.jpg/);
   assert.doesNotMatch(interactiveExperience, /<script/);
+});
+
+test("the interactive experience omits an empty timeline", (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: fixturePathFor("valid-resume-without-timeline.json"),
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const interactiveExperience = readFileSync(
+    join(outputDirectory, "index.html"),
+    "utf8",
+  );
+
+  assert.doesNotMatch(interactiveExperience, /timeline-heading/);
+  assert.doesNotMatch(interactiveExperience, />Trayectoria</);
+  assert.doesNotMatch(interactiveExperience, /<ol>/);
 });
 
 test("the contractual build accepts local work and education skills without top-level skills", (t) => {
