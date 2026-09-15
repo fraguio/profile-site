@@ -77,6 +77,16 @@ El hero muestra nombre, rol profesional, el contenido íntegro de `basics.summar
 
 El CTA de contacto abre `mailto:` hacia el email profesional. LinkedIn y GitHub, si existen en `basics.profiles`, son enlaces secundarios prioritarios. No se muestra fecha de actualización en la primera versión.
 
+### Dirección visual y composición v1
+
+La [referencia visual de la v1](../design/profile-site-v1-reference.png) guía tanto la estética como la distribución general, pero no constituye un contrato literal ni autoriza a anticipar funciones de fases posteriores. La experiencia adopta un marco oscuro, editorial y sobrio-profesional, con alto contraste, acento dorado contenido, navegación superior y jerarquía tipográfica serif/sans. No incorpora controles inertes para representar filtros, selección, lector, PDF, tema o movimiento antes de que sus fases los hagan operativos.
+
+En desktop, la composición dispone la identidad, el resumen, los CTAs Base y los enlaces profesionales en una columna izquierda, y la trayectoria en una zona derecha más amplia. Esa zona puede dividirse después en carril y lector lateral sin reemplazar el árbol de contenido ni rehacer la composición principal. En la entrega estática, la trayectoria usa todo el espacio disponible y no muestra un lector vacío.
+
+En mobile, el hero y el timeline son regiones consecutivas del mismo documento. El desplazamiento principal es vertical, libre y sin `scroll-snap`; no se presentan como pantallas laterales ni se fuerzan alturas rígidas. El hero puede crecer para conservar el resumen completo y ofrece un enlace textual visible `Explorar trayectoria` hacia el encabezado del timeline. La continuidad gráfica y, cuando el viewport lo permita, el inicio de la siguiente región refuerzan que existe contenido debajo sin depender de animación ni de un icono aislado.
+
+La referencia de CV web no amplía el alcance de la composición visual de la experiencia interactiva. Cualquier rediseño de `/read/` conserva su contrato documental y se aborda de forma independiente.
+
 ### Timeline
 
 El timeline combina `work`, `education` y `projects` en una secuencia cronológica. Un elemento de cualquiera de esas secciones debe tener `startDate` válida; los elementos sin `endDate` se consideran vigentes y aparecen primero. El orden es descendente por fecha de finalización o vigencia, después por `startDate` descendente y, ante empate, conserva el orden de origen.
