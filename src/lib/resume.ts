@@ -3,13 +3,73 @@ import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import resumeSchema from "../../schemas/jsonresume-1.3.1.json";
 
+type Profile = {
+  network?: string;
+  url?: string;
+};
+
 type Resume = {
   basics: {
     email: string;
     label: string;
     name: string;
     summary: string;
+    url?: string;
+    location?: {
+      city?: string;
+      countryCode?: string;
+      region?: string;
+    };
+    profiles?: Profile[];
   };
+  education?: Array<{
+    area?: string;
+    courses?: string[];
+    endDate?: string;
+    institution?: string;
+    skills?: string[];
+    startDate: string;
+    studyType?: string;
+  }>;
+  projects?: Array<{
+    description?: string;
+    endDate?: string;
+    entity?: string;
+    highlights?: string[];
+    keywords?: string[];
+    name?: string;
+    roles?: string[];
+    startDate: string;
+  }>;
+  work?: Array<{
+    description?: string;
+    endDate?: string;
+    highlights?: string[];
+    location?: string;
+    name?: string;
+    position?: string;
+    skills?: string[];
+    startDate: string;
+    summary?: string;
+  }>;
+};
+
+type TimelineMilestone = {
+  category: "education" | "projects" | "work";
+  categoryLabel: string;
+  description?: string;
+  endDate?: string;
+  endDateLabel?: string;
+  entity?: string;
+  highlights: string[];
+  location?: string;
+  order: number;
+  roles: string[];
+  skills: string[];
+  startDate: string;
+  startDateLabel: string;
+  summary?: string;
+  title?: string;
 };
 
 type ResumeRecord = Record<string, unknown>;
@@ -29,6 +89,7 @@ const resumeData = JSON.parse(readFileSync(resumePath, "utf8")) as unknown;
 validateResume(resumeData);
 
 export const resume = resumeData as Resume;
+export const timeline = createTimeline(resume);
 
 function validateResume(resume: unknown) {
   if (!schemaValidator(resume)) {
@@ -131,6 +192,139 @@ function validateSkills(diagnostics: string[], path: string, skills: unknown) {
       );
     }
   }
+}
+
+function createTimeline(resume: Resume) {
+  const milestones: TimelineMilestone[] = [];
+  let order = 0;
+
+  for (const work of resume.work ?? []) {
+    const title = text(work.position) ?? text(work.name);
+
+    milestones.push({
+      category: "work",
+      categoryLabel: "Experiencia profesional",
+      description: text(work.description),
+      endDate: work.endDate,
+      endDateLabel: work.endDate ? formatDate(work.endDate) : undefined,
+      entity: title === work.name ? undefined : text(work.name),
+      highlights: uniqueTexts(work.highlights),
+      location: text(work.location),
+      order: order++,
+      roles: [],
+      skills: uniqueTexts(work.skills),
+      startDate: work.startDate,
+      startDateLabel: formatDate(work.startDate),
+      summary: text(work.summary),
+      title,
+    });
+  }
+
+  for (const education of resume.education ?? []) {
+    const title = educationTitle(education);
+
+    milestones.push({
+      category: "education",
+      categoryLabel: "Formación",
+      description: undefined,
+      endDate: education.endDate,
+      endDateLabel: education.endDate ? formatDate(education.endDate) : undefined,
+      entity: title === education.institution ? undefined : text(education.institution),
+      highlights: uniqueTexts(education.courses),
+      location: undefined,
+      order: order++,
+      roles: [],
+      skills: uniqueTexts(education.skills),
+      startDate: education.startDate,
+      startDateLabel: formatDate(education.startDate),
+      summary: undefined,
+      title,
+    });
+  }
+
+  for (const project of resume.projects ?? []) {
+    milestones.push({
+      category: "projects",
+      categoryLabel: "Proyectos",
+      description: text(project.description),
+      endDate: project.endDate,
+      endDateLabel: project.endDate ? formatDate(project.endDate) : undefined,
+      entity: text(project.entity),
+      highlights: uniqueTexts(project.highlights),
+      location: undefined,
+      order: order++,
+      roles: uniqueTexts(project.roles),
+      skills: uniqueTexts(project.keywords),
+      startDate: project.startDate,
+      startDateLabel: formatDate(project.startDate),
+      summary: undefined,
+      title: text(project.name),
+    });
+  }
+
+  return milestones.sort(compareMilestones);
+}
+
+function compareMilestones(left: TimelineMilestone, right: TimelineMilestone) {
+  if (left.endDate === undefined && right.endDate !== undefined) {
+    return -1;
+  }
+
+  if (left.endDate !== undefined && right.endDate === undefined) {
+    return 1;
+  }
+
+  if (left.endDate && right.endDate) {
+    const endDateDifference = toDatePosition(right.endDate) - toDatePosition(left.endDate);
+
+    if (endDateDifference !== 0) {
+      return endDateDifference;
+    }
+  }
+
+  const startDateDifference =
+    toDatePosition(right.startDate) - toDatePosition(left.startDate);
+
+  return startDateDifference === 0 ? left.order - right.order : startDateDifference;
+}
+
+function educationTitle(education: NonNullable<Resume["education"]>[number]) {
+  const studyType = text(education.studyType);
+  const area = text(education.area);
+
+  if (studyType && area) {
+    return `${studyType} en ${area}`;
+  }
+
+  return studyType ?? area ?? text(education.institution);
+}
+
+function formatDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    timeZone: "UTC",
+  };
+
+  if (month !== undefined) {
+    options.month = "long";
+  }
+
+  if (day !== undefined) {
+    options.day = "numeric";
+  }
+
+  return new Intl.DateTimeFormat("es-ES", options).format(
+    new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1)),
+  );
+}
+
+function uniqueTexts(values: string[] | undefined) {
+  return [...new Set((values ?? []).flatMap((value) => text(value) ?? []))];
+}
+
+function text(value: string | undefined) {
+  return value?.trim() === "" ? undefined : value;
 }
 
 function isValidDate(value: unknown): value is string {

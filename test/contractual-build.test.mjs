@@ -76,6 +76,140 @@ test("the contractual build produces the Base HTML outputs from the selected fix
   );
 });
 
+test("the interactive experience presents the supported trajectory without JavaScript", (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: fixturePath,
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const interactiveExperience = readFileSync(
+    join(outputDirectory, "index.html"),
+    "utf8",
+  );
+
+  for (const content of [
+    "Alicia Ejemplo",
+    "Especialista en sistemas ficticios",
+    "Construye sistemas comprensibles a partir de hechos verificables.",
+    "Arquitecta de software",
+    "Empresa dedicada a sistemas de aprendizaje.",
+    "Dirige la evolución de productos con equipos multidisciplinares.",
+    "Redujo el tiempo de entrega.",
+    "Astro",
+    "Proyecto Vigente",
+    "Explora una herramienta para equipos distribuidos.",
+    "Responsable técnica",
+    "Node.js",
+    "Grado en Ingeniería de software",
+    "Instituto Ficticio",
+    "Arquitectura de sistemas",
+    "Diseño de sistemas",
+    "España",
+    "enero de 2025",
+    "Actualidad",
+    "Experiencia profesional",
+    "Formación",
+    "Proyectos",
+  ]) {
+    assert.match(interactiveExperience, new RegExp(content));
+  }
+
+  for (const [url, label] of [
+    ["/profile-site/read/", "Leer CV web"],
+    ["mailto:alicia.ejemplo@example.test", "Contactar"],
+    ["https://alicia.example.test", "Sitio web"],
+    ["https://www.linkedin.com/in/alicia-ejemplo", "LinkedIn"],
+    ["https://github.com/alicia-ejemplo", "GitHub"],
+    ["https://mastodon.social/@alicia-ejemplo", "Mastodon"],
+  ]) {
+    assert.match(
+      interactiveExperience,
+      new RegExp(`href="${url.replaceAll("/", "\\/")}"[^>]*>${label}`),
+    );
+  }
+
+  for (const content of [
+    "Proyecto Vigente",
+    "Instituto Ficticio",
+    "Empresa de Origen",
+    "Proyecto de Empate",
+  ]) {
+    assert.ok(
+      interactiveExperience.indexOf(content) > 0,
+      `Expected ${content} in the timeline.`,
+    );
+  }
+
+  assert.ok(
+    interactiveExperience.indexOf("Leer CV web") <
+      interactiveExperience.indexOf(
+        "Construye sistemas comprensibles a partir de hechos verificables.",
+      ),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("LinkedIn") <
+      interactiveExperience.indexOf("Mastodon"),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("GitHub") <
+      interactiveExperience.indexOf("Mastodon"),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("Arquitecta de software") <
+      interactiveExperience.indexOf("Proyecto Vigente"),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("Proyecto Vigente") <
+      interactiveExperience.indexOf("Instituto Ficticio"),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("Instituto Ficticio") <
+      interactiveExperience.indexOf("Empresa de Origen"),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("Proyecto con inicio posterior") <
+      interactiveExperience.indexOf("Empresa de Origen"),
+  );
+  assert.ok(
+    interactiveExperience.indexOf("Empresa de Origen") <
+      interactiveExperience.indexOf("Proyecto de Empate"),
+  );
+  assert.equal((interactiveExperience.match(/Redujo el tiempo de entrega\./g) ?? []).length, 1);
+  assert.equal((interactiveExperience.match(/>Astro</g) ?? []).length, 1);
+  assert.doesNotMatch(interactiveExperience, /Catálogo global oculto/);
+  assert.doesNotMatch(interactiveExperience, /metadatos\.example\.test/);
+  assert.doesNotMatch(interactiveExperience, /Sección no soportada/);
+  assert.doesNotMatch(interactiveExperience, /\+34 600 000 000/);
+  assert.doesNotMatch(interactiveExperience, /Calle Privada 1/);
+  assert.doesNotMatch(interactiveExperience, /28000/);
+  assert.doesNotMatch(interactiveExperience, /retrato\.jpg/);
+  assert.doesNotMatch(interactiveExperience, /<script/);
+});
+
+test("the interactive experience omits an empty timeline", (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: fixturePathFor("valid-resume-without-timeline.json"),
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const interactiveExperience = readFileSync(
+    join(outputDirectory, "index.html"),
+    "utf8",
+  );
+
+  assert.doesNotMatch(interactiveExperience, /timeline-heading/);
+  assert.doesNotMatch(interactiveExperience, />Trayectoria</);
+  assert.doesNotMatch(interactiveExperience, /<ol>/);
+});
+
 test("the contractual build accepts local work and education skills without top-level skills", (t) => {
   const outputDirectory = temporaryOutputDirectory(t);
 
