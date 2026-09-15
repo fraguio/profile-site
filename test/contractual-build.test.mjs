@@ -76,6 +76,71 @@ test("the contractual build produces the Base HTML outputs from the selected fix
   );
 });
 
+test("el CV web presenta el currículo compatible completo como documento semántico", (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: fixturePath,
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const webCv = readFileSync(join(outputDirectory, "read", "index.html"), "utf8");
+
+  for (const content of [
+    "Alicia Ejemplo",
+    "Especialista en sistemas ficticios",
+    "alicia.ejemplo@example.test",
+    "https://alicia.example.test",
+    "LinkedIn",
+    "GitHub",
+    "Mastodon",
+    "Madrid, Comunidad de Madrid, España",
+    "Construye sistemas comprensibles a partir de hechos verificables.",
+    "Arquitecta de software",
+    "Dirige la evolución de productos con equipos multidisciplinares.",
+    "Redujo el tiempo de entrega.",
+    "Astro",
+    "Proyecto Vigente",
+    "Responsable técnica",
+    "Publicó un prototipo funcional.",
+    "Node.js",
+    "Grado en Ingeniería de software",
+    "Instituto Ficticio",
+    "Arquitectura de sistemas",
+    "Diseño de sistemas",
+  ]) {
+    assert.match(webCv, new RegExp(content));
+  }
+
+  assert.match(webCv, /<main>/);
+  assert.match(webCv, /<header>/);
+  assert.match(webCv, /<address>/);
+  assert.match(webCv, /<section aria-labelledby="work-heading">/);
+  assert.match(webCv, /<section aria-labelledby="projects-heading">/);
+  assert.match(webCv, /<section aria-labelledby="education-heading">/);
+  assert.match(webCv, /<ol>/);
+  assert.match(webCv, /<article>/);
+  assert.match(webCv, /<time datetime="2025-01">\s*enero de 2025\s*<\/time>/);
+  assert.match(webCv, /<ul>/);
+
+  for (const [earlier, later] of [
+    ["Resumen profesional", "Experiencia profesional"],
+    ["Experiencia profesional", "Proyectos"],
+    ["Proyectos", "Formación"],
+  ]) {
+    assert.ok(
+      webCv.indexOf(earlier) < webCv.indexOf(later),
+      `Se esperaba ${earlier} antes de ${later}.`,
+    );
+  }
+
+  assert.doesNotMatch(webCv, /data-contract="read-download-pdf"/);
+  assert.doesNotMatch(webCv, /href="[^"]+\.pdf"/);
+  assert.doesNotMatch(webCv, /<script[^>]+src=/);
+});
+
 test("the interactive experience presents the supported trajectory without JavaScript", (t) => {
   const outputDirectory = temporaryOutputDirectory(t);
 

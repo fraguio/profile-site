@@ -54,8 +54,10 @@ type Resume = {
   }>;
 };
 
+export type TimelineCategory = "education" | "projects" | "work";
+
 type TimelineMilestone = {
-  category: "education" | "projects" | "work";
+  category: TimelineCategory;
   categoryLabel: string;
   description?: string;
   endDate?: string;
@@ -90,6 +92,12 @@ validateResume(resumeData);
 
 export const resume = resumeData as Resume;
 export const timeline = createTimeline(resume);
+export const formattedLocation = formatLocation(resume.basics.location);
+export const professionalProfiles = (resume.basics.profiles ?? []).filter(
+  (profile) => profile.network?.trim() && profile.url?.trim(),
+).sort(
+  (left, right) => profilePriority(left.network) - profilePriority(right.network),
+);
 
 function validateResume(resume: unknown) {
   if (!schemaValidator(resume)) {
@@ -263,6 +271,40 @@ function createTimeline(resume: Resume) {
   }
 
   return milestones.sort(compareMilestones);
+}
+
+function formatLocation(location: Resume["basics"]["location"]) {
+  if (!location) {
+    return undefined;
+  }
+
+  const country = location.countryCode
+    ? localizeCountry(location.countryCode)
+    : undefined;
+  const values = [location.city, location.region, country].filter(
+    (value) => value?.trim(),
+  );
+
+  return values.length > 0 ? values.join(", ") : undefined;
+}
+
+function localizeCountry(countryCode: string) {
+  try {
+    return new Intl.DisplayNames(["es"], { type: "region" }).of(countryCode);
+  } catch {
+    return countryCode;
+  }
+}
+
+function profilePriority(network: string | undefined) {
+  switch (network?.toLowerCase()) {
+    case "linkedin":
+      return 0;
+    case "github":
+      return 1;
+    default:
+      return 2;
+  }
 }
 
 function compareMilestones(left: TimelineMilestone, right: TimelineMilestone) {
