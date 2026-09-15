@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("the web CV offers keyboard printing without application scripts", async ({ page }) => {
+test("el CV web permite imprimir con teclado sin scripts de aplicación", async ({ page }) => {
   await page.addInitScript(() => {
     window.print = () => {
       document.documentElement.dataset.printed = "true";
@@ -24,7 +24,7 @@ test("the web CV offers keyboard printing without application scripts", async ({
   await expect(page.getByText("Dirige la evolución de productos con equipos multidisciplinares.")).toBeVisible();
 });
 
-test("the web CV remains complete without JavaScript", async ({ browser }) => {
+test("el CV web conserva el contenido completo sin JavaScript", async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
 

@@ -76,7 +76,7 @@ test("the contractual build produces the Base HTML outputs from the selected fix
   );
 });
 
-test("the web CV renders the complete supported curriculum as a semantic document", (t) => {
+test("el CV web presenta el currículo compatible completo como documento semántico", (t) => {
   const outputDirectory = temporaryOutputDirectory(t);
 
   const result = build(outputDirectory, {
@@ -132,7 +132,7 @@ test("the web CV renders the complete supported curriculum as a semantic documen
   ]) {
     assert.ok(
       webCv.indexOf(earlier) < webCv.indexOf(later),
-      `Expected ${earlier} before ${later}.`,
+      `Se esperaba ${earlier} antes de ${later}.`,
     );
   }
 

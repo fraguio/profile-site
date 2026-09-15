@@ -1,47 +1,14 @@
 ---
-import { resume, timeline } from "../lib/resume";
+import {
+  formattedLocation,
+  professionalProfiles,
+  resume,
+  timeline,
+} from "../lib/resume";
 
 const readPath = `${import.meta.env.BASE_URL}read/`;
-const location = formatLocation(resume.basics.location);
-const profiles = (resume.basics.profiles ?? []).filter(
-  (profile) => profile.network?.trim() && profile.url?.trim(),
-).sort(
-  (left, right) => profilePriority(left.network) - profilePriority(right.network),
-);
-
-function formatLocation(location: typeof resume.basics.location) {
-  if (!location) {
-    return undefined;
-  }
-
-  const country = location.countryCode
-    ? localizeCountry(location.countryCode)
-    : undefined;
-  const values = [location.city, location.region, country].filter(
-    (value) => value?.trim(),
-  );
-
-  return values.length > 0 ? values.join(", ") : undefined;
-}
-
-function localizeCountry(countryCode: string) {
-  try {
-    return new Intl.DisplayNames(["es"], { type: "region" }).of(countryCode);
-  } catch {
-    return countryCode;
-  }
-}
-
-function profilePriority(network: string | undefined) {
-  switch (network?.toLowerCase()) {
-    case "linkedin":
-      return 0;
-    case "github":
-      return 1;
-    default:
-      return 2;
-  }
-}
+const location = formattedLocation;
+const profiles = professionalProfiles;
 ---
 
 <!doctype html>

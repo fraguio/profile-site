@@ -7,7 +7,7 @@ const fixturePath = fileURLToPath(
 );
 
 export default defineConfig({
-  testDir: "./test",
+  testDir: "./e2e",
   testMatch: "web-cv.browser.mjs",
   use: {
     baseURL: "http://127.0.0.1:4321/profile-site/",
