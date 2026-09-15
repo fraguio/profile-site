@@ -150,6 +150,47 @@ body {
   line-height: 1;
 }
 
+.timeline__filters {
+  margin: 0 0 2rem;
+  padding: 0;
+  border: 0;
+}
+
+.timeline__filters legend {
+  margin-bottom: 0.75rem;
+  color: #d6d7d1;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.timeline__filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.timeline__filter-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #53605a;
+  border-radius: 0.2rem;
+  color: #f2f0e9;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.timeline__filter-option:has(input:checked) {
+  border-color: #edc767;
+  background: rgb(237 199 103 / 16%);
+}
+
+.timeline__filter-option input {
+  accent-color: #edc767;
+}
+
 .timeline__list {
   position: relative;
   display: grid;
@@ -167,6 +208,11 @@ body {
   width: 1px;
   background: linear-gradient(#edc767, #46504c 95%, transparent);
   content: "";
+}
+
+.timeline__rail:focus-visible {
+  outline: 3px solid #f8f6ef;
+  outline-offset: 4px;
 }
 
 .timeline__item {
@@ -283,6 +329,21 @@ a:focus-visible {
   outline-offset: 4px;
 }
 
+input:focus-visible {
+  outline: 3px solid #f8f6ef;
+  outline-offset: 3px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 @media (max-width: 52rem) {
   .interactive-experience {
     display: block;
@@ -316,6 +377,17 @@ a:focus-visible {
 
   .timeline h2 {
     margin-bottom: 2rem;
+  }
+}
+
+@media (min-width: 52.001rem) {
+  .timeline-enhanced .timeline__rail {
+    max-block-size: min(42rem, calc(100dvh - 14rem));
+    padding-right: 0.75rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: #68706c #111617;
+    scrollbar-gutter: stable;
   }
 }
 

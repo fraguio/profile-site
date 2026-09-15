@@ -9,8 +9,8 @@
   "scripts": {
     "build": "astro build",
     "check": "astro check",
-    "test": "node --test && playwright test",
-    "test:browser": "playwright test",
+    "test": "node --test && pnpm test:browser",
+    "test:browser": "playwright test && playwright test --config=playwright-empty-category.config.mjs",
     "test:unit": "node --test"
   },
   "devDependencies": {

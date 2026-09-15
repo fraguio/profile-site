@@ -5,6 +5,7 @@ import {
   resume,
   timeline,
 } from "../lib/resume";
+import type { TimelineCategory } from "../lib/resume";
 import PageMetadata from "../components/PageMetadata.astro";
 import "../styles/interactive-experience.css";
 
@@ -15,6 +16,17 @@ const title = `${resume.basics.name} | ${resume.basics.label}`;
 const description = `Trayectoria profesional de ${resume.basics.name}, ${resume.basics.label.toLowerCase()}.`;
 const canonicalUrl = Astro.url.href;
 const personId = `${canonicalUrl}#person`;
+const timelineFilterOptions = [
+  { value: "all", label: "Toda la trayectoria" },
+  { value: "work", label: "Experiencia profesional" },
+  { value: "projects", label: "Proyectos" },
+  { value: "education", label: "Formación" },
+] satisfies Array<{ label: string; value: "all" | TimelineCategory }>;
+const availableTimelineFilters = timelineFilterOptions.filter(
+  (filter) =>
+    filter.value === "all" ||
+    timeline.some((milestone) => milestone.category === filter.value),
+);
 const structuredData = JSON.stringify({
   "@context": "https://schema.org",
   "@graph": [
@@ -78,9 +90,38 @@ const structuredData = JSON.stringify({
       {timeline.length > 0 && (
         <section class="timeline" aria-labelledby="timeline-heading">
           <h2 id="timeline-heading">Trayectoria</h2>
-          <ol class="timeline__list">
+          <fieldset class="timeline__filters" data-contract="timeline-filters" hidden>
+            <legend>Filtrar trayectoria</legend>
+            <div class="timeline__filter-options">
+              {availableTimelineFilters.map((filter) => (
+                <label class="timeline__filter-option">
+                  <input
+                    aria-controls="timeline-rail"
+                    checked={filter.value === "all"}
+                    data-timeline-filter-label={filter.label}
+                    name="timeline-filter"
+                    type="radio"
+                    value={filter.value}
+                  />
+                  {filter.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <p
+            aria-atomic="true"
+            class="visually-hidden"
+            data-contract="timeline-filter-status"
+            role="status"
+          ></p>
+          <ol
+            aria-label="Hitos de la trayectoria"
+            class="timeline__list timeline__rail"
+            data-contract="timeline-rail"
+            id="timeline-rail"
+          >
             {timeline.map((milestone) => (
-              <li class="timeline__item">
+              <li class="timeline__item" data-timeline-category={milestone.category}>
                 <article class="milestone">
                   <p class="milestone__category">{milestone.categoryLabel}</p>
                   {milestone.title && <h3>{milestone.title}</h3>}
@@ -140,5 +181,58 @@ const structuredData = JSON.stringify({
         </section>
       )}
     </main>
+    <script>
+      const filters = document.querySelector<HTMLFieldSetElement>(
+        '[data-contract="timeline-filters"]',
+      );
+      const status = document.querySelector<HTMLElement>(
+        '[data-contract="timeline-filter-status"]',
+      );
+      const rail = document.querySelector<HTMLOListElement>(
+        '[data-contract="timeline-rail"]',
+      );
+      const milestones = [
+        ...document.querySelectorAll<HTMLElement>("[data-timeline-category]"),
+      ];
+
+      if (filters && status && rail && milestones.length > 0) {
+        document.documentElement.classList.add("timeline-enhanced");
+        filters.hidden = false;
+        rail.tabIndex = 0;
+
+        filters.addEventListener("change", (event) => {
+          const selectedFilter = event.target;
+
+          if (
+            !(selectedFilter instanceof HTMLInputElement) ||
+            selectedFilter.name !== "timeline-filter"
+          ) {
+            return;
+          }
+
+          const visibleMilestones = milestones.filter((milestone) => {
+            const matchesFilter =
+              selectedFilter.value === "all" ||
+              milestone.dataset.timelineCategory === selectedFilter.value;
+
+            milestone.hidden = !matchesFilter;
+
+            return matchesFilter;
+          });
+          const milestoneLabel =
+            visibleMilestones.length === 1 ? "hito" : "hitos";
+          const verb = visibleMilestones.length === 1 ? "muestra" : "muestran";
+          const filterLabel = selectedFilter.dataset.timelineFilterLabel?.toLowerCase();
+
+          status.textContent = `Se ${verb} ${visibleMilestones.length} ${milestoneLabel} de ${filterLabel}.`;
+          rail.scrollTo({
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+              ? "auto"
+              : "smooth",
+            top: 0,
+          });
+        });
+      }
+    </script>
   </body>
 </html>

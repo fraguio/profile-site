@@ -455,7 +455,35 @@ test("the interactive experience presents the supported trajectory without JavaS
   assert.doesNotMatch(interactiveExperience, /Calle Privada 1/);
   assert.doesNotMatch(interactiveExperience, /28000/);
   assert.doesNotMatch(interactiveExperience, /retrato\.jpg/);
-  assert.doesNotMatch(body, /<script/);
+  assert.match(
+    body,
+    /<fieldset[^>]*data-contract="timeline-filters"[^>]*hidden/,
+  );
+});
+
+test("the interactive experience keeps timeline filters unavailable without JavaScript", (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: fixturePath,
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const interactiveExperience = readFileSync(
+    join(outputDirectory, "index.html"),
+    "utf8",
+  );
+
+  assert.match(
+    interactiveExperience,
+    /<fieldset[^>]*data-contract="timeline-filters"[^>]*hidden/,
+  );
+  assert.match(interactiveExperience, /<input[^>]*value="all"/);
+  assert.match(interactiveExperience, /<input[^>]*value="work"/);
+  assert.match(interactiveExperience, /<input[^>]*value="projects"/);
+  assert.match(interactiveExperience, /<input[^>]*value="education"/);
 });
 
 test("the interactive experience omits an empty timeline", (t) => {
