@@ -10,6 +10,9 @@ import {
 const interactiveExperiencePath = import.meta.env.BASE_URL;
 const location = formattedLocation;
 const profiles = professionalProfiles;
+const title = `CV web | ${resume.basics.name}`;
+const description = `CV web de ${resume.basics.name}, ${resume.basics.label.toLowerCase()}.`;
+const canonicalUrl = Astro.url.href;
 const sectionDefinitions: Array<{ category: TimelineCategory; heading: string }> = [
   {
     category: "work",
@@ -35,7 +38,14 @@ const sections = sectionDefinitions.map((section) => ({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>CV web | {resume.basics.name}</title>
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content="profile" />
+    <meta property="og:locale" content="es_ES" />
     <style is:global>
       body {
         color: #171717;

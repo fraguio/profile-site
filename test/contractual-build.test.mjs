@@ -76,6 +76,218 @@ test("the contractual build produces the Base HTML outputs from the selected fix
   );
 });
 
+test("the interactive experience publishes complete metadata at its public URL", (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: fixturePath,
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const interactiveExperience = readFileSync(
+    join(outputDirectory, "index.html"),
+    "utf8",
+  );
+
+  assert.match(
+    interactiveExperience,
+    /<title>Alicia Ejemplo \| Especialista en sistemas ficticios<\/title>/,
+  );
+  assert.match(
+    interactiveExperience,
+    /<meta name="description" content="Trayectoria profesional de Alicia Ejemplo, especialista en sistemas ficticios\."/,
+  );
+  assert.match(
+    interactiveExperience,
+    /<link rel="canonical" href="https:\/\/fraguio\.github\.io\/profile-site\/"/,
+  );
+
+  for (const [property, content] of [
+    ["og:title", "Alicia Ejemplo | Especialista en sistemas ficticios"],
+    ["og:description", "Trayectoria profesional de Alicia Ejemplo, especialista en sistemas ficticios."],
+    ["og:url", "https://fraguio.github.io/profile-site/"],
+    ["og:type", "profile"],
+    ["og:locale", "es_ES"],
+  ]) {
+    assert.match(
+      interactiveExperience,
+      new RegExp(`<meta property="${property}" content="${content}"`),
+    );
+  }
+
+  assert.doesNotMatch(interactiveExperience, /property="og:image"/);
+});
+
+test("the interactive experience publishes public Person and ProfilePage structured data", (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: fixturePath,
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const interactiveExperience = readFileSync(
+    join(outputDirectory, "index.html"),
+    "utf8",
+  );
+  const match = interactiveExperience.match(
+    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
+  );
+
+  assert.ok(match, "Expected JSON-LD in the interactive experience.");
+
+  const structuredData = JSON.parse(match[1]);
+  const person = structuredData["@graph"].find(
+    (item) => item["@type"] === "Person",
+  );
+  const profilePage = structuredData["@graph"].find(
+    (item) => item["@type"] === "ProfilePage",
+  );
+
+  assert.deepEqual(person, {
+    "@id": "https://fraguio.github.io/profile-site/#person",
+    "@type": "Person",
+    name: "Alicia Ejemplo",
+    jobTitle: "Especialista en sistemas ficticios",
+    description: "Construye sistemas comprensibles a partir de hechos verificables.",
+    url: "https://alicia.example.test",
+    sameAs: [
+      "https://www.linkedin.com/in/alicia-ejemplo",
+      "https://github.com/alicia-ejemplo",
+      "https://mastodon.social/@alicia-ejemplo",
+    ],
+  });
+  assert.deepEqual(profilePage, {
+    "@type": "ProfilePage",
+    name: "Alicia Ejemplo | Especialista en sistemas ficticios",
+    description: "Trayectoria profesional de Alicia Ejemplo, especialista en sistemas ficticios.",
+    url: "https://fraguio.github.io/profile-site/",
+    mainEntity: {
+      "@id": "https://fraguio.github.io/profile-site/#person",
+    },
+  });
+
+  for (const privateValue of [
+    "+34 600 000 000",
+    "Calle Privada 1",
+    "28000",
+    "retrato.jpg",
+    "Sección no soportada",
+  ]) {
+    assert.equal(JSON.stringify(structuredData).includes(privateValue), false);
+  }
+});
+
+test("the web CV publishes complete metadata at its public URL", (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: fixturePath,
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const webCv = readFileSync(join(outputDirectory, "read", "index.html"), "utf8");
+
+  assert.match(webCv, /<title>CV web \| Alicia Ejemplo<\/title>/);
+  assert.match(
+    webCv,
+    /<meta name="description" content="CV web de Alicia Ejemplo, especialista en sistemas ficticios\."/,
+  );
+  assert.match(
+    webCv,
+    /<link rel="canonical" href="https:\/\/fraguio\.github\.io\/profile-site\/read\/"/,
+  );
+
+  for (const [property, content] of [
+    ["og:title", "CV web | Alicia Ejemplo"],
+    ["og:description", "CV web de Alicia Ejemplo, especialista en sistemas ficticios."],
+    ["og:url", "https://fraguio.github.io/profile-site/read/"],
+    ["og:type", "profile"],
+    ["og:locale", "es_ES"],
+  ]) {
+    assert.match(webCv, new RegExp(`<meta property="${property}" content="${content}"`));
+  }
+
+  assert.doesNotMatch(webCv, /property="og:image"/);
+});
+
+test("the contractual build recomposes metadata and navigation below another public base path", (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+  const publicBaseUrl = "https://profiles.example.test/candidates/alicia/";
+
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: publicBaseUrl,
+    RESUME_PATH: fixturePath,
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const interactiveExperience = readFileSync(
+    join(outputDirectory, "index.html"),
+    "utf8",
+  );
+  const webCv = readFileSync(join(outputDirectory, "read", "index.html"), "utf8");
+  const webCvUrl = `${publicBaseUrl}read/`;
+
+  for (const [html, url] of [
+    [interactiveExperience, publicBaseUrl],
+    [webCv, webCvUrl],
+  ]) {
+    assert.match(html, new RegExp(`<link rel="canonical" href="${url}"`));
+    assert.match(html, new RegExp(`<meta property="og:url" content="${url}"`));
+    assert.equal((html.match(/<title>/g) ?? []).length, 1);
+    assert.equal((html.match(/<meta name="description"/g) ?? []).length, 1);
+    assert.equal((html.match(/<meta name="description" content="[^"].*?"/g) ?? []).length, 1);
+    assert.equal((html.match(/<link rel="canonical"/g) ?? []).length, 1);
+    assert.equal((html.match(/<link rel="canonical" href="[^"].*?"/g) ?? []).length, 1);
+
+    for (const property of [
+      "og:title",
+      "og:description",
+      "og:url",
+      "og:type",
+      "og:locale",
+    ]) {
+      assert.equal(
+        (html.match(new RegExp(`<meta property="${property}"`, "g")) ?? []).length,
+        1,
+      );
+      assert.equal(
+        (html.match(new RegExp(`<meta property="${property}" content="[^"].*?"`, "g")) ?? []).length,
+        1,
+      );
+    }
+  }
+
+  assert.match(interactiveExperience, /href="\/candidates\/alicia\/read\/"/);
+  assert.match(webCv, /href="\/candidates\/alicia\/"/);
+  assert.doesNotMatch(interactiveExperience, /https:\/\/profiles\.example\.test\/["#]/);
+  assert.doesNotMatch(webCv, /https:\/\/profiles\.example\.test\/["#]/);
+
+  const jsonLdMatch = interactiveExperience.match(
+    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
+  );
+
+  assert.ok(jsonLdMatch, "Expected JSON-LD in the interactive experience.");
+
+  const structuredData = JSON.parse(jsonLdMatch[1]);
+  const person = structuredData["@graph"].find(
+    (item) => item["@type"] === "Person",
+  );
+  const profilePage = structuredData["@graph"].find(
+    (item) => item["@type"] === "ProfilePage",
+  );
+
+  assert.equal(person["@id"], `${publicBaseUrl}#person`);
+  assert.equal(profilePage.url, publicBaseUrl);
+});
+
 test("el CV web presenta el currículo compatible completo como documento semántico", (t) => {
   const outputDirectory = temporaryOutputDirectory(t);
 
