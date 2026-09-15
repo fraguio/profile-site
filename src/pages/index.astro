@@ -6,6 +6,7 @@ import {
   timeline,
 } from "../lib/resume";
 import PageMetadata from "../components/PageMetadata.astro";
+import "../styles/interactive-experience.css";
 
 const readPath = `${import.meta.env.BASE_URL}read/`;
 const location = formattedLocation;
@@ -47,18 +48,24 @@ const structuredData = JSON.stringify({
     <PageMetadata {canonicalUrl} {description} {structuredData} {title} />
   </head>
   <body>
-    <main>
-      <header>
+    <main class="interactive-experience">
+      <header class="profile-hero">
+        <p class="profile-hero__eyebrow">Perfil profesional</p>
         <h1>{resume.basics.name}</h1>
-        <p>{resume.basics.label}</p>
-        <nav aria-label="Acciones principales">
+        <p class="profile-hero__role">{resume.basics.label}</p>
+        <nav class="profile-hero__actions" aria-label="Acciones principales">
           <a href={readPath}>Leer CV web</a>
           <a href={`mailto:${resume.basics.email}`}>Contactar</a>
         </nav>
-        <p>{resume.basics.summary}</p>
-        {location && <p>{location}</p>}
+        <p class="profile-hero__summary">{resume.basics.summary}</p>
+        {location && <p class="profile-hero__location">{location}</p>}
+        {timeline.length > 0 && (
+          <a class="profile-hero__explore" href="#timeline-heading">
+            Explorar trayectoria
+          </a>
+        )}
         {(resume.basics.url || profiles.length > 0) && (
-          <nav aria-label="Enlaces profesionales">
+          <nav class="profile-hero__profiles" aria-label="Enlaces profesionales">
             {resume.basics.url && (
               <a href={resume.basics.url}>Sitio web</a>
             )}
@@ -69,16 +76,16 @@ const structuredData = JSON.stringify({
         )}
       </header>
       {timeline.length > 0 && (
-        <section aria-labelledby="timeline-heading">
+        <section class="timeline" aria-labelledby="timeline-heading">
           <h2 id="timeline-heading">Trayectoria</h2>
-          <ol>
+          <ol class="timeline__list">
             {timeline.map((milestone) => (
-              <li>
-                <article>
-                  <p>{milestone.categoryLabel}</p>
+              <li class="timeline__item">
+                <article class="milestone">
+                  <p class="milestone__category">{milestone.categoryLabel}</p>
                   {milestone.title && <h3>{milestone.title}</h3>}
-                  {milestone.entity && <p>{milestone.entity}</p>}
-                  <p>
+                  {milestone.entity && <p class="milestone__entity">{milestone.entity}</p>}
+                  <p class="milestone__period">
                     <time datetime={milestone.startDate}>
                       {milestone.startDateLabel}
                     </time>
@@ -93,13 +100,13 @@ const structuredData = JSON.stringify({
                       " - Actualidad"
                     )}
                   </p>
-                  {milestone.location && <p>{milestone.location}</p>}
-                  {milestone.description && <p>{milestone.description}</p>}
-                  {milestone.summary && <p>{milestone.summary}</p>}
+                  {milestone.location && <p class="milestone__location">{milestone.location}</p>}
+                  {milestone.description && <p class="milestone__description">{milestone.description}</p>}
+                  {milestone.summary && <p class="milestone__summary">{milestone.summary}</p>}
                   {milestone.roles.length > 0 && (
                     <>
                       <h4>Roles</h4>
-                      <ul>
+                      <ul class="milestone__roles">
                         {milestone.roles.map((role) => (
                           <li>{role}</li>
                         ))}
@@ -109,7 +116,7 @@ const structuredData = JSON.stringify({
                   {milestone.highlights.length > 0 && (
                     <>
                       <h4>Hitos destacados</h4>
-                      <ul>
+                      <ul class="milestone__highlights">
                         {milestone.highlights.map((highlight) => (
                           <li>{highlight}</li>
                         ))}
@@ -119,7 +126,7 @@ const structuredData = JSON.stringify({
                   {milestone.skills.length > 0 && (
                     <>
                       <h4>Habilidades asociadas</h4>
-                      <ul>
+                      <ul class="milestone__skills">
                         {milestone.skills.map((skill) => (
                           <li>{skill}</li>
                         ))}
