@@ -20,7 +20,7 @@ html { scroll-behavior: smooth; }
 body { margin: 0; min-width: 320px; background: #111211; }
 button, a { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+button:focus-visible, a:focus-visible, [tabindex="0"]:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 
 main { max-width: 1240px; margin: auto; padding: 32px 28px 144px; }
 .hero { max-width: 850px; padding: clamp(32px, 9vw, 110px) 0 54px; }
@@ -99,12 +99,6 @@ h2 { margin-bottom: 0; font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 400; le
 @keyframes vertical-drift { from { transform: translateY(0); } to { transform: translateY(var(--loop-distance, -50%)); } }
 @keyframes horizontal-drift { from { transform: translateX(0); } to { transform: translateX(var(--loop-distance, -50%)); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
-/* A user request can explicitly opt the prototype into the timeline motion. */
-@media (prefers-reduced-motion: reduce) {
-  .is-motion-consented .ticker-track { animation: vertical-drift var(--motion-duration, 30s) linear infinite !important; }
-  .is-motion-consented .event-list { animation: vertical-drift var(--motion-duration, 26s) linear infinite !important; }
-  .is-motion-consented .ribbon { animation: horizontal-drift var(--motion-duration, 34s) linear infinite !important; }
-}
 @media (max-width: 720px) {
   main { padding: 18px 16px 150px; }
   .hero { padding-top: 46px; }

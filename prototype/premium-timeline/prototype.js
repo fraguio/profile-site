@@ -111,9 +111,6 @@ const state = {
   focused: false,
   reducedMotion: prefersReducedMotion,
   motionConsent: !prefersReducedMotion,
-  focusDetailHeading: false,
-  returnFocusInstance: null,
-  ignoreNextFocus: false,
 };
 
 const root = document.querySelector("#variant-root");
@@ -152,7 +149,7 @@ function detailMarkup(entry) {
   if (!entry)
     return `<p class="empty-reader">Seleccione un hito para leer su contexto. Sin selección, el movimiento puede continuar.</p>`;
   const skills = entry.skills.map((skill) => `<li>${skill}</li>`).join("");
-  return `<article class="detail"><header class="detail-header"><button class="close-detail" type="button" data-close-detail>Cerrar ×</button><span class="category">${labelFor(entry.type)}</span><h3 class="detail-title" tabindex="-1">${entry.title}</h3><p class="item-meta">${entry.entity} · ${entry.date}</p></header><div class="detail-body"><p>${entry.text}</p><ul class="skills" aria-label="Habilidades asociadas">${skills}</ul></div></article>`;
+  return `<article class="detail"><header class="detail-header"><button class="close-detail" type="button" data-close-detail>Cerrar ×</button><span class="category">${labelFor(entry.type)}</span><h3>${entry.title}</h3><p class="item-meta">${entry.entity} · ${entry.date}</p></header><div class="detail-body"><p>${entry.text}</p><ul class="skills" aria-label="Habilidades asociadas">${skills}</ul></div></article>`;
 }
 
 function repeated(items, mode) {
@@ -199,14 +196,13 @@ function renderVariant(animationTime = null) {
   const items = visibleEntries();
   const selectedEntry = entries.find((entry) => entry.id === state.selected);
   const pauseClass = isPaused() ? "is-paused" : "";
-  const consentClass = state.motionConsent ? "is-motion-consented" : "";
 
   if (state.variant === "a") {
-    root.innerHTML = `<section class="variant-a ${pauseClass} ${consentClass}" aria-label="Variante A: detalle expandible"><div class="ticker-window"><div class="ticker-track">${repeated(items, "a")}</div></div></section>`;
+    root.innerHTML = `<section class="variant-a ${pauseClass}" aria-label="Variante A: detalle expandible"><div class="ticker-window"><div class="ticker-track">${repeated(items, "a")}</div></div></section>`;
   } else if (state.variant === "b") {
-    root.innerHTML = `<section class="variant-b ${pauseClass} ${consentClass}${selectedEntry ? " has-selection" : ""}" aria-label="Variante B: navegador y lector"><div class="event-nav"><div class="event-list">${repeated(items, "b")}</div></div><aside class="reader" aria-live="polite">${detailMarkup(selectedEntry)}</aside>${selectedEntry ? `<section class="mobile-detail-panel" aria-live="polite">${detailMarkup(selectedEntry)}</section>` : ""}</section>`;
+    root.innerHTML = `<section class="variant-b ${pauseClass}${selectedEntry ? " has-selection" : ""}" aria-label="Variante B: navegador y lector"><div class="event-nav"><div class="event-list">${repeated(items, "b")}</div></div><aside class="reader" aria-live="polite">${detailMarkup(selectedEntry)}</aside>${selectedEntry ? `<section class="mobile-detail-panel" aria-live="polite">${detailMarkup(selectedEntry)}</section>` : ""}</section>`;
   } else {
-    root.innerHTML = `<section class="variant-c ${pauseClass} ${consentClass}" aria-label="Variante C: cinta horizontal y atril"><div class="ribbon-window"><div class="ribbon">${repeated(items, "c")}</div></div><section class="reading-desk" aria-live="polite"><span class="category">Detalle</span>${detailMarkup(selectedEntry)}</section></section>`;
+    root.innerHTML = `<section class="variant-c ${pauseClass}" aria-label="Variante C: cinta horizontal y atril"><div class="ribbon-window"><div class="ribbon">${repeated(items, "c")}</div></div><section class="reading-desk" aria-live="polite"><span class="category">Detalle</span>${detailMarkup(selectedEntry)}</section></section>`;
   }
   applyMotionSettings();
   if (animationTime !== null) {
@@ -217,22 +213,6 @@ function renderVariant(animationTime = null) {
   }
   bindTimelineEvents();
   updateState();
-  if (state.focusDetailHeading) {
-    state.focusDetailHeading = false;
-    requestAnimationFrame(() =>
-      root.querySelector(".mobile-detail-panel .detail-title")?.focus(),
-    );
-  }
-  if (state.returnFocusInstance) {
-    const instance = state.returnFocusInstance;
-    state.returnFocusInstance = null;
-    requestAnimationFrame(() => {
-      const activator = root.querySelector(`[data-instance="${instance}"]`);
-      if (!activator) return;
-      state.ignoreNextFocus = true;
-      activator.focus();
-    });
-  }
 }
 
 function bindTimelineEvents() {
@@ -240,11 +220,8 @@ function bindTimelineEvents() {
     button.addEventListener("click", () => {
       const animationTime = motionTime();
       const selected = state.selectedInstance === button.dataset.instance;
-      const isMobile = window.matchMedia("(max-width: 720px)").matches;
       state.selected = selected ? null : button.dataset.entry;
       state.selectedInstance = selected ? null : button.dataset.instance;
-      state.focusDetailHeading = !selected && isMobile;
-      state.returnFocusInstance = selected && isMobile ? button.dataset.instance : null;
       state.focused = false;
       state.hovered = button.matches(":hover");
       renderVariant(animationTime);
@@ -259,22 +236,15 @@ function bindTimelineEvents() {
       setAttention("pointerPressed", true);
       if (event.pointerType === "touch") setAttention("touchPaused", true);
     });
-    button.addEventListener("pointerup", (event) => {
+    button.addEventListener("pointerup", () => {
       requestAnimationFrame(() => {
-        setAttention("pointerPressed", false);
-        if (event.pointerType === "touch") setAttention("touchPaused", false);
+        if (state.selected === null) setAttention("pointerPressed", false);
       });
     });
     button.addEventListener("pointercancel", () =>
       setAttention("pointerPressed", false),
     );
-    button.addEventListener("focus", () => {
-      if (state.ignoreNextFocus) {
-        state.ignoreNextFocus = false;
-        return;
-      }
-      setAttention("focused", true);
-    });
+    button.addEventListener("focus", () => setAttention("focused", true));
     button.addEventListener("blur", () => setAttention("focused", false));
   });
   root
@@ -290,11 +260,9 @@ function setAttention(cause, value) {
 
 function closeDetail() {
   const animationTime = motionTime();
-  const isMobile = window.matchMedia("(max-width: 720px)").matches;
-  const selectedInstance = state.selectedInstance;
   state.selected = null;
   state.selectedInstance = null;
-  state.returnFocusInstance = isMobile ? selectedInstance : null;
+  state.touchPaused = false;
   state.pointerPressed = false;
   state.hovered = false;
   state.focused = false;
@@ -311,10 +279,6 @@ function updateState() {
   const current = variants.find((variant) => variant.key === state.variant);
   document.querySelector("#variant-label").textContent = current.label;
   const paused = isPaused();
-  root.firstElementChild?.classList.toggle(
-    "is-motion-consented",
-    state.motionConsent,
-  );
   motionToggle.textContent = state.selected
     ? "Cerrar detalle y reanudar"
     : paused
