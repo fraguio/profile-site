@@ -459,6 +459,7 @@ test("the interactive experience presents the supported trajectory without JavaS
     body,
     /<fieldset[^>]*data-contract="timeline-filters"[^>]*hidden/,
   );
+  assert.doesNotMatch(body, /data-contract="timeline-reader"/);
 });
 
 test("the interactive experience keeps timeline filters unavailable without JavaScript", (t) => {
