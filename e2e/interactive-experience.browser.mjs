@@ -97,7 +97,30 @@ test("la experiencia interactiva conserva el arbol completo al desactivar JavaSc
     page.getByRole("region", { name: "Trayectoria" }).getByRole("article"),
   ).toHaveCount(6);
   await expect(page.locator('[data-contract="timeline-filters"]')).toBeHidden();
+  await expect(page.locator('[data-contract="timeline-reader"]')).toHaveCount(0);
   await expect(page.getByRole("radio")).toHaveCount(0);
+
+  await context.close();
+});
+
+test("el fallback desktop no muestra un lector y conserva todos los detalles", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    viewport: { width: 1440, height: 900 },
+  });
+  const page = await context.newPage();
+
+  await page.goto("http://127.0.0.1:4321/profile-site/");
+
+  await expect(page.locator('[data-contract="timeline-reader"]')).toHaveCount(0);
+  await expect(
+    page.getByRole("article").filter({ hasText: "Arquitecta de software" }),
+  ).toContainText("Redujo el tiempo de entrega.");
+  await expect(
+    page.getByRole("article").filter({ hasText: "Proyecto Vigente" }),
+  ).toContainText("Node.js");
 
   await context.close();
 });
@@ -216,6 +239,91 @@ test.describe("con entrada touch", () => {
     await page.getByRole("radio", { name: "Proyectos" }).tap();
 
     await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(3);
+  });
+});
+
+test.describe("lector lateral desktop", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("abre un solo hito, comunica la seleccion y permite cerrarlo con teclado", async ({
+    page,
+  }) => {
+    await page.goto("./");
+
+    const firstMilestone = page
+      .locator('[data-contract="milestone-trigger"]')
+      .filter({ hasText: "Arquitecta de software" });
+    const secondMilestone = page
+      .locator('[data-contract="milestone-trigger"]')
+      .filter({ hasText: "Proyecto Vigente" });
+    const reader = page.locator('[data-contract="timeline-reader"]');
+    const rail = page.locator('[data-contract="timeline-rail"]');
+    const initialRailBox = await rail.boundingBox();
+
+    await firstMilestone.click();
+
+    await expect(firstMilestone).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]'),
+    ).toHaveCount(1);
+    await expect(reader).toBeVisible();
+    await expect(reader).toContainText("Experiencia profesional");
+    await expect(reader).toContainText("Arquitecta de software");
+    await expect(reader).toContainText("Laboratorio Vigente");
+    await expect(reader).toContainText("enero de 2025 - Actualidad");
+    expect(await rail.boundingBox()).toEqual(initialRailBox);
+
+    await secondMilestone.click();
+
+    await expect(firstMilestone).toHaveAttribute("aria-pressed", "false");
+    await expect(secondMilestone).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]'),
+    ).toHaveCount(1);
+    await expect(reader).toContainText("Proyecto Vigente");
+
+    await secondMilestone.focus();
+    await page.keyboard.press("Space");
+
+    await expect(reader).toBeHidden();
+    await expect(secondMilestone).toHaveAttribute("aria-pressed", "false");
+    expect(await rail.boundingBox()).toEqual(initialRailBox);
+
+    await secondMilestone.focus();
+    await page.keyboard.press("Enter");
+    await expect(reader).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await expect(reader).toBeHidden();
+    await expect(secondMilestone).toBeFocused();
+  });
+
+  test("el cierre y el cambio de filtro limpian el lector antes de anunciar el conjunto", async ({
+    page,
+  }) => {
+    await page.goto("./");
+
+    const milestone = page
+      .locator('[data-contract="milestone-trigger"]')
+      .filter({ hasText: "Arquitecta de software" });
+    const reader = page.locator('[data-contract="timeline-reader"]');
+
+    await milestone.click();
+    await page.getByRole("button", { name: "Cerrar detalle" }).click();
+
+    await expect(reader).toBeHidden();
+    await expect(milestone).toBeFocused();
+
+    await milestone.click();
+    await page.getByRole("radio", { name: "Proyectos" }).click();
+
+    await expect(reader).toBeHidden();
+    await expect(
+      page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]'),
+    ).toHaveCount(0);
+    await expect(page.getByRole("status")).toHaveText(
+      "Se muestran 3 hitos de proyectos.",
+    );
   });
 });
 

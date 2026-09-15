@@ -242,6 +242,23 @@ body {
   box-shadow: 0 1.25rem 3rem rgb(0 0 0 / 15%);
 }
 
+.milestone__trigger {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.milestone__trigger:hover,
+.milestone__trigger[aria-pressed="true"] {
+  color: #f8f6ef;
+  outline: 1px solid #edc767;
+  outline-offset: 0.75rem;
+}
+
 .milestone h3 {
   margin: 0.6rem 0 0;
   font-size: clamp(1.45rem, 2vw, 2rem);
@@ -334,6 +351,12 @@ input:focus-visible {
   outline-offset: 3px;
 }
 
+.milestone__trigger:focus-visible,
+.timeline__reader-close:focus-visible {
+  outline: 3px solid #f8f6ef;
+  outline-offset: 4px;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -381,13 +404,78 @@ input:focus-visible {
 }
 
 @media (min-width: 52.001rem) {
+  .timeline-enhanced .timeline__experience {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(20rem, 1.15fr);
+    gap: 1.5rem;
+    min-height: min(42rem, calc(100dvh - 14rem));
+  }
+
   .timeline-enhanced .timeline__rail {
+    grid-column: 1;
     max-block-size: min(42rem, calc(100dvh - 14rem));
     padding-right: 0.75rem;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-color: #68706c #111617;
     scrollbar-gutter: stable;
+  }
+
+  .timeline__reader {
+    grid-column: 2;
+    min-block-size: min(42rem, calc(100dvh - 14rem));
+    max-block-size: min(42rem, calc(100dvh - 14rem));
+    overflow: hidden;
+    border: 1px solid #3b4541;
+    border-radius: 0.5rem;
+    background: rgb(15 20 20 / 92%);
+    box-shadow: 0 1.25rem 3rem rgb(0 0 0 / 15%);
+  }
+
+  .timeline__reader-content {
+    display: flex;
+    block-size: 100%;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .timeline__reader [data-contract="timeline-reader-header"] {
+    flex: 0 0 auto;
+    padding: clamp(1.25rem, 2.5vw, 2rem);
+    padding-bottom: 1rem;
+  }
+
+  .timeline__reader [data-contract="timeline-reader-body"] {
+    overflow-y: auto;
+    padding: 0 clamp(1.25rem, 2.5vw, 2rem) clamp(1.25rem, 2.5vw, 2rem);
+    overscroll-behavior: contain;
+    scrollbar-color: #68706c #111617;
+  }
+
+  .timeline__reader .milestone__category {
+    margin-top: 1rem;
+  }
+
+  .timeline__reader h3 {
+    margin: 0.6rem 0 0;
+    color: #f8f6ef;
+    font-family: "Source Serif 4 Variable", Georgia, serif;
+    font-size: clamp(1.45rem, 2vw, 2rem);
+    font-weight: 650;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+  }
+
+  .timeline__reader-close {
+    float: right;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid #68706c;
+    border-radius: 0.2rem;
+    background: transparent;
+    color: #f8f6ef;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 750;
   }
 }
 

@@ -114,70 +114,76 @@ const structuredData = JSON.stringify({
             data-contract="timeline-filter-status"
             role="status"
           ></p>
-          <ol
-            aria-label="Hitos de la trayectoria"
-            class="timeline__list timeline__rail"
-            data-contract="timeline-rail"
-            id="timeline-rail"
-          >
-            {timeline.map((milestone) => (
-              <li class="timeline__item" data-timeline-category={milestone.category}>
-                <article class="milestone">
-                  <p class="milestone__category">{milestone.categoryLabel}</p>
-                  {milestone.title && <h3>{milestone.title}</h3>}
-                  {milestone.entity && <p class="milestone__entity">{milestone.entity}</p>}
-                  <p class="milestone__period">
-                    <time datetime={milestone.startDate}>
-                      {milestone.startDateLabel}
-                    </time>
-                    {milestone.endDate ? (
-                      <>
-                        {" - "}
-                        <time datetime={milestone.endDate}>
-                          {milestone.endDateLabel}
+          <div class="timeline__experience">
+            <ol
+              aria-label="Hitos de la trayectoria"
+              class="timeline__list timeline__rail"
+              data-contract="timeline-rail"
+              id="timeline-rail"
+            >
+              {timeline.map((milestone) => (
+                <li class="timeline__item" data-timeline-category={milestone.category}>
+                  <article class="milestone">
+                    <div class="milestone__summary" data-contract="milestone-summary">
+                      <p class="milestone__category">{milestone.categoryLabel}</p>
+                      {milestone.title && <h3>{milestone.title}</h3>}
+                      {milestone.entity && <p class="milestone__entity">{milestone.entity}</p>}
+                      <p class="milestone__period">
+                        <time datetime={milestone.startDate}>
+                          {milestone.startDateLabel}
                         </time>
-                      </>
-                    ) : (
-                      " - Actualidad"
-                    )}
-                  </p>
-                  {milestone.location && <p class="milestone__location">{milestone.location}</p>}
-                  {milestone.description && <p class="milestone__description">{milestone.description}</p>}
-                  {milestone.summary && <p class="milestone__summary">{milestone.summary}</p>}
-                  {milestone.roles.length > 0 && (
-                    <>
-                      <h4>Roles</h4>
-                      <ul class="milestone__roles">
-                        {milestone.roles.map((role) => (
-                          <li>{role}</li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                  {milestone.highlights.length > 0 && (
-                    <>
-                      <h4>Hitos destacados</h4>
-                      <ul class="milestone__highlights">
-                        {milestone.highlights.map((highlight) => (
-                          <li>{highlight}</li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                  {milestone.skills.length > 0 && (
-                    <>
-                      <h4>Habilidades asociadas</h4>
-                      <ul class="milestone__skills">
-                        {milestone.skills.map((skill) => (
-                          <li>{skill}</li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </article>
-              </li>
-            ))}
-          </ol>
+                        {milestone.endDate ? (
+                          <>
+                            {" - "}
+                            <time datetime={milestone.endDate}>
+                              {milestone.endDateLabel}
+                            </time>
+                          </>
+                        ) : (
+                          " - Actualidad"
+                        )}
+                      </p>
+                    </div>
+                    <div class="milestone__detail" data-contract="milestone-detail">
+                      {milestone.location && <p class="milestone__location">{milestone.location}</p>}
+                      {milestone.description && <p class="milestone__description">{milestone.description}</p>}
+                      {milestone.summary && <p class="milestone__summary">{milestone.summary}</p>}
+                      {milestone.roles.length > 0 && (
+                        <>
+                          <h4>Roles</h4>
+                          <ul class="milestone__roles">
+                            {milestone.roles.map((role) => (
+                              <li>{role}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                      {milestone.highlights.length > 0 && (
+                        <>
+                          <h4>Hitos destacados</h4>
+                          <ul class="milestone__highlights">
+                            {milestone.highlights.map((highlight) => (
+                              <li>{highlight}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                      {milestone.skills.length > 0 && (
+                        <>
+                          <h4>Habilidades asociadas</h4>
+                          <ul class="milestone__skills">
+                            {milestone.skills.map((skill) => (
+                              <li>{skill}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </div>
+                  </article>
+                </li>
+              ))}
+            </ol>
+          </div>
         </section>
       )}
     </main>
@@ -194,11 +200,123 @@ const structuredData = JSON.stringify({
       const milestones = [
         ...document.querySelectorAll<HTMLElement>("[data-timeline-category]"),
       ];
+      const summaries = [
+        ...document.querySelectorAll<HTMLElement>(
+          '[data-contract="milestone-summary"]',
+        ),
+      ];
 
-      if (filters && status && rail && milestones.length > 0) {
+      if (filters && status && rail && milestones.length > 0 && summaries.length > 0) {
         document.documentElement.classList.add("timeline-enhanced");
         filters.hidden = false;
         rail.tabIndex = 0;
+        let closeDetail: (restoreFocus?: boolean) => void = () => {};
+
+        if (window.matchMedia("(min-width: 52.001rem)").matches) {
+          const reader = document.createElement("aside");
+          const readerArticle = document.createElement("article");
+          const readerHeader = document.createElement("header");
+          const readerBody = document.createElement("div");
+          const summariesByTrigger = new Map<HTMLButtonElement, HTMLElement>();
+          let selectedTrigger: HTMLButtonElement | undefined;
+
+          reader.className = "timeline__reader";
+          reader.dataset.contract = "timeline-reader";
+          reader.setAttribute("aria-label", "Detalle del hito");
+          reader.hidden = true;
+          readerArticle.className = "timeline__reader-content";
+          readerHeader.dataset.contract = "timeline-reader-header";
+          readerBody.dataset.contract = "timeline-reader-body";
+          readerArticle.append(readerHeader, readerBody);
+          reader.append(readerArticle);
+          rail.parentElement?.append(reader);
+
+          closeDetail = (restoreFocus = false) => {
+            if (!selectedTrigger) {
+              return;
+            }
+
+            selectedTrigger.setAttribute("aria-pressed", "false");
+            reader.hidden = true;
+            readerHeader.replaceChildren();
+            readerBody.replaceChildren();
+            const trigger = selectedTrigger;
+            selectedTrigger = undefined;
+
+            if (restoreFocus) {
+              trigger.focus();
+            }
+          };
+
+          function detailFor(summary: HTMLElement) {
+            return summary
+              .closest<HTMLElement>("[data-timeline-category]")
+              ?.querySelector<HTMLElement>('[data-contract="milestone-detail"]');
+          }
+
+          function clonedChildren(element: HTMLElement) {
+            return [...element.children].map((child) => child.cloneNode(true));
+          }
+
+          function openDetail(trigger: HTMLButtonElement) {
+            const summary = summariesByTrigger.get(trigger);
+            const detail = summary && detailFor(summary);
+
+            if (!summary || !detail) {
+              return;
+            }
+
+            closeDetail();
+            const closeButton = document.createElement("button");
+
+            closeButton.type = "button";
+            closeButton.className = "timeline__reader-close";
+            closeButton.textContent = "Cerrar detalle";
+            closeButton.addEventListener("click", () => closeDetail(true));
+            readerHeader.append(
+              closeButton,
+              ...clonedChildren(summary),
+            );
+            readerBody.append(...clonedChildren(detail));
+            trigger.setAttribute("aria-pressed", "true");
+            selectedTrigger = trigger;
+            reader.hidden = false;
+          }
+
+          for (const summary of summaries) {
+            const detail = detailFor(summary);
+
+            if (!detail) {
+              continue;
+            }
+
+            const trigger = document.createElement("button");
+
+            trigger.type = "button";
+            trigger.className = "milestone__trigger";
+            trigger.dataset.contract = "milestone-trigger";
+            trigger.setAttribute("aria-pressed", "false");
+            trigger.append(...clonedChildren(summary));
+            summariesByTrigger.set(trigger, summary);
+            summary.before(trigger);
+            summary.hidden = true;
+            detail.hidden = true;
+            trigger.addEventListener("click", () => {
+              if (selectedTrigger === trigger) {
+                closeDetail();
+              } else {
+                openDetail(trigger);
+              }
+            });
+          }
+
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && selectedTrigger) {
+              event.preventDefault();
+              closeDetail(true);
+            }
+          });
+        }
 
         filters.addEventListener("change", (event) => {
           const selectedFilter = event.target;
@@ -210,6 +328,7 @@ const structuredData = JSON.stringify({
             return;
           }
 
+          closeDetail();
           const visibleMilestones = milestones.filter((milestone) => {
             const matchesFilter =
               selectedFilter.value === "all" ||
@@ -223,14 +342,25 @@ const structuredData = JSON.stringify({
             visibleMilestones.length === 1 ? "hito" : "hitos";
           const verb = visibleMilestones.length === 1 ? "muestra" : "muestran";
           const filterLabel = selectedFilter.dataset.timelineFilterLabel?.toLowerCase();
+          const announcement = `Se ${verb} ${visibleMilestones.length} ${milestoneLabel} de ${filterLabel}.`;
 
-          status.textContent = `Se ${verb} ${visibleMilestones.length} ${milestoneLabel} de ${filterLabel}.`;
           rail.scrollTo({
             behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
               ? "auto"
               : "smooth",
             top: 0,
           });
+
+          function announceWhenRailResets() {
+            if (rail.scrollTop <= 1) {
+              status.textContent = announcement;
+              return;
+            }
+
+            requestAnimationFrame(announceWhenRailResets);
+          }
+
+          announceWhenRailResets();
         });
       }
     </script>

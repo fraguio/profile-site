@@ -1,0 +1,17 @@
+{
+  "basics": {
+    "name": "Alicia Ejemplo",
+    "label": "Especialista en sistemas ficticios",
+    "email": "alicia.ejemplo@example.test",
+    "summary": "Construye sistemas comprensibles a partir de hechos verificables."
+  },
+  "work": [
+    {
+      "name": "Laboratorio Ficticio",
+      "position": "Hito con contenido largo",
+      "startDate": "2025-01",
+      "summary": "Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera.",
+      "skills": ["TypeScript", "Astro"]
+    }
+  ]
+}
