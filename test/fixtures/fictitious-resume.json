@@ -3,6 +3,114 @@
     "name": "Alicia Ejemplo",
     "label": "Especialista en sistemas ficticios",
     "email": "alicia.ejemplo@example.test",
-    "summary": "Construye sistemas comprensibles a partir de hechos verificables."
-  }
+    "summary": "Construye sistemas comprensibles a partir de hechos verificables.",
+    "url": "https://alicia.example.test",
+    "phone": "+34 600 000 000",
+    "image": "https://alicia.example.test/retrato.jpg",
+    "location": {
+      "address": "Calle Privada 1",
+      "postalCode": "28000",
+      "city": "Madrid",
+      "region": "Comunidad de Madrid",
+      "countryCode": "ES"
+    },
+    "profiles": [
+      {
+        "network": "LinkedIn",
+        "username": "alicia-ejemplo",
+        "url": "https://www.linkedin.com/in/alicia-ejemplo"
+      },
+      {
+        "network": "GitHub",
+        "username": "alicia-ejemplo",
+        "url": "https://github.com/alicia-ejemplo"
+      }
+    ]
+  },
+  "work": [
+    {
+      "name": "Laboratorio Vigente",
+      "position": "Arquitecta de software",
+      "location": "Madrid",
+      "url": "https://laboratorio.example.test",
+      "startDate": "2025-01",
+      "summary": "Dirige la evolución de productos con equipos multidisciplinares.",
+      "highlights": [
+        "Redujo el tiempo de entrega.",
+        "Redujo el tiempo de entrega."
+      ],
+      "skills": [
+        "TypeScript",
+        "Astro",
+        "Astro"
+      ]
+    },
+    {
+      "name": "Empresa de Origen",
+      "position": "Ingeniera de plataforma",
+      "startDate": "2021-01-01",
+      "endDate": "2022-12-31",
+      "summary": "Mantuvo servicios críticos."
+    }
+  ],
+  "education": [
+    {
+      "institution": "Instituto Ficticio",
+      "area": "Ingeniería de software",
+      "studyType": "Grado",
+      "startDate": "2019-09",
+      "endDate": "2023-06",
+      "courses": [
+        "Arquitectura de sistemas"
+      ],
+      "skills": [
+        "Diseño de sistemas"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Proyecto Vigente",
+      "entity": "Laboratorio Vigente",
+      "description": "Explora una herramienta para equipos distribuidos.",
+      "startDate": "2024",
+      "roles": [
+        "Responsable técnica"
+      ],
+      "highlights": [
+        "Publicó un prototipo funcional."
+      ],
+      "keywords": [
+        "Node.js",
+        "Node.js"
+      ]
+    },
+    {
+      "name": "Proyecto de Empate",
+      "entity": "Empresa de Origen",
+      "description": "Amplió la plataforma existente.",
+      "startDate": "2021-01-01",
+      "endDate": "2022-12-31",
+      "keywords": [
+        "Observabilidad"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Catálogo global oculto",
+      "keywords": [
+        "No debe aparecer"
+      ]
+    }
+  ],
+  "meta": {
+    "canonical": "https://metadatos.example.test/privados"
+  },
+  "volunteer": [
+    {
+      "organization": "Sección no soportada",
+      "position": "No debe aparecer"
+    }
+  ]
 }
