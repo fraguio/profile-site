@@ -96,9 +96,127 @@ test("la experiencia interactiva conserva el arbol completo al desactivar JavaSc
   await expect(
     page.getByRole("region", { name: "Trayectoria" }).getByRole("article"),
   ).toHaveCount(6);
-  await expect(page.locator("body script")).toHaveCount(0);
+  await expect(page.locator('[data-contract="timeline-filters"]')).toBeHidden();
+  await expect(page.getByRole("radio")).toHaveCount(0);
 
   await context.close();
+});
+
+test("el filtro inicial muestra la trayectoria combinada", async ({ page }) => {
+  await page.goto("./");
+
+  const filters = page.getByRole("group", { name: "Filtrar trayectoria" });
+
+  await expect(filters).toBeVisible();
+  await expect(
+    page.getByRole("radio", { name: "Toda la trayectoria" }),
+  ).toBeChecked();
+  await expect(page.getByRole("radio")).toHaveCount(4);
+  await expect(page.locator("[data-timeline-category]")).toHaveCount(6);
+  await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(6);
+});
+
+test("los filtros muestran cada categoria y anuncian el resultado sin persistirlo", async ({
+  page,
+}) => {
+  await page.goto("./");
+
+  const status = page.getByRole("status");
+  const timeline = page.getByRole("region", { name: "Trayectoria" });
+  const initialUrl = page.url();
+  const initialBrowserState = await page.evaluate(() => ({
+    historyLength: window.history.length,
+    localStorage: Object.entries(window.localStorage),
+    sessionStorage: Object.entries(window.sessionStorage),
+  }));
+
+  for (const [filterValue, label, count, announcement] of [
+    [
+      "work",
+      "Experiencia profesional",
+      2,
+      "Se muestran 2 hitos de experiencia profesional.",
+    ],
+    ["projects", "Proyectos", 3, "Se muestran 3 hitos de proyectos."],
+    ["education", "Formación", 1, "Se muestra 1 hito de formación."],
+    ["all", "Toda la trayectoria", 6, "Se muestran 6 hitos de toda la trayectoria."],
+  ]) {
+    await page.getByRole("radio", { name: label }).click();
+
+    await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(
+      count,
+    );
+    await expect(timeline.getByRole("article")).toHaveCount(count);
+    if (filterValue !== "all") {
+      await expect(
+        timeline.locator(`[data-timeline-category="${filterValue}"]:not([hidden])`),
+      ).toHaveCount(count);
+    }
+    await expect(status).toHaveText(announcement);
+    await expect(page).toHaveURL(initialUrl);
+    expect(
+      await page.evaluate(() => ({
+        historyLength: window.history.length,
+        localStorage: Object.entries(window.localStorage),
+        sessionStorage: Object.entries(window.sessionStorage),
+      })),
+    ).toEqual(initialBrowserState);
+  }
+
+  await page.reload();
+
+  await expect(
+    page.getByRole("radio", { name: "Toda la trayectoria" }),
+  ).toBeChecked();
+  await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(6);
+});
+
+test("el teclado cambia el filtro y reinicia el carril en el hito mas reciente", async ({
+  page,
+}) => {
+  await page.goto("./");
+
+  const allFilter = page.getByRole("radio", { name: "Toda la trayectoria" });
+  const workFilter = page.getByRole("radio", {
+    name: "Experiencia profesional",
+  });
+  const timeline = page.getByRole("region", { name: "Trayectoria" });
+  const rail = page.locator('[data-contract="timeline-rail"]');
+  const initialScrollTop = await page.evaluate(() => window.scrollY);
+
+  await rail.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+  expect(await rail.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+
+  await allFilter.focus();
+  await page.keyboard.press("ArrowRight");
+
+  await expect(workFilter).toBeChecked();
+  await expect(workFilter).toBeFocused();
+  await expect(workFilter).toBeInViewport();
+  await expect(page.getByRole("status")).toHaveText(
+    "Se muestran 2 hitos de experiencia profesional.",
+  );
+  await expect(timeline.getByRole("article")).toHaveCount(2);
+  await expect(timeline.locator("[data-timeline-category]").first()).toHaveAttribute(
+    "data-timeline-category",
+    "work",
+  );
+  expect(await page.evaluate(() => window.scrollY)).toBe(initialScrollTop);
+  await expect
+    .poll(() => rail.evaluate((element) => element.scrollTop))
+    .toBe(0);
+});
+
+test.describe("con entrada touch", () => {
+  test.use({ hasTouch: true });
+
+  test("el filtro responde al toque", async ({ page }) => {
+    await page.goto("./");
+
+    await page.getByRole("radio", { name: "Proyectos" }).tap();
+
+    await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(3);
+  });
 });
 
 test("la experiencia interactiva no contiene vulneraciones Axe de nivel AA", async ({
