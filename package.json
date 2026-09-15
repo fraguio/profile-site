@@ -1,0 +1,20 @@
+{
+  "name": "profile-site",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "packageManager": "pnpm@11.5.2",
+  "scripts": {
+    "build": "astro build",
+    "check": "astro check",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@types/node": "^24.10.1",
+    "astro": "^5.17.1",
+    "typescript": "^5.9.3"
+  }
+}
