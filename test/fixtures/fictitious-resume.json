@@ -1,0 +1,8 @@
+{
+  "basics": {
+    "name": "Ada Lovelace",
+    "label": "Analytical Engineer",
+    "email": "ada.lovelace@example.test",
+    "summary": "Construye sistemas comprensibles a partir de hechos verificables."
+  }
+}

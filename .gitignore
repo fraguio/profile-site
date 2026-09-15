@@ -1,0 +1,32 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Outputs y caches de Astro y TypeScript
+dist/
+.astro/
+*.tsbuildinfo
+
+# Artefactos de pruebas
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Resultados locales de rendimiento
+.lighthouseci/
+
+# Variables de entorno y secrets locales
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs
+*.log
+
+# Archivos locales del sistema operativo y del IDE
+.DS_Store
+Thumbs.db
+.idea/
