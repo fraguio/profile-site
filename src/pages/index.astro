@@ -5,6 +5,7 @@ import {
   resume,
   timeline,
 } from "../lib/resume";
+import PageMetadata from "../components/PageMetadata.astro";
 
 const readPath = `${import.meta.env.BASE_URL}read/`;
 const location = formattedLocation;
@@ -43,15 +44,7 @@ const structuredData = JSON.stringify({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <link rel="canonical" href={canonicalUrl} />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:type" content="profile" />
-    <meta property="og:locale" content="es_ES" />
-    <script is:inline type="application/ld+json" set:html={structuredData}></script>
+    <PageMetadata {canonicalUrl} {description} {structuredData} {title} />
   </head>
   <body>
     <main>

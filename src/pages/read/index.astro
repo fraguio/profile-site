@@ -6,6 +6,7 @@ import {
   timeline,
   type TimelineCategory,
 } from "../../lib/resume";
+import PageMetadata from "../../components/PageMetadata.astro";
 
 const interactiveExperiencePath = import.meta.env.BASE_URL;
 const location = formattedLocation;
@@ -38,14 +39,7 @@ const sections = sectionDefinitions.map((section) => ({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <link rel="canonical" href={canonicalUrl} />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:type" content="profile" />
-    <meta property="og:locale" content="es_ES" />
+    <PageMetadata {canonicalUrl} {description} {title} />
     <style is:global>
       body {
         color: #171717;

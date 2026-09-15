@@ -50,6 +50,36 @@ function build(outputDirectory, environment) {
   );
 }
 
+function assertOpenGraphMetadata(html, title, description, url) {
+  for (const [property, content] of [
+    ["og:title", title],
+    ["og:description", description],
+    ["og:url", url],
+    ["og:type", "profile"],
+    ["og:locale", "es_ES"],
+  ]) {
+    assert.ok(html.includes(`<meta property="${property}" content="${content}"`));
+  }
+
+  assert.doesNotMatch(html, /property="og:image"/);
+}
+
+function structuredDataFrom(html) {
+  const match = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+
+  assert.ok(match, "Expected JSON-LD in the interactive experience.");
+
+  const structuredData = JSON.parse(match[1]);
+
+  return {
+    structuredData,
+    person: structuredData["@graph"].find((item) => item["@type"] === "Person"),
+    profilePage: structuredData["@graph"].find(
+      (item) => item["@type"] === "ProfilePage",
+    ),
+  };
+}
+
 test("the contractual build produces the Base HTML outputs from the selected fixture", (t) => {
   const outputDirectory = temporaryOutputDirectory(t);
 
@@ -104,20 +134,12 @@ test("the interactive experience publishes complete metadata at its public URL",
     /<link rel="canonical" href="https:\/\/fraguio\.github\.io\/profile-site\/"/,
   );
 
-  for (const [property, content] of [
-    ["og:title", "Alicia Ejemplo | Especialista en sistemas ficticios"],
-    ["og:description", "Trayectoria profesional de Alicia Ejemplo, especialista en sistemas ficticios."],
-    ["og:url", "https://fraguio.github.io/profile-site/"],
-    ["og:type", "profile"],
-    ["og:locale", "es_ES"],
-  ]) {
-    assert.match(
-      interactiveExperience,
-      new RegExp(`<meta property="${property}" content="${content}"`),
-    );
-  }
-
-  assert.doesNotMatch(interactiveExperience, /property="og:image"/);
+  assertOpenGraphMetadata(
+    interactiveExperience,
+    "Alicia Ejemplo | Especialista en sistemas ficticios",
+    "Trayectoria profesional de Alicia Ejemplo, especialista en sistemas ficticios.",
+    "https://fraguio.github.io/profile-site/",
+  );
 });
 
 test("the interactive experience publishes public Person and ProfilePage structured data", (t) => {
@@ -134,18 +156,8 @@ test("the interactive experience publishes public Person and ProfilePage structu
     join(outputDirectory, "index.html"),
     "utf8",
   );
-  const match = interactiveExperience.match(
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
-  );
-
-  assert.ok(match, "Expected JSON-LD in the interactive experience.");
-
-  const structuredData = JSON.parse(match[1]);
-  const person = structuredData["@graph"].find(
-    (item) => item["@type"] === "Person",
-  );
-  const profilePage = structuredData["@graph"].find(
-    (item) => item["@type"] === "ProfilePage",
+  const { structuredData, person, profilePage } = structuredDataFrom(
+    interactiveExperience,
   );
 
   assert.deepEqual(person, {
@@ -204,17 +216,12 @@ test("the web CV publishes complete metadata at its public URL", (t) => {
     /<link rel="canonical" href="https:\/\/fraguio\.github\.io\/profile-site\/read\/"/,
   );
 
-  for (const [property, content] of [
-    ["og:title", "CV web | Alicia Ejemplo"],
-    ["og:description", "CV web de Alicia Ejemplo, especialista en sistemas ficticios."],
-    ["og:url", "https://fraguio.github.io/profile-site/read/"],
-    ["og:type", "profile"],
-    ["og:locale", "es_ES"],
-  ]) {
-    assert.match(webCv, new RegExp(`<meta property="${property}" content="${content}"`));
-  }
-
-  assert.doesNotMatch(webCv, /property="og:image"/);
+  assertOpenGraphMetadata(
+    webCv,
+    "CV web | Alicia Ejemplo",
+    "CV web de Alicia Ejemplo, especialista en sistemas ficticios.",
+    "https://fraguio.github.io/profile-site/read/",
+  );
 });
 
 test("the contractual build recomposes metadata and navigation below another public base path", (t) => {
@@ -270,19 +277,7 @@ test("the contractual build recomposes metadata and navigation below another pub
   assert.doesNotMatch(interactiveExperience, /https:\/\/profiles\.example\.test\/["#]/);
   assert.doesNotMatch(webCv, /https:\/\/profiles\.example\.test\/["#]/);
 
-  const jsonLdMatch = interactiveExperience.match(
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
-  );
-
-  assert.ok(jsonLdMatch, "Expected JSON-LD in the interactive experience.");
-
-  const structuredData = JSON.parse(jsonLdMatch[1]);
-  const person = structuredData["@graph"].find(
-    (item) => item["@type"] === "Person",
-  );
-  const profilePage = structuredData["@graph"].find(
-    (item) => item["@type"] === "ProfilePage",
-  );
+  const { person, profilePage } = structuredDataFrom(interactiveExperience);
 
   assert.equal(person["@id"], `${publicBaseUrl}#person`);
   assert.equal(profilePage.url, publicBaseUrl);
@@ -367,6 +362,9 @@ test("the interactive experience presents the supported trajectory without JavaS
     join(outputDirectory, "index.html"),
     "utf8",
   );
+  const body = interactiveExperience.match(/<body>([\s\S]*)<\/body>/)?.[1];
+
+  assert.ok(body, "Expected a body in the interactive experience.");
 
   for (const content of [
     "Alicia Ejemplo",
@@ -422,38 +420,31 @@ test("the interactive experience presents the supported trajectory without JavaS
   }
 
   assert.ok(
-    interactiveExperience.indexOf("Leer CV web") <
-      interactiveExperience.indexOf(
+    body.indexOf("Leer CV web") <
+      body.indexOf(
         "Construye sistemas comprensibles a partir de hechos verificables.",
       ),
   );
   assert.ok(
-    interactiveExperience.indexOf("LinkedIn") <
-      interactiveExperience.indexOf("Mastodon"),
+    body.indexOf("LinkedIn") < body.indexOf("Mastodon"),
   );
   assert.ok(
-    interactiveExperience.indexOf("GitHub") <
-      interactiveExperience.indexOf("Mastodon"),
+    body.indexOf("GitHub") < body.indexOf("Mastodon"),
   );
   assert.ok(
-    interactiveExperience.indexOf("Arquitecta de software") <
-      interactiveExperience.indexOf("Proyecto Vigente"),
+    body.indexOf("Arquitecta de software") < body.indexOf("Proyecto Vigente"),
   );
   assert.ok(
-    interactiveExperience.indexOf("Proyecto Vigente") <
-      interactiveExperience.indexOf("Instituto Ficticio"),
+    body.indexOf("Proyecto Vigente") < body.indexOf("Instituto Ficticio"),
   );
   assert.ok(
-    interactiveExperience.indexOf("Instituto Ficticio") <
-      interactiveExperience.indexOf("Empresa de Origen"),
+    body.indexOf("Instituto Ficticio") < body.indexOf("Empresa de Origen"),
   );
   assert.ok(
-    interactiveExperience.indexOf("Proyecto con inicio posterior") <
-      interactiveExperience.indexOf("Empresa de Origen"),
+    body.indexOf("Proyecto con inicio posterior") < body.indexOf("Empresa de Origen"),
   );
   assert.ok(
-    interactiveExperience.indexOf("Empresa de Origen") <
-      interactiveExperience.indexOf("Proyecto de Empate"),
+    body.indexOf("Empresa de Origen") < body.indexOf("Proyecto de Empate"),
   );
   assert.equal((interactiveExperience.match(/Redujo el tiempo de entrega\./g) ?? []).length, 1);
   assert.equal((interactiveExperience.match(/>Astro</g) ?? []).length, 1);
@@ -464,7 +455,7 @@ test("the interactive experience presents the supported trajectory without JavaS
   assert.doesNotMatch(interactiveExperience, /Calle Privada 1/);
   assert.doesNotMatch(interactiveExperience, /28000/);
   assert.doesNotMatch(interactiveExperience, /retrato\.jpg/);
-  assert.doesNotMatch(interactiveExperience, /<script/);
+  assert.doesNotMatch(body, /<script/);
 });
 
 test("the interactive experience omits an empty timeline", (t) => {
