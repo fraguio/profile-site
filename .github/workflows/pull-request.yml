@@ -33,3 +33,4 @@ jobs:
       - run: pnpm test:browser
       - run: pnpm build
       - run: pnpm measure:performance
+      - run: cat "$GITHUB_STEP_SUMMARY"
