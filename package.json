@@ -8,6 +8,7 @@
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "build": "astro build",
+    "acquire:profile-data": "node scripts/acquire-profile-data.mjs",
     "check": "astro check",
     "test": "node --test && pnpm test:browser",
     "test:browser": "playwright test && playwright test --config=playwright-empty-category.config.mjs && playwright test --config=playwright-long-detail.config.mjs && playwright test --config=playwright-mobile-detail.config.mjs",
