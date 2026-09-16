@@ -127,7 +127,10 @@ test("la baseline ejecuta el build contractual con su fixture y perfil versionad
 
   assert.equal(buildResult.status, 0, `${buildResult.stdout}\n${buildResult.stderr}`);
   assert.ok(summaryPath, "GITHUB_STEP_SUMMARY is required for the real baseline.");
-  const result = measure(outputDirectory, summaryPath);
+  const result = measure(outputDirectory, summaryPath, {
+    FAKE_LIGHTHOUSE_MOBILE_SCORE: "0.97",
+    FAKE_LIGHTHOUSE_DESKTOP_SCORE: "0.99",
+  });
 
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   const summary = readFileSync(summaryPath, "utf8");

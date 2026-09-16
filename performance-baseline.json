@@ -2,8 +2,8 @@
   "fixture": "test/fixtures/fictitious-resume.json",
   "mobileProfile": "lighthouse-mobile-profile.json",
   "observed": {
-    "mobilePerformance": 92,
-    "desktopPerformance": 95,
+    "mobilePerformance": 97,
+    "desktopPerformance": 99,
     "initialJavaScript": 8100,
     "javascriptBundles": 78801,
     "fonts": 253492,

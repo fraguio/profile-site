@@ -35,7 +35,7 @@ if (
         performance: {
           score: profile === "mobile"
             ? Number(process.env.FAKE_LIGHTHOUSE_MOBILE_SCORE ?? 0.9 + mobileRun / 100)
-            : 0.95,
+            : Number(process.env.FAKE_LIGHTHOUSE_DESKTOP_SCORE ?? 0.95),
         },
       },
       finalUrl: url,
