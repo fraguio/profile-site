@@ -35,6 +35,7 @@ function measure(outputDirectory, summaryPath, environment = {}) {
     env: {
       ...process.env,
       GITHUB_STEP_SUMMARY: summaryPath,
+      FAKE_LIGHTHOUSE_EXPECT_HEADLESS: "true",
       PERFORMANCE_LIGHTHOUSE_RUNNER: fakeLighthouseRunner,
       PERFORMANCE_OUTPUT_DIRECTORY: outputDirectory,
       ...environment,

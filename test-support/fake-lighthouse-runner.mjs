@@ -7,7 +7,12 @@ const outputPath = arguments_
 const profile = arguments_.includes("--preset=desktop") ? "desktop" : "mobile";
 const mobileRun = Number(/mobile-(\d+)\.json$/.exec(outputPath)?.[1]);
 
-if (process.env.FAKE_LIGHTHOUSE_FAILURE === "true") {
+if (
+  process.env.FAKE_LIGHTHOUSE_EXPECT_HEADLESS === "true" &&
+  !arguments_.includes("--chrome-flags=--headless=new")
+) {
+  process.exitCode = 1;
+} else if (process.env.FAKE_LIGHTHOUSE_FAILURE === "true") {
   process.exitCode = 1;
 } else {
   const html = await (await fetch(url)).text();

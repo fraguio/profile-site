@@ -130,6 +130,7 @@ function runLighthouse(url, reportPath, profileArguments) {
     "--output=json",
     `--output-path=${reportPath}`,
     `--chrome-path=${chromePath}`,
+    "--chrome-flags=--headless=new",
     ...profileArguments,
   ];
 
