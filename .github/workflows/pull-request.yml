@@ -32,5 +32,6 @@ jobs:
           PERFORMANCE_REAL_BASELINE: true
       - run: pnpm test:browser
       - run: pnpm build
-      - run: pnpm measure:performance
-      - run: cat "$GITHUB_STEP_SUMMARY"
+      - run: |
+          pnpm measure:performance
+          cat "$GITHUB_STEP_SUMMARY"
