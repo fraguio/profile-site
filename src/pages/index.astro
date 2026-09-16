@@ -188,6 +188,14 @@ const structuredData = JSON.stringify({
       )}
     </main>
     <script>
+      let gsap: typeof import("gsap").gsap | undefined;
+
+      try {
+        ({ gsap } = await import("gsap"));
+      } catch {
+        // El HTML accesible sigue siendo util si no carga la mejora opcional.
+      }
+
       const filters = document.querySelector<HTMLFieldSetElement>(
         '[data-contract="timeline-filters"]',
       );
@@ -206,11 +214,171 @@ const structuredData = JSON.stringify({
         ),
       ];
 
-      if (filters && status && rail && milestones.length > 0 && summaries.length > 0) {
+      if (filters && status && rail && milestones.length > 0 && summaries.length > 0 && gsap) {
         document.documentElement.classList.add("timeline-enhanced");
         filters.hidden = false;
         rail.tabIndex = 0;
+        const motionControl = document.createElement("button");
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const transientPauses = new Set<string>();
+        const programmaticFocusReturns = new WeakSet<HTMLElement>();
+        let manuallyPaused = reducedMotion.matches;
+        let motion:
+          | { kill(): void; pause(): void; play(): void }
+          | undefined;
+        let isResetting = false;
         let closeDetail: (restoreFocus?: boolean) => void = () => {};
+        let selectedTrigger: HTMLButtonElement | undefined;
+
+        motionControl.type = "button";
+        motionControl.className = "timeline__motion-control";
+        motionControl.dataset.contract = "timeline-motion-control";
+        filters.after(motionControl);
+
+        function maximumScrollTop() {
+          return Math.max(0, rail.scrollHeight - rail.clientHeight);
+        }
+
+        function restartMotion() {
+          motion?.kill();
+          const distance = maximumScrollTop();
+
+          if (distance === 0) {
+            motion = undefined;
+            return;
+          }
+
+          motion = gsap.to(rail, {
+            duration: Math.max(6, distance / 120),
+            ease: "none",
+            repeat: -1,
+            scrollTop: distance,
+            onRepeat: () => {
+              rail.scrollTop = 0;
+            },
+          });
+        }
+
+        function synchronizeMotion() {
+          const isPaused = manuallyPaused || transientPauses.size > 0;
+
+          rail.dataset.timelineMotion = isPaused ? "paused" : "running";
+          motionControl.textContent = selectedTrigger
+            ? "Cerrar detalle y reanudar"
+            : isPaused
+              ? "Reanudar movimiento"
+              : "Pausar movimiento";
+
+          if (isPaused) {
+            motion?.pause();
+          } else if (isResetting) {
+            return;
+          } else if (motion) {
+            motion.play();
+          } else {
+            restartMotion();
+          }
+        }
+
+        function setTransientPause(reason: string, paused: boolean) {
+          if (paused) {
+            transientPauses.add(reason);
+          } else {
+            transientPauses.delete(reason);
+          }
+          synchronizeMotion();
+        }
+
+        rail.addEventListener("pointerenter", () => setTransientPause("hover", true));
+        rail.addEventListener("pointerleave", () => setTransientPause("hover", false));
+        rail.addEventListener("touchstart", () => setTransientPause("touch", true), {
+          passive: true,
+        });
+        rail.addEventListener("touchend", () => setTransientPause("touch", false), {
+          passive: true,
+        });
+        rail.addEventListener("touchcancel", () => setTransientPause("touch", false), {
+          passive: true,
+        });
+        rail.addEventListener("focusin", (event) => {
+          const target = event.target;
+
+          if (
+            target instanceof HTMLElement &&
+            programmaticFocusReturns.has(target)
+          ) {
+            programmaticFocusReturns.delete(target);
+            return;
+          }
+
+          setTransientPause("focus", true);
+        });
+        rail.addEventListener("focusout", (event) => {
+          if (event.target instanceof HTMLElement) {
+            delete event.target.dataset.timelineSuppressFocusOutline;
+          }
+
+          if (!(event.relatedTarget instanceof Node) || !rail.contains(event.relatedTarget)) {
+            setTransientPause("focus", false);
+          }
+        });
+        function synchronizeSelectionPause() {
+          const selection = document.getSelection();
+          const anchor = selection?.anchorNode;
+          const focus = selection?.focusNode;
+          const hasRailSelection =
+            !selection?.isCollapsed &&
+            ((anchor && rail.contains(anchor)) || (focus && rail.contains(focus)));
+
+          setTransientPause("selection", hasRailSelection);
+        }
+
+        document.addEventListener("selectionchange", synchronizeSelectionPause);
+
+        function resetForFilter() {
+          transientPauses.clear();
+          if (rail.matches(":hover")) {
+            transientPauses.add("hover");
+          }
+          if (rail.contains(document.activeElement)) {
+            transientPauses.add("focus");
+          }
+          synchronizeSelectionPause();
+          isResetting = true;
+          motion?.kill();
+          motion = undefined;
+          rail.scrollTo({
+            behavior: reducedMotion.matches ? "auto" : "smooth",
+            top: 0,
+          });
+          window.setTimeout(
+            () => {
+              rail.scrollTop = 0;
+              isResetting = false;
+              restartMotion();
+              synchronizeMotion();
+            },
+            reducedMotion.matches ? 0 : 300,
+          );
+          synchronizeMotion();
+        }
+
+        motionControl.addEventListener("click", () => {
+          const closesDetail = Boolean(selectedTrigger);
+          const wasPaused = manuallyPaused || transientPauses.size > 0;
+
+          if (closesDetail) {
+            closeDetail(true);
+          }
+
+          transientPauses.clear();
+          manuallyPaused = closesDetail
+            ? false
+            : wasPaused
+              ? false
+              : true;
+          synchronizeMotion();
+        });
 
         if (window.matchMedia("(min-width: 52.001rem)").matches) {
           const reader = document.createElement("aside");
@@ -218,8 +386,6 @@ const structuredData = JSON.stringify({
           const readerHeader = document.createElement("header");
           const readerBody = document.createElement("div");
           const summariesByTrigger = new Map<HTMLButtonElement, HTMLElement>();
-          let selectedTrigger: HTMLButtonElement | undefined;
-
           reader.className = "timeline__reader";
           reader.dataset.contract = "timeline-reader";
           reader.setAttribute("aria-label", "Detalle del hito");
@@ -242,8 +408,12 @@ const structuredData = JSON.stringify({
             readerBody.replaceChildren();
             const trigger = selectedTrigger;
             selectedTrigger = undefined;
+            setTransientPause("detail", false);
+            synchronizeMotion();
 
             if (restoreFocus) {
+              trigger.dataset.timelineSuppressFocusOutline = "true";
+              programmaticFocusReturns.add(trigger);
               trigger.focus();
             }
           };
@@ -281,6 +451,7 @@ const structuredData = JSON.stringify({
             trigger.setAttribute("aria-pressed", "true");
             selectedTrigger = trigger;
             reader.hidden = false;
+            setTransientPause("detail", true);
           }
 
           for (const summary of summaries) {
@@ -314,6 +485,9 @@ const structuredData = JSON.stringify({
             if (event.key === "Escape" && selectedTrigger) {
               event.preventDefault();
               closeDetail(true);
+              transientPauses.clear();
+              manuallyPaused = false;
+              synchronizeMotion();
             }
           });
         } else {
@@ -323,7 +497,6 @@ const structuredData = JSON.stringify({
           const panelBody = document.createElement("div");
           const summariesByTrigger = new Map<HTMLButtonElement, HTMLElement>();
           const experience = rail.parentElement;
-          let selectedTrigger: HTMLButtonElement | undefined;
           let frozenPosition:
             | { railScrollTop: number; windowScrollY: number }
             | undefined;
@@ -357,9 +530,12 @@ const structuredData = JSON.stringify({
             const trigger = selectedTrigger;
             selectedTrigger = undefined;
             frozenPosition = undefined;
+            setTransientPause("detail", false);
+            synchronizeMotion();
 
             if (restoreFocus) {
               trigger.dataset.timelineFocusReturn = "programmatic";
+              programmaticFocusReturns.add(trigger);
               trigger.focus({ preventScroll: true });
             }
           };
@@ -402,6 +578,7 @@ const structuredData = JSON.stringify({
             selectedTrigger = trigger;
             rail.hidden = true;
             panel.hidden = false;
+            setTransientPause("detail", true);
             panelHeader.focus({ preventScroll: true });
 
             const panelTop = panel.getBoundingClientRect().top + window.scrollY;
@@ -486,12 +663,7 @@ const structuredData = JSON.stringify({
           const filterLabel = selectedFilter.dataset.timelineFilterLabel?.toLowerCase();
           const announcement = `Se ${verb} ${visibleMilestones.length} ${milestoneLabel} de ${filterLabel}.`;
 
-          rail.scrollTo({
-            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-              ? "auto"
-              : "smooth",
-            top: 0,
-          });
+          resetForFilter();
 
           function announceWhenRailResets() {
             if (rail.scrollTop <= 1) {
@@ -504,6 +676,8 @@ const structuredData = JSON.stringify({
 
           announceWhenRailResets();
         });
+
+        synchronizeMotion();
       }
     </script>
   </body>
