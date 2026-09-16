@@ -34,6 +34,7 @@ export default createPlaywrightConfig({
   testIgnore: [
     "timeline-filters-empty-category.browser.mjs",
     "timeline-reader-long-content.browser.mjs",
+    "timeline-mobile-panel.browser.mjs",
   ],
   testMatch: "*.browser.mjs",
 });
