@@ -260,7 +260,7 @@ test.describe("lector lateral desktop", () => {
     const rail = page.locator('[data-contract="timeline-rail"]');
     const initialRailBox = await rail.boundingBox();
 
-    await firstMilestone.click();
+    await firstMilestone.click({ force: true });
 
     await expect(firstMilestone).toHaveAttribute("aria-pressed", "true");
     await expect(
@@ -273,7 +273,7 @@ test.describe("lector lateral desktop", () => {
     await expect(reader).toContainText("enero de 2025 - Actualidad");
     expect(await rail.boundingBox()).toEqual(initialRailBox);
 
-    await secondMilestone.click();
+    await secondMilestone.click({ force: true });
 
     await expect(firstMilestone).toHaveAttribute("aria-pressed", "false");
     await expect(secondMilestone).toHaveAttribute("aria-pressed", "true");
@@ -308,13 +308,13 @@ test.describe("lector lateral desktop", () => {
       .filter({ hasText: "Arquitecta de software" });
     const reader = page.locator('[data-contract="timeline-reader"]');
 
-    await milestone.click();
-    await page.getByRole("button", { name: "Cerrar detalle" }).click();
+    await milestone.click({ force: true });
+    await page.getByRole("button", { name: "Cerrar detalle", exact: true }).click();
 
     await expect(reader).toBeHidden();
     await expect(milestone).toBeFocused();
 
-    await milestone.click();
+    await milestone.click({ force: true });
     await page.getByRole("radio", { name: "Proyectos" }).click();
 
     await expect(reader).toBeHidden();

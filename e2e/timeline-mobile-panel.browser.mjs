@@ -46,6 +46,7 @@ test("el panel mobile sustituye el carril, conserva su posicion y restaura el fo
   await expect(rail).toBeVisible();
   await expect(trigger).toBeFocused();
   await expect(trigger).toHaveAttribute("data-timeline-focus-return", "programmatic");
+  await expect(rail).toHaveAttribute("data-timeline-motion", "running");
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(frozenWindowScrollY);
 });
 
@@ -60,7 +61,7 @@ test("el boton del panel mobile cierra el detalle y devuelve el foco al activado
 
   await trigger.focus();
   await page.keyboard.press("Space");
-  await page.getByRole("button", { name: "Cerrar detalle" }).click();
+  await page.getByRole("button", { name: "Cerrar detalle", exact: true }).click();
 
   await expect(page.locator('[data-contract="timeline-mobile-panel"]')).toBeHidden();
   await expect(trigger).toBeFocused();

@@ -163,6 +163,24 @@ body {
   font-weight: 700;
 }
 
+.timeline__motion-control {
+  min-height: 2.75rem;
+  margin: -1.25rem 0 2rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #68706c;
+  border-radius: 0.2rem;
+  background: transparent;
+  color: #f2f0e9;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.timeline__motion-control:hover {
+  border-color: #edc767;
+  background: rgb(237 199 103 / 16%);
+}
+
 .timeline__filter-options {
   display: flex;
   flex-wrap: wrap;
@@ -356,9 +374,26 @@ input:focus-visible {
 }
 
 .milestone__trigger:focus-visible,
-.timeline__reader-close:focus-visible {
+.timeline__reader-close:focus-visible,
+.timeline__motion-control:focus-visible {
   outline: 3px solid #f8f6ef;
   outline-offset: 4px;
+}
+
+.milestone__trigger:focus-visible {
+  outline-color: #edc767;
+}
+
+.milestone__trigger[data-timeline-suppress-focus-outline]:focus-visible {
+  outline: none;
+}
+
+.timeline-enhanced .timeline__rail {
+  scrollbar-width: none;
+}
+
+.timeline-enhanced .timeline__rail::-webkit-scrollbar {
+  display: none;
 }
 
 .visually-hidden {
@@ -404,6 +439,14 @@ input:focus-visible {
 
   .timeline h2 {
     margin-bottom: 2rem;
+  }
+
+  .timeline-enhanced .timeline__rail {
+    max-block-size: min(34rem, 70dvh);
+    padding-right: 0.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: #68706c #111617;
   }
 
   .timeline__mobile-panel {
@@ -484,7 +527,6 @@ input:focus-visible {
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-color: #68706c #111617;
-    scrollbar-gutter: stable;
   }
 
   .timeline__reader {
