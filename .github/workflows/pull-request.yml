@@ -1,0 +1,28 @@
+name: Pull request Base gate
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-base:
+    runs-on: ubuntu-latest
+    env:
+      PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
+      RESUME_PATH: test/fixtures/fictitious-resume.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test:unit
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:browser
