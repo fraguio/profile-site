@@ -316,6 +316,148 @@ const structuredData = JSON.stringify({
               closeDetail(true);
             }
           });
+        } else {
+          const panel = document.createElement("section");
+          const panelArticle = document.createElement("article");
+          const panelHeader = document.createElement("header");
+          const panelBody = document.createElement("div");
+          const summariesByTrigger = new Map<HTMLButtonElement, HTMLElement>();
+          const experience = rail.parentElement;
+          let selectedTrigger: HTMLButtonElement | undefined;
+          let frozenPosition:
+            | { railScrollTop: number; windowScrollY: number }
+            | undefined;
+
+          panel.className = "timeline__mobile-panel";
+          panel.dataset.contract = "timeline-mobile-panel";
+          panel.setAttribute("aria-label", "Detalle del hito");
+          panel.hidden = true;
+          panelArticle.className = "timeline__mobile-panel-content";
+          panelHeader.dataset.contract = "timeline-mobile-panel-header";
+          panelHeader.tabIndex = -1;
+          panelBody.dataset.contract = "timeline-mobile-panel-body";
+          panelArticle.append(panelHeader, panelBody);
+          panel.append(panelArticle);
+          experience?.append(panel);
+
+          closeDetail = (restoreFocus = false) => {
+            if (!selectedTrigger || !frozenPosition) {
+              return;
+            }
+
+            selectedTrigger.setAttribute("aria-pressed", "false");
+            panel.hidden = true;
+            panelHeader.replaceChildren();
+            panelBody.replaceChildren();
+            rail.hidden = false;
+            experience?.style.removeProperty("min-block-size");
+            experience?.style.removeProperty("padding-block-end");
+            rail.scrollTop = frozenPosition.railScrollTop;
+            window.scrollTo({ top: frozenPosition.windowScrollY, behavior: "auto" });
+            const trigger = selectedTrigger;
+            selectedTrigger = undefined;
+            frozenPosition = undefined;
+
+            if (restoreFocus) {
+              trigger.dataset.timelineFocusReturn = "programmatic";
+              trigger.focus({ preventScroll: true });
+            }
+          };
+
+          function detailFor(summary: HTMLElement) {
+            return summary
+              .closest<HTMLElement>("[data-timeline-category]")
+              ?.querySelector<HTMLElement>('[data-contract="milestone-detail"]');
+          }
+
+          function clonedChildren(element: HTMLElement) {
+            return [...element.children].map((child) => child.cloneNode(true));
+          }
+
+          function openDetail(trigger: HTMLButtonElement) {
+            const summary = summariesByTrigger.get(trigger);
+            const detail = summary && detailFor(summary);
+
+            if (!summary || !detail) {
+              return;
+            }
+
+            frozenPosition = {
+              railScrollTop: rail.scrollTop,
+              windowScrollY: window.scrollY,
+            };
+            experience?.style.setProperty(
+              "min-block-size",
+              `${rail.getBoundingClientRect().height}px`,
+            );
+            const closeButton = document.createElement("button");
+
+            closeButton.type = "button";
+            closeButton.className = "timeline__mobile-panel-close";
+            closeButton.textContent = "Cerrar detalle";
+            closeButton.addEventListener("click", () => closeDetail(true));
+            panelHeader.append(closeButton, ...clonedChildren(summary));
+            panelBody.append(...clonedChildren(detail));
+            trigger.setAttribute("aria-pressed", "true");
+            selectedTrigger = trigger;
+            rail.hidden = true;
+            panel.hidden = false;
+            panelHeader.focus({ preventScroll: true });
+
+            const panelTop = panel.getBoundingClientRect().top + window.scrollY;
+            const panelMargin = Number.parseFloat(
+              window.getComputedStyle(panel).scrollMarginTop,
+            );
+            const targetScrollY = panelTop - panelMargin;
+            const additionalSpace = Math.max(
+              0,
+              targetScrollY -
+                (document.documentElement.scrollHeight - window.innerHeight),
+            );
+
+            if (additionalSpace > 0) {
+              experience?.style.setProperty(
+                "padding-block-end",
+                `${additionalSpace}px`,
+              );
+            }
+
+            window.scrollTo({ top: targetScrollY, behavior: "auto" });
+          }
+
+          for (const summary of summaries) {
+            const detail = detailFor(summary);
+
+            if (!detail) {
+              continue;
+            }
+
+            const trigger = document.createElement("button");
+
+            trigger.type = "button";
+            trigger.className = "milestone__trigger";
+            trigger.dataset.contract = "milestone-trigger";
+            trigger.setAttribute("aria-pressed", "false");
+            trigger.append(...clonedChildren(summary));
+            summariesByTrigger.set(trigger, summary);
+            summary.before(trigger);
+            summary.hidden = true;
+            detail.hidden = true;
+            trigger.addEventListener("click", () => {
+              if (selectedTrigger === trigger) {
+                closeDetail(true);
+              } else {
+                openDetail(trigger);
+              }
+            });
+          }
+
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && selectedTrigger) {
+              event.preventDefault();
+              closeDetail(true);
+            }
+          });
         }
 
         filters.addEventListener("change", (event) => {
