@@ -22,6 +22,8 @@ test("el workflow de pull request ejecuta el gate Base sin permisos ni datos de 
   assert.match(workflow, /pnpm test:unit/);
   assert.match(workflow, /pnpm exec playwright install --with-deps chromium/);
   assert.match(workflow, /pnpm test:browser/);
+  assert.match(workflow, /pnpm build/);
+  assert.match(workflow, /pnpm measure:performance/);
   assert.match(workflow, /RESUME_PATH: test\/fixtures\/fictitious-resume\.json/);
   assert.doesNotMatch(workflow, /secrets\./i);
   assert.doesNotMatch(workflow, /profile-data/i);
