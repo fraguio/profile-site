@@ -8,6 +8,7 @@
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "build": "astro build",
+    "measure:performance": "node scripts/measure-performance.mjs",
     "generate:pdf": "node scripts/generate-cv-pdf.mjs",
     "acquire:profile-data": "node scripts/acquire-profile-data.mjs",
     "check": "astro check",
@@ -26,6 +27,7 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "astro": "^5.17.1",
+    "lighthouse": "^13.4.1",
     "pdfjs-dist": "5.5.207",
     "typescript": "^5.9.3"
   },

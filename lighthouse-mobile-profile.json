@@ -1,0 +1,7 @@
+{
+  "extends": "lighthouse:default",
+  "settings": {
+    "formFactor": "mobile",
+    "throttlingMethod": "simulate"
+  }
+}
