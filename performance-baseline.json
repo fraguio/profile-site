@@ -1,0 +1,24 @@
+{
+  "fixture": "test/fixtures/fictitious-resume.json",
+  "mobileProfile": "lighthouse-mobile-profile.json",
+  "observed": {
+    "mobilePerformance": 92,
+    "desktopPerformance": 95,
+    "initialJavaScript": 8100,
+    "javascriptBundles": 78801,
+    "fonts": 253492,
+    "ownResources": 362518,
+    "criticalRequests": 2
+  },
+  "budgets": {
+    "initialJavaScript": 9000,
+    "javascriptBundles": 87000,
+    "fonts": 280000,
+    "ownResources": 400000,
+    "criticalRequests": 3
+  },
+  "mobile": {
+    "target": 90,
+    "absoluteLimit": 80
+  }
+}

@@ -13,19 +13,23 @@ const mobileProfilePath = resolve("lighthouse-mobile-profile.json");
 const lighthouseRunner = process.env.PERFORMANCE_LIGHTHOUSE_RUNNER;
 const require = createRequire(import.meta.url);
 const chromePath = process.env.PERFORMANCE_CHROME_PATH ?? chromium.executablePath();
-
-if (!existsSync(outputDirectory)) {
-  throw new Error(`Static output directory does not exist: ${outputDirectory}`);
-}
+const enforceBudgets = process.env.PERFORMANCE_ENFORCE_BUDGETS === "true";
+const event = process.env.PERFORMANCE_EVENT ?? "pull_request";
+let baseline;
 
 if (!summaryPath) {
   throw new Error("GITHUB_STEP_SUMMARY is required.");
 }
 
 const reportsDirectory = mkdtempSync(join(tmpdir(), "profile-site-lighthouse-"));
-const server = createStaticServer(outputDirectory, publicPath);
+let server;
 
 try {
+  if (!existsSync(outputDirectory)) {
+    throw new Error(`Static output directory does not exist: ${outputDirectory}`);
+  }
+  baseline = JSON.parse(readFileSync(resolve("performance-baseline.json"), "utf8"));
+  server = createStaticServer(outputDirectory, publicPath);
   const url = await listen(server, publicPath);
   const mobileReports = [];
   for (const run of [1, 2, 3]) {
@@ -43,16 +47,32 @@ try {
   const mobileMedian = median(mobileReports.map(performanceScore));
   const deterministicMetrics = collectDeterministicMetrics(outputDirectory, publicPath);
 
-  appendSummary(summaryPath, {
+  const measurement = {
     desktopReport,
     deterministicMetrics,
     mobileMedian,
     mobileReports,
     publicPath,
     url,
-  });
+  };
+  const evaluation = enforceBudgets
+    ? evaluate(measurement, baseline, event)
+    : { failures: [], warnings: [] };
+
+  appendSummary(summaryPath, measurement, baseline, evaluation, enforceBudgets);
+
+  if (evaluation.failures.length > 0) {
+    const error = new Error(evaluation.failures.join("\n"));
+    error.measurementSummaryWritten = true;
+    throw error;
+  }
+} catch (error) {
+  if (!error.measurementSummaryWritten) {
+    appendMeasurementFailure(summaryPath, error);
+  }
+  throw error;
 } finally {
-  server.close();
+  server?.close();
   rmSync(reportsDirectory, { recursive: true, force: true });
 }
 
@@ -244,19 +264,47 @@ function totalSize(files) {
   return files.reduce((total, file) => total + statSync(file).size, 0);
 }
 
-function appendSummary(path, measurement) {
+function evaluate(measurement, baseline, event) {
+  const metrics = measurement.deterministicMetrics;
+  const mobileScore = measurement.mobileMedian;
+
+  const failures = [];
+  const warnings = [];
+  for (const [name, value] of Object.entries(metrics)) {
+    if (value > baseline.budgets[name]) {
+      failures.push(`Deterministic budget exceeded: ${name} (${value} > ${baseline.budgets[name]}).`);
+    }
+  }
+
+  if (mobileScore < baseline.mobile.absoluteLimit) {
+    failures.push(`Mobile Lighthouse absolute limit exceeded: ${mobileScore} < ${baseline.mobile.absoluteLimit}.`);
+  } else if (mobileScore < baseline.mobile.target) {
+    const message = `objetivo Lighthouse mobile incumplido: ${mobileScore} < ${baseline.mobile.target}.`;
+    if (["pull_request", "push"].includes(event)) {
+      failures.push(`Mobile Lighthouse ${message}`);
+    } else {
+      warnings.push(`Warning: ${message}`);
+    }
+  }
+
+  return { failures, warnings, metrics, mobileScore };
+}
+
+function appendSummary(path, measurement, baseline, evaluation, enforced) {
   const mobileScore = measurement.mobileMedian.toFixed(0);
   const desktopScore = performanceScore(measurement.desktopReport).toFixed(0);
   const mobileAudits = medianAudits(measurement.mobileReports);
   const desktopAudits = auditValues(measurement.desktopReport);
-  const metrics = measurement.deterministicMetrics;
+  const metrics = evaluation.metrics ?? measurement.deterministicMetrics;
   const summary = [
     "## Medición de rendimiento",
     "",
     `- Output estático servido localmente: \`${measurement.url}\``,
     `- Perfil mobile versionado: \`lighthouse-mobile-profile.json\``,
     `- Ruta pública medida: \`${measurement.publicPath}\``,
-    "- Esta fase informa resultados; no declara budgets, objetivos ni límites.",
+    enforced
+      ? "- Baseline de la experiencia completa y gates aplicados desde `performance-baseline.json`."
+      : "- Esta fase informa resultados; no declara budgets, objetivos ni límites.",
     "",
     "### Lighthouse mobile (mediana de 3 ejecuciones)",
     "",
@@ -276,9 +324,50 @@ function appendSummary(path, measurement) {
     `| Recursos propios | ${metrics.ownResources} bytes |`,
     `| Requests críticos | ${metrics.criticalRequests} |`,
     "",
+    ...(enforced ? evaluationSummary(baseline, evaluation) : []),
   ].join("\n");
 
   writeFileSync(path, summary, { flag: "a" });
+}
+
+function evaluationSummary(baseline, evaluation) {
+  const outcomes = [
+    ...evaluation.warnings,
+    ...evaluation.failures,
+  ];
+  return [
+    "### Gates",
+    "",
+    `- Objetivo Lighthouse mobile: ${baseline.mobile.target}`,
+    `- Límite absoluto Lighthouse mobile: ${baseline.mobile.absoluteLimit}`,
+    "- Justificación de calibración: `docs/performance-baseline.md`.",
+    "",
+    "| Control | Baseline observada | Umbral | Margen |",
+    "| --- | ---: | ---: | ---: |",
+    `| Lighthouse mobile | ${baseline.observed.mobilePerformance} | ${baseline.mobile.target} | ${baseline.observed.mobilePerformance - baseline.mobile.target} |`,
+    `| Límite absoluto mobile | ${baseline.observed.mobilePerformance} | ${baseline.mobile.absoluteLimit} | ${baseline.observed.mobilePerformance - baseline.mobile.absoluteLimit} |`,
+    ...Object.entries(baseline.budgets).map(([name, budget]) => `| ${name} | ${baseline.observed[name]} | ${budget} | ${budget - baseline.observed[name]} |`),
+    "",
+    ...outcomes.map((outcome) => `- ${outcome}`),
+    `- Resultado: ${evaluation.failures.length > 0 ? "bloquea" : "aprobado"}`,
+    "",
+  ];
+}
+
+function appendMeasurementFailure(path, error) {
+  writeFileSync(
+    path,
+    [
+      "## Medición de rendimiento",
+      "",
+      "### Gates",
+      "",
+      `- Fallo técnico de medición: ${error.message}`,
+      "- Resultado: bloquea",
+      "",
+    ].join("\n"),
+    { flag: "a" },
+  );
 }
 
 function medianAudits(reports) {
