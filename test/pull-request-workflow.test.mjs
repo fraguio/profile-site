@@ -68,6 +68,23 @@ test("el workflow de publicación automática ejecuta los gates Base y adquiere 
   assert.match(workflow, /^      - run: \|\n          status=0/m);
 });
 
+test("el receptor de dispatch exige el contrato completo antes de adquirir la revisión exacta", () => {
+  const workflow = readFileSync(performanceWorkflowPath, "utf8");
+
+  assert.match(workflow, /types: \[profile-data-updated\]/);
+  assert.match(workflow, /DISPATCH_PROFILE_DATA_REF: \$\{\{ github\.event\.client_payload\.profile_data_ref \}\}/);
+  assert.match(workflow, /test -n "\$DISPATCH_PROFILE_DATA_REF" && test -n "\$DISPATCH_PROFILE_DATA_PATH" && test -n "\$DISPATCH_PROFILE_DATA_SHA"/);
+  assert.match(workflow, /PROFILE_DATA_SOURCE_REF: \$\{\{ github\.event\.client_payload\.profile_data_ref \|\| inputs\.profile_data_ref \|\| 'main' \}\}/);
+  assert.ok(
+    workflow.indexOf("Validate repository dispatch payload") < workflow.indexOf("Acquire exact profile data revision"),
+    "el payload debe validarse antes de adquirir datos o poder publicar",
+  );
+  assert.ok(
+    workflow.indexOf("Validate repository dispatch payload") < workflow.indexOf("pnpm install --frozen-lockfile"),
+    "un payload inválido debe fallar antes de recorrer los gates de build",
+  );
+});
+
 test("el workflow publica un único artefacto Base tras comprobar que la revisión sigue vigente", () => {
   const workflow = readFileSync(performanceWorkflowPath, "utf8");
 
@@ -104,6 +121,7 @@ test("el workflow publica un único artefacto Base tras comprobar que la revisi�
   assert.match(workflow, /actions\/deploy-pages@v4/);
   const publishWorkflow = workflow.split("\n  publish:\n")[1];
   assert.ok(publishWorkflow, "el workflow debe incluir el job publish");
+  assert.match(publishWorkflow, /concurrency:\n\s+group: profile-site-publication\n\s+cancel-in-progress: false/);
   assert.match(publishWorkflow, /contents: read/);
   assert.match(publishWorkflow, /pages: write/);
   assert.match(publishWorkflow, /id-token: write/);
