@@ -1,4 +1,4 @@
-name: Performance gate
+name: Publish Base
 
 on:
   push:
@@ -27,6 +27,8 @@ permissions:
 jobs:
   measure:
     runs-on: ubuntu-latest
+    outputs:
+      resolved_profile_data_sha: ${{ steps.acquired-profile-data.outputs.resolved_profile_data_sha }}
     env:
       PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
       PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
@@ -47,39 +49,89 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test:unit
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:browser
       - name: Validate repository dispatch payload
         if: github.event_name == 'repository_dispatch'
         run: test -n "$DISPATCH_PROFILE_DATA_SHA" && test -n "$DISPATCH_PROFILE_DATA_PATH"
       - run: mkdir -p .profile-data
-      - run: pnpm acquire:profile-data
+      - name: Resolve current profile data revision
+        id: current-profile-data
+        if: github.event_name == 'push'
+        env:
+          PROFILE_DATA_RESOLUTION_MODE: resolve
+        run: pnpm check:current-profile-data-revision
+      - name: Acquire exact profile data revision
+        id: acquired-profile-data
+        env:
+          PROFILE_DATA_REF: ${{ github.event_name == 'push' && steps.current-profile-data.outputs.resolved_profile_data_sha || github.event.client_payload.profile_data_sha || inputs.profile_data_ref || 'main' }}
+        run: |
+          pnpm acquire:profile-data | tee acquisition.log
+          grep '^resolved_profile_data_sha=' acquisition.log >> "$GITHUB_ENV"
+          grep '^resolved_profile_data_sha=' acquisition.log >> "$GITHUB_OUTPUT"
       - run: pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
       - run: |
           status=0
           pnpm measure:performance || status=$?
           cat "$GITHUB_STEP_SUMMARY"
           exit "$status"
-      - uses: actions/upload-pages-artifact@v3
-        if: inputs.deploy == true
+      - uses: actions/upload-artifact@v4
         with:
+          name: base-site
           path: dist
+          if-no-files-found: error
 
-  deploy-manual:
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy == true
+  publish:
+    if: github.event_name != 'workflow_dispatch' || inputs.deploy == true
     needs: measure
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
-      name: manual-deploy
+      name: ${{ github.event_name == 'workflow_dispatch' && 'manual-deploy' || 'github-pages' }}
       url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
+      PROFILE_DATA_PATH: ${{ github.event.client_payload.profile_data_path || inputs.profile_data_path || 'data/resume.json' }}
+      RESOLVED_PROFILE_DATA_SHA: ${{ needs.measure.outputs.resolved_profile_data_sha }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: base-site
+          path: dist
+      - id: latest-profile-data
+        if: github.event_name != 'workflow_dispatch'
+        run: pnpm check:current-profile-data-revision
+      - name: Record superseded publication
+        if: github.event_name != 'workflow_dispatch' && steps.latest-profile-data.outputs.is_current != 'true'
+        run: echo "## Publicación supersedida" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'workflow_dispatch' || steps.latest-profile-data.outputs.is_current == 'true'
+        with:
+          path: dist
       - id: deployment
+        if: github.event_name == 'workflow_dispatch' || steps.latest-profile-data.outputs.is_current == 'true'
         uses: actions/deploy-pages@v4
-      - name: Smoke test de la publicación
+      - name: Smoke test de la experiencia interactiva
+        if: github.event_name == 'workflow_dispatch' || steps.latest-profile-data.outputs.is_current == 'true'
         env:
           PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
-        run: |
-          curl --fail --silent --show-error --retry 3 "$PROFILE_SITE_BASE_URL" -o /dev/null
-          curl --fail --silent --show-error --retry 3 "${PROFILE_SITE_BASE_URL}read/" -o /dev/null
+        run: curl --fail --silent --show-error --retry 3 "$PROFILE_SITE_BASE_URL" -o /dev/null
+      - name: Smoke test del CV web
+        if: github.event_name == 'workflow_dispatch' || steps.latest-profile-data.outputs.is_current == 'true'
+        env:
+          PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
+        run: curl --fail --silent --show-error --retry 3 "${PROFILE_SITE_BASE_URL}read/" -o /dev/null

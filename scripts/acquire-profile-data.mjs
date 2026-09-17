@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const apiBaseUrl = "https://api.github.com";
+export const apiBaseUrl = "https://api.github.com";
 
 export async function acquireProfileData({
   fetch = globalThis.fetch,
@@ -90,7 +90,7 @@ async function acquirePath({ fetch, headers, profileDataPath, repository, resolv
   return source;
 }
 
-async function request(fetch, url, options, prefix) {
+export async function request(fetch, url, options, prefix) {
   let response;
 
   try {
@@ -106,7 +106,7 @@ async function request(fetch, url, options, prefix) {
   return response;
 }
 
-async function responseBody(response, prefix) {
+export async function responseBody(response, prefix) {
   try {
     return await response.json();
   } catch {

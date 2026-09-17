@@ -11,11 +11,12 @@
     "measure:performance": "node scripts/measure-performance.mjs",
     "generate:pdf": "node scripts/generate-cv-pdf.mjs",
     "acquire:profile-data": "node scripts/acquire-profile-data.mjs",
+    "check:current-profile-data-revision": "node scripts/check-current-profile-data-revision.mjs",
     "check": "astro check",
-    "test": "node --test && pnpm test:browser",
+    "test": "node --test --test-concurrency=1 && pnpm test:browser",
     "test:browser": "playwright test && playwright test --config=playwright-empty-category.config.mjs && playwright test --config=playwright-long-detail.config.mjs && playwright test --config=playwright-mobile-detail.config.mjs",
     "test:pdf": "node --test pdf-checks/generate-cv-pdf.mjs",
-    "test:unit": "node --test"
+    "test:unit": "node --test --test-concurrency=1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
