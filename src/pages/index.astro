@@ -10,6 +10,7 @@ import PageMetadata from "../components/PageMetadata.astro";
 import "../styles/interactive-experience.css";
 
 const readPath = `${import.meta.env.BASE_URL}read/`;
+const pdfPath = `${import.meta.env.BASE_URL}cv/eduardo-nogueira-fraguio-cv.pdf`;
 const location = formattedLocation;
 const profiles = professionalProfiles;
 const title = `${resume.basics.name} | ${resume.basics.label}`;
@@ -67,6 +68,7 @@ const structuredData = JSON.stringify({
         <p class="profile-hero__role">{resume.basics.label}</p>
         <nav class="profile-hero__actions" aria-label="Acciones principales">
           <a href={readPath}>Leer CV web</a>
+          <a href={pdfPath}>Descargar CV PDF</a>
           <a href={`mailto:${resume.basics.email}`}>Contactar</a>
         </nav>
         <p class="profile-hero__summary">{resume.basics.summary}</p>

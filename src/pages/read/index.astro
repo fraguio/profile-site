@@ -9,6 +9,7 @@ import {
 import PageMetadata from "../../components/PageMetadata.astro";
 
 const interactiveExperiencePath = import.meta.env.BASE_URL;
+const pdfPath = `${import.meta.env.BASE_URL}cv/eduardo-nogueira-fraguio-cv.pdf`;
 const location = formattedLocation;
 const profiles = professionalProfiles;
 const title = `CV web | ${resume.basics.name}`;
@@ -136,6 +137,7 @@ const sections = sectionDefinitions.map((section) => ({
         )}
         <nav aria-label="Acciones del documento" data-contract="read-actions">
           <button data-contract="read-print-action" type="button">Imprimir CV web</button>
+          <a data-contract="read-download-pdf" download href={pdfPath}>Descargar CV PDF</a>
           <a href={interactiveExperiencePath}>Volver a la experiencia interactiva</a>
         </nav>
       </header>

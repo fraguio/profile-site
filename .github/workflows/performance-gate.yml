@@ -1,4 +1,4 @@
-name: Publish Base
+name: Publish PDF
 
 on:
   push:
@@ -55,8 +55,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm test:unit
       - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:unit
       - run: pnpm test:browser
       - run: mkdir -p .profile-data
       - name: Resolve current profile data revision
@@ -81,7 +81,7 @@ jobs:
           exit "$status"
       - uses: actions/upload-artifact@v4
         with:
-          name: base-site
+          name: pdf-site
           path: dist
           if-no-files-found: error
 
@@ -115,7 +115,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
-          name: base-site
+          name: pdf-site
           path: dist
       - id: latest-profile-data
         if: github.event_name != 'workflow_dispatch'
@@ -140,3 +140,12 @@ jobs:
         env:
           PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
         run: curl --fail --silent --show-error --retry 3 "${PROFILE_SITE_BASE_URL}read/" -o /dev/null
+      - name: Smoke test del CV PDF
+        if: github.event_name == 'workflow_dispatch' || steps.latest-profile-data.outputs.is_current == 'true'
+        env:
+          PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
+        run: |
+          pdf_path="$(mktemp)"
+          curl --fail --silent --show-error --retry 3 "${PROFILE_SITE_BASE_URL}cv/eduardo-nogueira-fraguio-cv.pdf" -o "$pdf_path"
+          test -s "$pdf_path"
+          test "$(head -c 5 "$pdf_path")" = "%PDF-"

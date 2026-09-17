@@ -20,7 +20,7 @@ function publicationWorkflows() {
   return { measureWorkflow, publishWorkflow };
 }
 
-test("el workflow de pull request ejecuta el gate Base sin permisos ni datos de publicación", () => {
+test("el workflow de pull request ejecuta el gate PDF sin permisos ni datos de publicación", () => {
   const workflow = readFileSync(workflowPath, "utf8");
 
   assert.match(workflow, /^on:\s*\n\s+pull_request:/m);
@@ -51,7 +51,7 @@ test("el workflow de pull request ejecuta el gate Base sin permisos ni datos de 
   assert.doesNotMatch(workflow, /deploy|pages|write/i);
 });
 
-test("el workflow de publicación automática ejecuta los gates Base y adquiere una revisión curricular exacta", () => {
+test("el workflow de publicación automática ejecuta los gates PDF y adquiere una revisión curricular exacta", () => {
   const workflow = readFileSync(performanceWorkflowPath, "utf8");
 
   assert.match(workflow, /^\s+push:/m);
@@ -95,7 +95,7 @@ test("el receptor de dispatch exige el contrato completo antes de adquirir la re
   );
 });
 
-test("el workflow publica un único artefacto Base tras comprobar que la revisión sigue vigente", () => {
+test("el workflow publica un único artefacto PDF tras comprobar que la revisión sigue vigente", () => {
   const workflow = readFileSync(performanceWorkflowPath, "utf8");
 
   assert.match(workflow, /actions\/upload-artifact@v4/);
@@ -124,7 +124,17 @@ test("el workflow publica un único artefacto Base tras comprobar que la revisi�
   assert.match(publishWorkflow, /pages: write/);
   assert.match(publishWorkflow, /id-token: write/);
   assert.equal([...workflow.matchAll(/actions\/upload-pages-artifact@v3/g)].length, 1);
-  assert.doesNotMatch(workflow, /eduardo-nogueira-fraguio-cv\.pdf/);
+  assert.match(workflow, /eduardo-nogueira-fraguio-cv\.pdf/);
+});
+
+test("el artefacto PDF solo se sube después de que el build contractual sea correcto", () => {
+  const { measureWorkflow } = publicationWorkflows();
+
+  assert.ok(
+    measureWorkflow.indexOf("pnpm build") < measureWorkflow.indexOf("actions/upload-artifact@v4"),
+    "un fallo de build no debe dejar un artefacto parcial disponible para publicar",
+  );
+  assert.doesNotMatch(measureWorkflow, /actions\/upload-artifact@v4[\s\S]*?if: always\(\)/);
 });
 
 test("el dispatch manual valida por defecto sin solicitar aprobación ni publicar", () => {
@@ -184,4 +194,20 @@ test("el workflow ejecuta smoke tests independientes de la experiencia interacti
   assert.match(workflow, /curl --fail --silent --show-error --retry 3 "\$PROFILE_SITE_BASE_URL"/);
   assert.match(workflow, /Smoke test del CV web/);
   assert.match(workflow, /curl --fail --silent --show-error --retry 3 "\$\{PROFILE_SITE_BASE_URL\}read\/"/);
+});
+
+test("el workflow verifica el PDF público después de las superficies HTML", () => {
+  const workflow = readFileSync(performanceWorkflowPath, "utf8");
+
+  assert.match(workflow, /Smoke test del CV PDF/);
+  assert.match(
+    workflow,
+    /curl --fail --silent --show-error --retry 3 "\$\{PROFILE_SITE_BASE_URL\}cv\/eduardo-nogueira-fraguio-cv\.pdf" -o "\$pdf_path"/,
+  );
+  assert.match(workflow, /test -s "\$pdf_path"/);
+  assert.match(workflow, /head -c 5 "\$pdf_path"/);
+  assert.ok(
+    workflow.indexOf("Smoke test del CV web") < workflow.indexOf("Smoke test del CV PDF"),
+    "el PDF debe comprobarse después de las superficies HTML",
+  );
 });

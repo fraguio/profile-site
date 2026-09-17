@@ -80,7 +80,7 @@ function structuredDataFrom(html) {
   };
 }
 
-test("the contractual build produces the Base HTML outputs from the selected fixture", (t) => {
+test("the contractual build produces the PDF and HTML outputs from the selected fixture", (t) => {
   const outputDirectory = temporaryOutputDirectory(t);
 
   const result = build(outputDirectory, {
@@ -98,11 +98,25 @@ test("the contractual build produces the Base HTML outputs from the selected fix
 
   assert.match(interactiveExperience, /Alicia Ejemplo/);
   assert.match(interactiveExperience, /href="\/profile-site\/read\/"/);
+  assert.match(
+    interactiveExperience,
+    /href="\/profile-site\/cv\/eduardo-nogueira-fraguio-cv\.pdf"[^>]*>Descargar CV PDF/,
+  );
   assert.match(webCv, /Alicia Ejemplo/);
   assert.match(webCv, /href="\/profile-site\/"/);
+  assert.match(
+    webCv,
+    /<a data-contract="read-download-pdf" download href="\/profile-site\/cv\/eduardo-nogueira-fraguio-cv\.pdf">Descargar CV PDF<\/a>/,
+  );
   assert.equal(
     existsSync(join(outputDirectory, "cv", "eduardo-nogueira-fraguio-cv.pdf")),
-    false,
+    true,
+  );
+  assert.equal(
+    readFileSync(
+      join(outputDirectory, "cv", "eduardo-nogueira-fraguio-cv.pdf"),
+    ).subarray(0, 5).toString("ascii"),
+    "%PDF-",
   );
 });
 
@@ -343,8 +357,10 @@ test("el CV web presenta el currículo compatible completo como documento semán
     );
   }
 
-  assert.doesNotMatch(webCv, /data-contract="read-download-pdf"/);
-  assert.doesNotMatch(webCv, /href="[^"]+\.pdf"/);
+  assert.match(
+    webCv,
+    /<a data-contract="read-download-pdf" download href="\/profile-site\/cv\/eduardo-nogueira-fraguio-cv\.pdf">Descargar CV PDF<\/a>/,
+  );
   assert.doesNotMatch(webCv, /<script[^>]+src=/);
 });
 
@@ -395,6 +411,7 @@ test("the interactive experience presents the supported trajectory without JavaS
 
   for (const [url, label] of [
     ["/profile-site/read/", "Leer CV web"],
+    ["/profile-site/cv/eduardo-nogueira-fraguio-cv.pdf", "Descargar CV PDF"],
     ["mailto:alicia.ejemplo@example.test", "Contactar"],
     ["https://alicia.example.test", "Sitio web"],
     ["https://www.linkedin.com/in/alicia-ejemplo", "LinkedIn"],

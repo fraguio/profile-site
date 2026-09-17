@@ -36,8 +36,14 @@ test("el CV web conserva el contenido completo sin JavaScript", async ({ browser
   await expect(page.getByRole("heading", { name: "Proyectos" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Formación" })).toBeVisible();
   await expect(page.getByText("Responsable técnica")).toBeVisible();
-  await expect(page.locator("[data-contract='read-download-pdf']")).toHaveCount(0);
-  await expect(page.locator("a[href$='.pdf']")).toHaveCount(0);
+  const downloadAction = page.getByRole("link", { name: "Descargar CV PDF" });
+
+  await expect(downloadAction).toBeVisible();
+  await expect(downloadAction).toHaveAttribute(
+    "href",
+    "/profile-site/cv/eduardo-nogueira-fraguio-cv.pdf",
+  );
+  await expect(downloadAction).toHaveAttribute("download", "");
 
   await context.close();
 });

@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { chromium } from "@playwright/test";
+import { textFromPdf } from "./pdf-text.mjs";
 
 const outputDirectory = resolve(process.argv[2] ?? "dist");
 const publicBaseUrl = process.env.PROFILE_SITE_BASE_URL;
@@ -58,6 +59,7 @@ try {
   }
 
   let browser;
+  let factualContent = "";
 
   try {
     browser = await chromium.launch();
@@ -70,6 +72,22 @@ try {
     const localReadUrl = `http://127.0.0.1:${address.port}${readPath}`;
 
     await page.goto(localReadUrl, { waitUntil: "networkidle" });
+    factualContent = await page.locator("main").evaluate((main) => {
+      const actions = main.querySelector('[data-contract="read-actions"]');
+      const actionsWereHidden = actions instanceof HTMLElement && actions.hidden;
+
+      if (actions instanceof HTMLElement) {
+        actions.hidden = true;
+      }
+
+      const text = main.innerText;
+
+      if (actions instanceof HTMLElement) {
+        actions.hidden = actionsWereHidden;
+      }
+
+      return text;
+    });
     await page.emulateMedia({ media: "print" });
 
     const cvText = await page.locator("main").innerText();
@@ -111,6 +129,15 @@ try {
     throw new Error("Generated CV PDF has no pages.");
   }
 
+  const pdfText = await textFromPdf(pdf);
+  const missingContent = normalizedLines(factualContent).find(
+    (line) => !normalizeText(pdfText).includes(line),
+  );
+
+  if (missingContent) {
+    throw new Error("Generated CV PDF does not preserve factual content from the CV web.");
+  }
+
   console.log(`CV PDF generated: ${pageCount} page${pageCount === 1 ? "" : "s"}.`);
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));
@@ -146,4 +173,12 @@ function contentType(filePath) {
     default:
       return "application/octet-stream";
   }
+}
+
+function normalizedLines(text) {
+  return text.split(/\r?\n/).map(normalizeText).filter(Boolean);
+}
+
+function normalizeText(text) {
+  return text.replaceAll(/\s+/g, " ").trim();
 }
