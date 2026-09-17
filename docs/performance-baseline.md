@@ -6,6 +6,7 @@ La baseline se mide sobre `dist` de la experiencia completa, construido con
 `lighthouse-mobile-profile.json`. Lighthouse mobile usa la mediana de tres
 ejecuciones; desktop queda como observación y las métricas deterministas se
 obtienen una vez.
+La métrica de recursos propios incluye el CV PDF contractual.
 
 ## Evidencia de calibración
 
@@ -24,7 +25,7 @@ contractuales descritas arriba.
 | JavaScript inicial | 8100 bytes | 9000 bytes | 900 bytes | Cubre variaciones menores de empaquetado sin ocultar una nueva dependencia. |
 | Bundles JavaScript | 78801 bytes | 87000 bytes | 8199 bytes | Reserva crecimiento limitado para la interacción del timeline. |
 | Fuentes | 253492 bytes | 280000 bytes | 26508 bytes | Mantiene la tipografía autoalojada dentro de un coste conocido. |
-| Recursos propios | 362518 bytes | 400000 bytes | 37482 bytes | Acota el output completo sin restringir su composición actual. |
+| Recursos propios | 433921 bytes | 480000 bytes | 46079 bytes | Incorpora el CV PDF contractual y conserva un margen proporcional al anterior para variaciones menores de su render. |
 | Requests críticos | 2 | 3 | 1 | Permite un recurso crítico adicional antes de exigir revisión. |
 
 La tabla anterior es la evidencia de calibración de la PR: vincula cada umbral

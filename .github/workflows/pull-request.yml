@@ -1,4 +1,4 @@
-name: Pull request Base gate
+name: Pull request PDF gate
 
 on:
   pull_request:
@@ -25,8 +25,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm test:unit
       - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:unit
       - run: node --test --test-name-pattern="baseline" test/performance-measurement.test.mjs
         env:
           PERFORMANCE_REAL_BASELINE: true

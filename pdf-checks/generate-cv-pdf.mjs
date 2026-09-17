@@ -11,7 +11,7 @@ import {
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { textFromPdf } from "../scripts/pdf-text.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const fixturePath = fileURLToPath(
@@ -65,20 +65,6 @@ function generatePdf(outputDirectory, environment) {
   );
 }
 
-async function pdfText(pdf) {
-  const document = await getDocument({ data: new Uint8Array(pdf) }).promise;
-  const pages = await Promise.all(
-    Array.from({ length: document.numPages }, async (_, index) => {
-      const page = await document.getPage(index + 1);
-      const content = await page.getTextContent();
-
-      return content.items.map((item) => item.str).join(" ");
-    }),
-  );
-
-  return pages.join(" ");
-}
-
 test("el generador opt-in deriva un CV PDF válido desde el CV web construido", async (t) => {
   const outputDirectory = temporaryDirectory(t);
   const buildResult = build(outputDirectory);
@@ -114,7 +100,7 @@ test("el generador opt-in deriva un CV PDF válido desde el CV web construido", 
   assert.ok(pdf.length > 0);
   assert.equal(pdf.subarray(0, 5).toString("ascii"), "%PDF-");
   assert.match(pdf.toString("latin1"), /\/Type\s*\/Page\b/);
-  const text = await pdfText(pdf);
+  const text = await textFromPdf(pdf);
 
   for (const content of [
     "Alicia Ejemplo",
@@ -170,4 +156,24 @@ test("el generador falla con diagnóstico si Chromium no está disponible", (t) 
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Unable to launch Chromium/);
+});
+
+test("el generador falla si el PDF omite contenido factual del CV web", (t) => {
+  const outputDirectory = temporaryDirectory(t);
+  const buildResult = build(outputDirectory);
+  const readDocumentPath = join(outputDirectory, "read", "index.html");
+
+  assert.equal(buildResult.status, 0, `${buildResult.stdout}\n${buildResult.stderr}`);
+  writeFileSync(
+    readDocumentPath,
+    readFileSync(readDocumentPath, "utf8").replace(
+      "</head>",
+      '<style media="print">h2 { display: none; }</style></head>',
+    ),
+  );
+
+  const result = generatePdf(outputDirectory);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /does not preserve factual content/);
 });
