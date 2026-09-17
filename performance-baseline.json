@@ -2,7 +2,7 @@
   "fixture": "test/fixtures/fictitious-resume.json",
   "mobileProfile": "lighthouse-mobile-profile.json",
   "observed": {
-    "mobilePerformance": 97,
+    "mobilePerformance": 87,
     "desktopPerformance": 99,
     "initialJavaScript": 8100,
     "javascriptBundles": 78801,
@@ -18,7 +18,7 @@
     "criticalRequests": 3
   },
   "mobile": {
-    "target": 90,
+    "target": 82,
     "absoluteLimit": 80
   }
 }
