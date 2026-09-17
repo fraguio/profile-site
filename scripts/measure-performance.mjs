@@ -308,6 +308,8 @@ function appendSummary(path, measurement, baseline, evaluation, enforced) {
     "",
     "### Lighthouse mobile (mediana de 3 ejecuciones)",
     "",
+    `- Ejecuciones mobile: ${measurement.mobileReports.map(performanceScore).map((score) => score.toFixed(0)).join(", ")}`,
+    "",
     lighthouseTable(mobileScore, mobileAudits),
     "",
     "### Lighthouse desktop (observacional)",

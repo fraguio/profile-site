@@ -67,6 +67,7 @@ test("el entrypoint de rendimiento publica la mediana mobile, desktop y métrica
   const summary = readFileSync(summaryPath, "utf8");
 
   assert.match(summary, /Lighthouse mobile \(mediana de 3 ejecuciones\)/);
+  assert.match(summary, /Ejecuciones mobile: 91, 92, 93/);
   assert.match(summary, /92/);
   assert.match(summary, /Lighthouse desktop \(observacional\)/);
   assert.match(summary, /95/);

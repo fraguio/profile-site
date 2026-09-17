@@ -27,6 +27,7 @@ test("el workflow de pull request ejecuta el gate Base sin permisos ni datos de 
   assert.match(workflow, /pnpm test:browser/);
   assert.match(workflow, /pnpm build/);
   assert.match(workflow, /pnpm measure:performance/);
+  assert.match(workflow, /pnpm measure:performance \|\| status=\$\?/);
   assert.match(workflow, /cat "\$GITHUB_STEP_SUMMARY"/);
   assert.match(workflow, /PERFORMANCE_ENFORCE_BUDGETS: true/);
   assert.match(workflow, /PERFORMANCE_EVENT: pull_request/);
@@ -49,4 +50,6 @@ test("el workflow de rendimiento aplica la matriz a push y dispatch con el perfi
   assert.match(workflow, /PERFORMANCE_ENFORCE_BUDGETS: true/);
   assert.match(workflow, /PERFORMANCE_EVENT: \$\{\{ github\.event_name \}\}/);
   assert.match(workflow, /pnpm measure:performance/);
+  assert.match(workflow, /pnpm measure:performance \|\| status=\$\?/);
+  assert.match(workflow, /cat "\$GITHUB_STEP_SUMMARY"/);
 });
