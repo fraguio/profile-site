@@ -49,8 +49,8 @@ jobs:
       - run: pnpm acquire:profile-data
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
-       - run: |
-           status=0
-           pnpm measure:performance || status=$?
-           cat "$GITHUB_STEP_SUMMARY"
-           exit "$status"
+      - run: |
+          status=0
+          pnpm measure:performance || status=$?
+          cat "$GITHUB_STEP_SUMMARY"
+          exit "$status"
