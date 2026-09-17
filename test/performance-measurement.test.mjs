@@ -196,7 +196,7 @@ test("el entrypoint aplica la matriz de objetivos mobile por evento", (t) => {
 
   const result = productionMeasurement(outputDirectory, summaryPath, {
     PERFORMANCE_EVENT: "repository_dispatch",
-    FAKE_LIGHTHOUSE_MOBILE_SCORE: "0.89",
+    FAKE_LIGHTHOUSE_MOBILE_SCORE: "0.81",
   });
 
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
@@ -262,7 +262,7 @@ for (const [canary, event, status, outcome] of [
       ...(canary === "technical-failure"
         ? { FAKE_LIGHTHOUSE_FAILURE: "true" }
         : canary === "mobile-target"
-          ? { FAKE_LIGHTHOUSE_MOBILE_SCORE: "0.89" }
+          ? { FAKE_LIGHTHOUSE_MOBILE_SCORE: "0.81" }
           : canary === "mobile-absolute-limit"
             ? { FAKE_LIGHTHOUSE_MOBILE_SCORE: "0.79" }
             : {}),
