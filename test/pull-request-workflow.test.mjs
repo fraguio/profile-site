@@ -32,7 +32,10 @@ test("el workflow de pull request ejecuta el gate Base sin permisos ni datos de 
   assert.match(workflow, /^      - run: \|\n          status=0/m);
   assert.match(workflow, /PERFORMANCE_ENFORCE_BUDGETS: true/);
   assert.match(workflow, /PERFORMANCE_EVENT: pull_request/);
-  assert.match(workflow, /RESUME_PATH: test\/fixtures\/fictitious-resume\.json/);
+  assert.match(
+    workflow,
+    /RESUME_PATH: test\/fixtures\/fictitious-resume\.json/,
+  );
   assert.doesNotMatch(workflow, /secrets\./i);
   assert.doesNotMatch(workflow, /profile-data/i);
   assert.doesNotMatch(workflow, /deploy|pages|write/i);
@@ -44,7 +47,10 @@ test("el workflow de rendimiento aplica la matriz a push y dispatch con el perfi
   assert.match(workflow, /^\s+push:/m);
   assert.match(workflow, /^\s+repository_dispatch:/m);
   assert.match(workflow, /^\s+workflow_dispatch:/m);
-  assert.match(workflow, /PROFILE_DATA_READ_TOKEN: \$\{\{ secrets\.PROFILE_DATA_READ_TOKEN \}\}/);
+  assert.match(
+    workflow,
+    /PROFILE_DATA_READ_TOKEN: \$\{\{ secrets\.PROFILE_DATA_READ_TOKEN \}\}/,
+  );
   assert.match(workflow, /github\.event\.client_payload\.profile_data_sha/);
   assert.match(workflow, /Validate repository dispatch payload/);
   assert.match(workflow, /pnpm acquire:profile-data/);
@@ -54,4 +60,39 @@ test("el workflow de rendimiento aplica la matriz a push y dispatch con el perfi
   assert.match(workflow, /pnpm measure:performance \|\| status=\$\?/);
   assert.match(workflow, /cat "\$GITHUB_STEP_SUMMARY"/);
   assert.match(workflow, /^      - run: \|\n          status=0/m);
+});
+
+test("el deploy manual requiere deploy=true y usa manual-deploy sin proteger los gates", () => {
+  const workflow = readFileSync(performanceWorkflowPath, "utf8");
+  const [measureWorkflow, deployWorkflow] = workflow.split(
+    "\n  deploy-manual:\n",
+  );
+
+  assert.match(
+    measureWorkflow,
+    /profile_data_ref:\n\s+description:.*\n\s+required: true\n\s+default: main/,
+  );
+  assert.match(
+    measureWorkflow,
+    /profile_data_path:\n\s+description:.*\n\s+required: true\n\s+default: data\/resume\.json/,
+  );
+  assert.match(
+    workflow,
+    /deploy:\n\s+description:.*\n\s+required: true\n\s+type: boolean\n\s+default: false/,
+  );
+  assert.match(
+    measureWorkflow,
+    /actions\/upload-pages-artifact@v3\n\s+if: inputs\.deploy == true/,
+  );
+  assert.doesNotMatch(measureWorkflow, /\benvironment:/);
+  assert.ok(deployWorkflow, "el workflow debe incluir deploy-manual");
+  assert.match(
+    deployWorkflow,
+    /if: github\.event_name == 'workflow_dispatch' && inputs\.deploy == true/,
+  );
+  assert.match(deployWorkflow, /needs: measure/);
+  assert.match(deployWorkflow, /environment:\n\s+name: manual-deploy/);
+  assert.match(deployWorkflow, /actions\/deploy-pages@v4/);
+  assert.match(deployWorkflow, /Smoke test de la publicación/);
+  assert.equal([...workflow.matchAll(/manual-deploy/g)].length, 1);
 });

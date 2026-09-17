@@ -15,6 +15,11 @@ on:
         description: Ruta curricular en profile-data
         required: true
         default: data/resume.json
+      deploy:
+        description: Publicar en GitHub Pages después de los gates
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -54,3 +59,27 @@ jobs:
           pnpm measure:performance || status=$?
           cat "$GITHUB_STEP_SUMMARY"
           exit "$status"
+      - uses: actions/upload-pages-artifact@v3
+        if: inputs.deploy == true
+        with:
+          path: dist
+
+  deploy-manual:
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy == true
+    needs: measure
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: manual-deploy
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Smoke test de la publicación
+        env:
+          PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
+        run: |
+          curl --fail --silent --show-error --retry 3 "$PROFILE_SITE_BASE_URL" -o /dev/null
+          curl --fail --silent --show-error --retry 3 "${PROFILE_SITE_BASE_URL}read/" -o /dev/null
