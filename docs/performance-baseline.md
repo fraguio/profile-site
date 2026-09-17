@@ -7,6 +7,14 @@ La baseline se mide sobre `dist` de la experiencia completa, construido con
 ejecuciones; desktop queda como observación y las métricas deterministas se
 obtienen una vez.
 
+## Evidencia de calibración
+
+La ejecución [35142010909](https://github.com/fraguio/profile-site/actions/runs/35142010909)
+en GitHub Actions sobre Ubuntu capturó esta baseline con Chromium. Se ejecutó
+sobre el commit `5fe53a7`, con el fixture, el perfil y las variables
+contractuales descritas arriba; sus valores se fijaron después en
+`performance-baseline.json` mediante `a5eaffe`.
+
 | Medición observada | Valor | Umbral | Margen | Justificación |
 | --- | ---: | ---: | ---: | --- |
 | Lighthouse mobile | 97 | 90 | 7 puntos | Mantiene una regresión visible en pull request y push sin rechazar fluctuaciones menores de la medición. |
