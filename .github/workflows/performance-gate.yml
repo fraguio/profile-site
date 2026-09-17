@@ -1,0 +1,56 @@
+name: Performance gate
+
+on:
+  push:
+    branches: [main]
+  repository_dispatch:
+    types: [profile-data-updated]
+  workflow_dispatch:
+    inputs:
+      profile_data_ref:
+        description: Revisión de profile-data que se medirá
+        required: true
+        default: main
+      profile_data_path:
+        description: Ruta curricular en profile-data
+        required: true
+        default: data/resume.json
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    env:
+      PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
+      PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
+      PROFILE_DATA_REF: ${{ github.event.client_payload.profile_data_sha || inputs.profile_data_ref || 'main' }}
+      PROFILE_DATA_PATH: ${{ github.event.client_payload.profile_data_path || inputs.profile_data_path || 'data/resume.json' }}
+      RESUME_PATH: .profile-data/resume.json
+      PERFORMANCE_ENFORCE_BUDGETS: true
+      PERFORMANCE_EVENT: ${{ github.event_name }}
+      DISPATCH_PROFILE_DATA_SHA: ${{ github.event.client_payload.profile_data_sha }}
+      DISPATCH_PROFILE_DATA_PATH: ${{ github.event.client_payload.profile_data_path }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Validate repository dispatch payload
+        if: github.event_name == 'repository_dispatch'
+        run: test -n "$DISPATCH_PROFILE_DATA_SHA" && test -n "$DISPATCH_PROFILE_DATA_PATH"
+      - run: mkdir -p .profile-data
+      - run: pnpm acquire:profile-data
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: |
+          status=0
+          pnpm measure:performance || status=$?
+          cat "$GITHUB_STEP_SUMMARY"
+          exit "$status"

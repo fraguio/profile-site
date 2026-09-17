@@ -32,7 +32,11 @@ if (
         interactive: { numericValue: 1900 },
       },
       categories: {
-        performance: { score: profile === "mobile" ? 0.9 + mobileRun / 100 : 0.95 },
+        performance: {
+          score: profile === "mobile"
+            ? Number(process.env.FAKE_LIGHTHOUSE_MOBILE_SCORE ?? 0.9 + mobileRun / 100)
+            : Number(process.env.FAKE_LIGHTHOUSE_DESKTOP_SCORE ?? 0.95),
+        },
       },
       finalUrl: url,
     }),
