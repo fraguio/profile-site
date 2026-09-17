@@ -10,6 +10,16 @@ const performanceWorkflowPath = fileURLToPath(
   new URL("../.github/workflows/performance-gate.yml", import.meta.url),
 );
 
+function publicationWorkflows() {
+  const [measureWorkflow, publishWorkflow] = readFileSync(
+    performanceWorkflowPath,
+    "utf8",
+  ).split("\n  publish:\n");
+
+  assert.ok(publishWorkflow, "el workflow debe incluir el job publish");
+  return { measureWorkflow, publishWorkflow };
+}
+
 test("el workflow de pull request ejecuta el gate Base sin permisos ni datos de publicación", () => {
   const workflow = readFileSync(workflowPath, "utf8");
 
@@ -88,18 +98,6 @@ test("el receptor de dispatch exige el contrato completo antes de adquirir la re
 test("el workflow publica un único artefacto Base tras comprobar que la revisión sigue vigente", () => {
   const workflow = readFileSync(performanceWorkflowPath, "utf8");
 
-  assert.match(
-    workflow,
-    /profile_data_ref:\n\s+description:.*\n\s+required: true\n\s+default: main/,
-  );
-  assert.match(
-    workflow,
-    /profile_data_path:\n\s+description:.*\n\s+required: true\n\s+default: data\/resume\.json/,
-  );
-  assert.match(
-    workflow,
-    /deploy:\n\s+description:.*\n\s+required: true\n\s+type: boolean\n\s+default: false/,
-  );
   assert.match(workflow, /actions\/upload-artifact@v4/);
   assert.match(workflow, /actions\/download-artifact@v4/);
   assert.match(workflow, /outputs:\n\s+resolved_profile_data_sha: \$\{\{ steps\.acquired-profile-data\.outputs\.resolved_profile_data_sha \}\}/);
@@ -127,6 +125,56 @@ test("el workflow publica un único artefacto Base tras comprobar que la revisi�
   assert.match(publishWorkflow, /id-token: write/);
   assert.equal([...workflow.matchAll(/actions\/upload-pages-artifact@v3/g)].length, 1);
   assert.doesNotMatch(workflow, /eduardo-nogueira-fraguio-cv\.pdf/);
+});
+
+test("el dispatch manual valida por defecto sin solicitar aprobación ni publicar", () => {
+  const { measureWorkflow, publishWorkflow } = publicationWorkflows();
+
+  assert.match(
+    measureWorkflow,
+    /profile_data_ref:\n\s+description:.*\n\s+required: true\n\s+default: main/,
+  );
+  assert.match(
+    measureWorkflow,
+    /profile_data_path:\n\s+description:.*\n\s+required: true\n\s+default: data\/resume\.json/,
+  );
+  assert.match(
+    measureWorkflow,
+    /deploy:\n\s+description:.*\n\s+required: true\n\s+type: boolean\n\s+default: false/,
+  );
+  assert.doesNotMatch(measureWorkflow, /environment:|upload-pages-artifact|deploy-pages/);
+  assert.match(
+    publishWorkflow,
+    /^    if: github\.event_name != 'workflow_dispatch' \|\| inputs\.deploy == true$/m,
+  );
+  assert.match(publishWorkflow, /^    needs: measure$/m);
+});
+
+test("el job de publicación depende de los gates y no ignora sus fallos", () => {
+  const { publishWorkflow } = publicationWorkflows();
+
+  assert.match(publishWorkflow, /^    needs: measure$/m);
+  assert.doesNotMatch(publishWorkflow, /\balways\(/);
+});
+
+test("el deploy manual selecciona el entorno configurado y ejecuta smoke tests después de publicar", () => {
+  const { publishWorkflow } = publicationWorkflows();
+
+  assert.match(
+    publishWorkflow,
+    /name: \$\{\{ github\.event_name == 'workflow_dispatch' && 'manual-deploy' \|\| 'github-pages' \}\}/,
+  );
+  assert.equal([...publishWorkflow.matchAll(/manual-deploy/g)].length, 1);
+  assert.ok(
+    publishWorkflow.indexOf("actions/deploy-pages@v4") <
+      publishWorkflow.indexOf("Smoke test de la experiencia interactiva"),
+    "los smoke tests deben ejecutarse después del deploy",
+  );
+  assert.ok(
+    publishWorkflow.indexOf("Smoke test de la experiencia interactiva") <
+      publishWorkflow.indexOf("Smoke test del CV web"),
+    "los smoke tests deben cubrir ambas superficies publicadas",
+  );
 });
 
 test("el workflow ejecuta smoke tests independientes de la experiencia interactiva y el CV web", () => {
