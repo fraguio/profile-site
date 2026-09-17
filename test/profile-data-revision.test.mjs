@@ -19,7 +19,7 @@ function options(overrides = {}) {
     log: overrides.log ?? (() => {}),
     profileDataPath,
     repository,
-    resolvedProfileDataSha,
+    resolvedProfileDataSha: overrides.resolvedProfileDataSha ?? resolvedProfileDataSha,
     token: "read-token",
   };
 }
@@ -63,6 +63,22 @@ test("marca la publicación como supersedida cuando existe una revisión curricu
     `current_profile_data_sha=${currentProfileDataSha}`,
     "publication_status=superseded",
   ]);
+});
+
+test("solo permite publicar la revisión más reciente de dos ejecuciones concurrentes", async () => {
+  const currentProfileDataSha = "d3b07384d113edec49eaa6238ad5ff00".padEnd(40, "0");
+  const fetch = async () => response(200, [{ sha: currentProfileDataSha }]);
+
+  const [olderPublication, currentPublication] = await Promise.all([
+    checkCurrentProfileDataRevision(options({ fetch })),
+    checkCurrentProfileDataRevision(options({
+      fetch,
+      resolvedProfileDataSha: currentProfileDataSha,
+    })),
+  ]);
+
+  assert.deepEqual(olderPublication, { isCurrent: false, currentProfileDataSha });
+  assert.deepEqual(currentPublication, { isCurrent: true, currentProfileDataSha });
 });
 
 test("rechaza respuestas de revisión vigente inaccesibles sin exponer el token", async () => {

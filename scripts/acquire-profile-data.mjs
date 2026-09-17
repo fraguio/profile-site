@@ -10,6 +10,7 @@ export async function acquireProfileData({
   profileDataPath,
   ref,
   repository = "fraguio/profile-data",
+  sourceRef = ref,
   token,
 }) {
   if (!token) {
@@ -46,7 +47,7 @@ export async function acquireProfileData({
   });
 
   writeFileSync(resolve(outputPath), source);
-  log(`profile_data_ref=${ref}`);
+  log(`profile_data_ref=${sourceRef}`);
   log(`profile_data_path=${profileDataPath}`);
   log(`resolved_profile_data_sha=${resolvedProfileDataSha}`);
 
@@ -127,6 +128,7 @@ if (import.meta.main) {
     outputPath: process.env.RESUME_PATH,
     profileDataPath: process.env.PROFILE_DATA_PATH,
     ref: process.env.PROFILE_DATA_REF,
+    sourceRef: process.env.PROFILE_DATA_SOURCE_REF,
     token: process.env.PROFILE_DATA_READ_TOKEN,
   }).catch((error) => {
     console.error(error.message);

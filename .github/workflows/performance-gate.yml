@@ -33,14 +33,19 @@ jobs:
       PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
       PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
       PROFILE_DATA_REF: ${{ github.event.client_payload.profile_data_sha || inputs.profile_data_ref || 'main' }}
+      PROFILE_DATA_SOURCE_REF: ${{ github.event.client_payload.profile_data_ref || inputs.profile_data_ref || 'main' }}
       PROFILE_DATA_PATH: ${{ github.event.client_payload.profile_data_path || inputs.profile_data_path || 'data/resume.json' }}
       RESUME_PATH: .profile-data/resume.json
       PERFORMANCE_ENFORCE_BUDGETS: true
       PERFORMANCE_EVENT: ${{ github.event_name }}
+      DISPATCH_PROFILE_DATA_REF: ${{ github.event.client_payload.profile_data_ref }}
       DISPATCH_PROFILE_DATA_SHA: ${{ github.event.client_payload.profile_data_sha }}
       DISPATCH_PROFILE_DATA_PATH: ${{ github.event.client_payload.profile_data_path }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate repository dispatch payload
+        if: github.event_name == 'repository_dispatch'
+        run: test -n "$DISPATCH_PROFILE_DATA_REF" && test -n "$DISPATCH_PROFILE_DATA_PATH" && test -n "$DISPATCH_PROFILE_DATA_SHA"
       - uses: pnpm/action-setup@v4
         with:
           version: 11.5.2
@@ -53,9 +58,6 @@ jobs:
       - run: pnpm test:unit
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:browser
-      - name: Validate repository dispatch payload
-        if: github.event_name == 'repository_dispatch'
-        run: test -n "$DISPATCH_PROFILE_DATA_SHA" && test -n "$DISPATCH_PROFILE_DATA_PATH"
       - run: mkdir -p .profile-data
       - name: Resolve current profile data revision
         id: current-profile-data
@@ -87,6 +89,9 @@ jobs:
     if: github.event_name != 'workflow_dispatch' || inputs.deploy == true
     needs: measure
     runs-on: ubuntu-latest
+    concurrency:
+      group: profile-site-publication
+      cancel-in-progress: false
     permissions:
       contents: read
       pages: write

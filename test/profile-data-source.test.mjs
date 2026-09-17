@@ -84,6 +84,26 @@ test("registra la referencia, ruta y revisión curricular efectiva sin exponer t
   assert.equal(logs.join("\n").includes("Alicia Ejemplo"), false);
 });
 
+test("registra la referencia curricular original al adquirir su SHA exacto", async (t) => {
+  const outputPath = temporaryResumePath(t);
+  const logs = [];
+  const fetch = async (url) => response(200, url.includes("/commits/")
+    ? { sha: resolvedSha }
+    : { content: Buffer.from(resume).toString("base64"), encoding: "base64" });
+
+  await acquireProfileData({
+    ...options({ fetch, outputPath, log: (message) => logs.push(message) }),
+    ref: resolvedSha,
+    sourceRef: requestedRef,
+  });
+
+  assert.deepEqual(logs, [
+    `profile_data_ref=${requestedRef}`,
+    `profile_data_path=${requestedPath}`,
+    `resolved_profile_data_sha=${resolvedSha}`,
+  ]);
+});
+
 for (const [description, fetch, diagnostic] of [
   [
     "una referencia inexistente o ajena",
