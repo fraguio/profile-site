@@ -144,8 +144,22 @@ test("la baseline ejecuta el build contractual con su fixture y perfil versionad
     assert.match(summary, new RegExp(String(value)), `La baseline debe incluir ${name}.`);
   }
   const evidence = readFileSync(baselineEvidencePath, "utf8");
-  for (const value of [...Object.values(baseline.observed), ...Object.values(baseline.budgets)]) {
-    assert.match(evidence, new RegExp(String(value)));
+  const evidenceRows = [
+    ["Lighthouse mobile", baseline.observed.mobilePerformance, baseline.mobile.target, baseline.observed.mobilePerformance - baseline.mobile.target, "puntos"],
+    ["Límite absoluto mobile", baseline.observed.mobilePerformance, baseline.mobile.absoluteLimit, baseline.observed.mobilePerformance - baseline.mobile.absoluteLimit, "puntos"],
+    ["JavaScript inicial", baseline.observed.initialJavaScript, baseline.budgets.initialJavaScript, baseline.budgets.initialJavaScript - baseline.observed.initialJavaScript, "bytes"],
+    ["Bundles JavaScript", baseline.observed.javascriptBundles, baseline.budgets.javascriptBundles, baseline.budgets.javascriptBundles - baseline.observed.javascriptBundles, "bytes"],
+    ["Fuentes", baseline.observed.fonts, baseline.budgets.fonts, baseline.budgets.fonts - baseline.observed.fonts, "bytes"],
+    ["Recursos propios", baseline.observed.ownResources, baseline.budgets.ownResources, baseline.budgets.ownResources - baseline.observed.ownResources, "bytes"],
+    ["Requests críticos", baseline.observed.criticalRequests, baseline.budgets.criticalRequests, baseline.budgets.criticalRequests - baseline.observed.criticalRequests, ""],
+  ];
+  for (const [name, observed, threshold, margin, unit] of evidenceRows) {
+    const valueUnit = unit === "bytes" ? " bytes" : "";
+    assert.match(
+      evidence,
+      new RegExp(`\\| ${name} \\| ${observed}${valueUnit} \\| ${threshold}${valueUnit} \\| ${margin}${unit ? ` ${unit}` : ""} \\| .+ \\|`),
+      `La evidencia debe vincular ${name} con su valor observado, umbral, margen y justificación.`,
+    );
   }
 });
 

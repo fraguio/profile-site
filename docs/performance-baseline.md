@@ -26,7 +26,9 @@ contractuales descritas arriba; sus valores se fijaron después en
 | Recursos propios | 362518 bytes | 400000 bytes | 37482 bytes | Acota el output completo sin restringir su composición actual. |
 | Requests críticos | 2 | 3 | 1 | Permite un recurso crítico adicional antes de exigir revisión. |
 
-Los valores y umbrales se declaran también en `performance-baseline.json`, que
-es el input del evaluador. Los canarios de `test/performance-measurement.test.mjs`
-ejercitan fallo técnico, budget determinista, objetivo mobile y límite absoluto
-sin modificar el artefacto de producción.
+La tabla anterior es la evidencia de calibración de la PR: vincula cada umbral
+y margen con su medición observada y su justificación. Los valores y umbrales
+se declaran también en `performance-baseline.json`, que es el input del
+evaluador. Los canarios de `test/performance-measurement.test.mjs` ejercitan
+fallo técnico, budget determinista, objetivo mobile y límite absoluto sin
+modificar el artefacto de producción.
