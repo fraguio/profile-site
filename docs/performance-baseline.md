@@ -11,7 +11,8 @@ obtienen una vez.
 
 Las ejecuciones [35142010909](https://github.com/fraguio/profile-site/actions/runs/35142010909),
 [35188372156](https://github.com/fraguio/profile-site/actions/runs/35188372156)
-97, 87 y 85 con Chromium. La mediana, 87, se declara como baseline mobile.
+y su repetición capturaron valores mobile de 97, 87 y 85 con Chromium. La
+mediana, 87, se declara como baseline mobile.
 Las ejecuciones se realizaron sobre el fixture, el perfil y las variables
 contractuales descritas arriba.
 
