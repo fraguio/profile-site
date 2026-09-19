@@ -188,52 +188,30 @@ Las familias tipográficas definitivas se eligen durante diseño. Deben ser auto
 
 ## Integración curricular
 
-El emisor `profile-data` envía un `repository_dispatch` dedicado al repositorio con:
+`profile-site` es el único responsable de decidir cuándo actualizar sus superficies públicas. `profile-data` no emite eventos ni dispone de credenciales de escritura sobre `profile-site`; modificar la fuente curricular canónica no inicia una publicación.
 
-```json
-{
-  "event_type": "profile-data-updated",
-  "client_payload": {
-    "profile_data_ref": "main",
-    "profile_data_path": "data/resume.json",
-    "profile_data_sha": "<sha-del-commit-origen>"
-  }
-}
-```
+La integración cross-repo usa un único fine-grained PAT: `profile-site` guarda `PROFILE_DATA_READ_TOKEN`, limitado a `fraguio/profile-data` con `Contents: read`. El `GITHUB_TOKEN` de `profile-site` no lo sustituye porque su alcance no incluye otro repositorio privado. El token tiene expiración finita, se rota de forma operativa y su valor no aparece en archivos ni logs.
 
-En dispatch, los tres campos son obligatorios. `profile_data_sha` es la revisión efectiva: debe existir, pertenecer al repositorio de datos y se usa para leer `profile_data_path`. `profile_data_ref` es contexto humano y puede ser rama, tag o SHA. El build registra referencia, ruta y `resolved_profile_data_sha`.
+Toda publicación recibe como único input curricular `profile_data_sha`: un SHA completo que debe existir en `profile-data` y ser alcanzable desde `profile-data/main`. La publicación usa siempre `data/resume.json`, registra ese SHA como revisión curricular efectiva y registra también el SHA de `profile-site/main` que produjo el artefacto. Una revisión posterior en `profile-data/main` no invalida la elección explícita ni sustituye automáticamente la revisión curricular publicada.
 
-La integración cross-repo usa dos fine-grained PAT independientes. `profile-site` guarda `PROFILE_DATA_READ_TOKEN`, limitado a `fraguio/profile-data` con `Contents: read`; `profile-data` guarda `PROFILE_SITE_DISPATCH_TOKEN`, limitado a `fraguio/profile-site` con `Contents: write`. El `GITHUB_TOKEN` de `profile-site` no sustituye al primero porque su alcance no incluye otro repositorio privado. Los tokens tienen expiración finita, se rotan de forma operativa y sus valores no aparecen en archivos, payloads ni logs.
-
-Provisionar ambos PAT y secrets, activar Pages y configurar la aprobación del deploy manual son prerrequisitos humanos para habilitar publicaciones; el build y las validaciones locales no dependen de ellos.
-
-El receptor de `profile-site` debe estar publicado en la rama por defecto antes de habilitar el nuevo emisor. Debido a las instrucciones de `profile-data`, el propietario aplica allí el cambio como entrega humana: añade un workflow independiente que emite al cambiar `data/resume.json` en `main` y permite reenviar manualmente la revisión vigente de `main`. El envío manual desde otra ref falla. Ambos triggers envían los tres campos contractuales con el SHA exacto y fallan ante una respuesta HTTP no exitosa.
-
-El emisor existente hacia `profile-engine` se conserva de forma independiente mientras se resuelve [`profile-engine#14`](https://github.com/fraguio/profile-engine/issues/14). Esta coexistencia no convierte `profile-engine` en intermediario: `profile-site` sigue consumiendo directamente la fuente curricular. Retirar el emisor histórico queda fuera de la autoridad de este proyecto.
-
-Una carga ausente, inválida o inaccesible falla con diagnóstico explícito. Un build de publicación que no recibe SHA resuelve primero la referencia configurada a un SHA exacto y usa exclusivamente ese valor después.
+Una carga ausente, inválida o inaccesible y un SHA inexistente, incompleto o no alcanzable desde `profile-data/main` fallan con diagnóstico explícito antes de publicar.
 
 En desarrollo local se usa un `RESUME_PATH` explícito. Los pull requests usan un fixture ficticio versionado, sin secretos ni datos personales.
 
-Las actualizaciones automáticas usan `latest-wins`:
-
-1. Cada ejecución valida y construye el SHA que recibió.
-2. Antes de desplegar, comprueba si sigue siendo la revisión curricular vigente: el commit más reciente alcanzable desde `profile-data/main` que modificó `data/resume.json`.
-3. Si hay una revisión posterior, queda marcada como publicación supersedida y no despliega.
-4. Un despliegue que ya comenzó no se interrumpe de forma insegura; una ejecución posterior publica la revisión vigente.
-
 ## CI, despliegue y observabilidad
 
-GitHub Pages es el destino inicial como project site en `https://fraguio.github.io/profile-site/`, publicado mediante GitHub Actions. Los fallos contractuales anteriores al deploy conservan la última versión publicada y el despliegue del nuevo artefacto es atómico.
+GitHub Pages es el destino inicial como project site en `https://fraguio.github.io/profile-site/`, publicado mediante GitHub Actions. Los fallos contractuales anteriores al deploy conservan la última versión publicada y el despliegue del nuevo artefacto es atómico. No existen destinos alternativos bajo rutas como `/test/`; los candidatos se prueban localmente o mediante artefactos de validación.
 
-| Evento | Datos | Despliegue | Regla de referencia |
+| Recorrido | Datos | Despliegue | Regla de referencia |
 | --- | --- | --- | --- |
-| `pull_request` | Fixture ficticio | No | No requiere secretos |
-| `push` a `main` | Revisión vigente de `profile-data/main` resuelta a SHA | Sí | Registra SHA efectivo |
-| `repository_dispatch` | SHA recibido | Sí, si no fue supersedido | Usa el SHA recibido |
-| `workflow_dispatch` | Ref y ruta introducidas por operador | Solo con `deploy=true` | Resuelve la ref a SHA antes de construir |
+| Pull request | Fixture ficticio | No | No requiere secrets |
+| Validación automática tras `push` a `profile-site/main` | Revisión curricular vigente resuelta a SHA | No | Usa `PROFILE_DATA_READ_TOKEN` y registra ambos SHA |
+| Validación manual | `profile_data_sha` introducido por el operador | No | Exige SHA completo alcanzable desde `profile-data/main` |
+| Publicación manual | `profile_data_sha` introducido por el operador | Sí | Exige `profile-site/main` y aprobación del entorno protegido |
 
-`workflow_dispatch` ofrece `profile_data_ref` con default `main`, `profile_data_path` con default `data/resume.json` y `deploy` booleano con default `false`. Puede validar cualquier rama, tag o commit accesible. Para desplegar manualmente requiere `deploy=true`, aprobación humana mediante un entorno protegido de GitHub y logs visibles con referencia solicitada y SHA efectivo. Esa aprobación adicional solo gobierna el deploy manual; un `push` a `main` o un `repository_dispatch` válido publica automáticamente tras superar sus gates.
+La validación manual y la publicación son workflows distintos con el mismo único input `profile_data_sha`; no existe un booleano `deploy`. Ambos reutilizan el mismo recorrido de adquisición y gates y fallan antes de adquirir datos si no se ejecutan desde `profile-site/main`; su SHA queda determinado por el commit que ejecuta el workflow, no por otro input. Solo el job de deploy dispone de permisos de Pages y espera la aprobación del entorno protegido.
+
+Un `push` a `profile-site/main` inicia automáticamente el mismo recorrido de validación sin publicar. Resuelve la revisión curricular vigente a un SHA exacto antes de adquirir la fuente. Esta validación detecta incompatibilidades entre el código integrado y los datos reales, pero no modifica la revisión curricular publicada.
 
 Cada fase ejecuta pasos contractuales atómicos y diagnosticables para su alcance. La fase Base valida adquisición, schema, reglas locales, render HTML, rutas, SEO, CTAs y accesibilidad automatizable. La fase PDF añade generación, validación y output PDF. Cualquier fallo aplicable a la fase bloquea el despliegue.
 
@@ -249,12 +227,12 @@ Hay tres protecciones:
 - Los budgets deterministas de build para JavaScript inicial, bundles, fuentes, recursos propios y requests críticos bloquean siempre.
 - Lighthouse mobile tiene un objetivo y un límite absoluto de seguridad.
 
-| Control | Pull request | Push a `main` | Repository dispatch | Workflow dispatch |
+| Control | Pull request | Push a `main` | Validación manual | Publicación manual |
 | --- | --- | --- | --- | --- |
 | Fallo técnico de medición | Bloquea | Bloquea | Bloquea | Bloquea |
 | Budget determinista de build | Bloquea | Bloquea | Bloquea | Bloquea |
 | Objetivo Lighthouse mobile | Bloquea | Bloquea | Warning | Warning |
-| Límite absoluto de seguridad | Bloquea | Bloquea deploy | Bloquea deploy | Bloquea deploy |
+| Límite absoluto de seguridad | Bloquea | Bloquea | Bloquea | Bloquea deploy |
 | Lighthouse desktop | Informa | Informa | Informa | Informa |
 
 Antes de fijar umbrales, la medición técnica debe terminar correctamente y publicar resultados, pero las comparaciones todavía son informativas. Una vez disponibles datos, metadatos, filtros, detalle y movimiento, un PR posterior y dedicado captura la baseline de la experiencia completa. Se mide el `dist` contractual con el fixture y el perfil versionado que usarán los gates: mediana de tres ejecuciones para Lighthouse y una ejecución para métricas deterministas.
@@ -285,12 +263,14 @@ El build contractual se amplía por fases. En Base produce exactamente los dos H
 | PDF-001 | Publicar PDF estable desde CV web | `dist/cv/eduardo-nogueira-fraguio-cv.pdf` y checks PDF |
 | DATA-001 | Validar schema y reglas locales | Paso CI y diagnóstico de validación |
 | DATA-002 | Consumir revisión curricular exacta | Logs con `resolved_profile_data_sha` |
+| DATA-003 | Limitar publicaciones a revisiones integradas | Comprobación de alcanzabilidad desde `profile-data/main` |
 | INT-001 | Timeline con filtro inicial `all` | Prueba de render y estado cliente |
 | INT-002 | Detalle responsive accesible | Pruebas Playwright de foco, teclado y cierre |
 | A11Y-001 | WCAG 2.2 AA como objetivo | Axe, pruebas de interacción y checklist manual |
 | SEO-001 | Metadatos por ruta | Check sobre ambos HTML generados |
 | PERF-001 | Rendimiento con dos niveles | Baseline, canarios negativos, Lighthouse y budgets de build en summary |
 | DEPLOY-001 | Publicación íntegra y smoke test | Workflow y comprobación pública |
+| DEPLOY-002 | Publicación explícita y reproducible | Logs con los SHA de `profile-site` y `profile-data` y aprobación protegida |
 
 ## Decisiones aplazadas
 
@@ -308,4 +288,6 @@ El build contractual se amplía por fases. En Base produce exactamente los dos H
 - Render por request.
 - Drag & Drop del timeline.
 - Persistencia mediante URL, local storage o historial del estado interactivo.
+- Publicación automática por cambios en `profile-site` o `profile-data`.
+- Preview público bajo una ruta alternativa del project site.
 - Rollback automático después de un smoke test publicado fallido.

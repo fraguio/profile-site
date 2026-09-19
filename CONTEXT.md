@@ -34,6 +34,10 @@ _Evitar_: Main actual, última versión
 El SHA del commit más reciente alcanzable desde `profile-data/main` que modificó la fuente curricular canónica.
 _Evitar_: HEAD de main, último commit del repositorio
 
+**Revisión curricular publicada**:
+El SHA exacto de la fuente curricular que presentan actualmente las superficies públicas.
+_Evitar_: Revisión vigente, última versión
+
 **Timeline**:
 La secuencia cronológica unificada de hitos de experiencia profesional, formación y proyectos.
 _Evitar_: Lista de empleos, carrusel
@@ -46,6 +50,6 @@ _Evitar_: Tarjeta, evento genérico
 Una tecnología, práctica o capacidad vinculada a un hito concreto.
 _Evitar_: Catálogo global, skill transversal
 
-**Publicación supersedida**:
-Una ejecución automática que construyó una revisión curricular exacta pero no la publica porque existe una revisión más reciente.
-_Evitar_: Build fallido, despliegue cancelado
+**Publicación del perfil**:
+La actualización deliberada y conjunta de la Experiencia interactiva, el CV web y el CV PDF a partir de una revisión curricular efectiva elegida.
+_Evitar_: Sincronización automática, publicación curricular
