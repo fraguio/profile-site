@@ -1,0 +1,110 @@
+name: Publicar el perfil
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile_data_sha:
+        description: SHA completo de la revisión curricular que se publicará
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate-profile-data:
+    runs-on: ubuntu-latest
+    outputs:
+      resolved_profile_data_sha: ${{ steps.publishable-profile-data.outputs.resolved_profile_data_sha }}
+    env:
+      PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
+      PROFILE_DATA_SHA: ${{ inputs.profile_data_sha }}
+    steps:
+      - name: Comprobar la rama de ejecución
+        run: test "$GITHUB_REF" = "refs/heads/main"
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
+      - id: publishable-profile-data
+        name: Validar la Revisión curricular publicable
+        run: |
+          pnpm validate:publishable-profile-data-revision | tee validation.log
+          grep '^resolved_profile_data_sha=' validation.log >> "$GITHUB_OUTPUT"
+
+  validate:
+    needs: validate-profile-data
+    uses: ./.github/workflows/validate-profile-gates.yml
+    with:
+      profile_data_sha: ${{ needs.validate-profile-data.outputs.resolved_profile_data_sha }}
+    secrets: inherit
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: profile-validation
+          path: dist
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    env:
+      PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
+    steps:
+      - id: interactive-experience
+        name: Comprobar la Experiencia interactiva publicada
+        continue-on-error: true
+        run: |
+          curl --fail --show-error --silent --location "$PROFILE_SITE_BASE_URL" --output interactive-experience.html
+          test -s interactive-experience.html
+      - id: web-cv
+        name: Comprobar el CV web publicado
+        continue-on-error: true
+        run: |
+          curl --fail --show-error --silent --location "${PROFILE_SITE_BASE_URL}read/" --output web-cv.html
+          test -s web-cv.html
+      - id: cv
+        name: Comprobar el CV PDF publicado
+        continue-on-error: true
+        run: |
+          curl --fail --show-error --silent --location "${PROFILE_SITE_BASE_URL}cv/eduardo-nogueira-fraguio-cv.pdf" --output cv.pdf
+          test -s cv.pdf
+          head -c 5 cv.pdf | grep -Fx '%PDF-'
+      - name: Conservar diagnóstico de smoke tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: profile-public-smoke
+          path: |
+            interactive-experience.html
+            web-cv.html
+            cv.pdf
+          if-no-files-found: ignore
+      - name: Fallar si algún smoke test falla
+        if: always()
+        run: |
+          test "${{ steps.interactive-experience.outcome }}" = success
+          test "${{ steps.web-cv.outcome }}" = success
+          test "${{ steps.cv.outcome }}" = success

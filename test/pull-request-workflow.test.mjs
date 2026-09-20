@@ -15,6 +15,9 @@ const validationGatesWorkflowPath = fileURLToPath(
 const manualValidationWorkflowPath = fileURLToPath(
   new URL("../.github/workflows/validate-profile-release.yml", import.meta.url),
 );
+const publishProfileWorkflowPath = fileURLToPath(
+  new URL("../.github/workflows/publish-profile.yml", import.meta.url),
+);
 
 function readWorkflowSource(path) {
   return readFileSync(path, "utf8");
@@ -55,7 +58,6 @@ test("el push a main resuelve la Revisión curricular vigente antes de delegar l
   assert.match(source, /PROFILE_DATA_READ_TOKEN: \$\{\{ secrets\.PROFILE_DATA_READ_TOKEN \}\}/);
   assert.match(source, /PROFILE_DATA_PATH: data\/resume\.json/);
   assert.match(source, /uses: pnpm\/action-setup@v4/);
-  assert.match(source, /PROFILE_DATA_RESOLUTION_MODE: resolve/);
   assert.match(source, /Resolver la Revisión curricular vigente/);
   assert.match(source, /pnpm check:current-profile-data-revision/);
   assert.match(source, /uses: \.\/\.github\/workflows\/validate-profile-gates\.yml/);
@@ -87,8 +89,8 @@ test("los gates reutilizables adquieren una Revisión curricular efectiva, regis
   assert.match(source, /Adquirir la Revisión curricular efectiva/);
   assert.match(source, /pnpm build/);
   assert.match(source, /pnpm measure:performance/);
-  assert.match(source, /profile_site_sha=\$GITHUB_SHA/);
-  assert.match(source, /profile_data_sha=\$\{\{ steps\.acquired-profile-data\.outputs\.resolved_profile_data_sha \}\}/);
+  assert.match(source, /echo "profile_site_sha=\$GITHUB_SHA" \| tee -a "\$GITHUB_STEP_SUMMARY"/);
+  assert.match(source, /echo "profile_data_sha=\$\{\{ steps\.acquired-profile-data\.outputs\.resolved_profile_data_sha \}\}" \| tee -a "\$GITHUB_STEP_SUMMARY"/);
   assert.match(source, /actions\/upload-artifact@v4/);
   assert.match(source, /name: profile-validation/);
   assert.match(source, /path: dist/);
@@ -124,4 +126,66 @@ test("la validación manual acepta un único SHA publicable desde main y reutili
     "la ref debe rechazarse antes de validar o adquirir la revisión curricular",
   );
   assert.doesNotMatch(source, /pages:|environment:|upload-pages-artifact|deploy-pages|curl --fail/);
+});
+
+test("la publicación manual valida un SHA elegido, despliega el artefacto completo tras aprobación y comprueba las tres superficies", () => {
+  const source = readWorkflowSource(publishProfileWorkflowPath);
+
+  assert.match(source, /^on:\s*\n\s+workflow_dispatch:\s*\n\s+inputs:\s*\n\s+profile_data_sha:/m);
+  assert.match(source, /profile_data_sha:\s*\n\s+description:.*\n\s+required: true\s*\n\s+type: string/);
+  assert.deepEqual(workflowDispatchInputNames(source), ["profile_data_sha"]);
+  assert.match(source, /^permissions:\s*\n\s+contents: read$/m);
+  assert.match(source, /test "\$GITHUB_REF" = "refs\/heads\/main"/);
+  assert.match(source, /PROFILE_DATA_SHA: \$\{\{ inputs\.profile_data_sha \}\}/);
+  assert.match(source, /pnpm validate:publishable-profile-data-revision/);
+  assert.match(source, /uses: \.\/\.github\/workflows\/validate-profile-gates\.yml/);
+  assert.match(source, /needs: validate-profile-data/);
+  assert.match(source, /profile_data_sha: \$\{\{ needs\.validate-profile-data\.outputs\.resolved_profile_data_sha \}\}/);
+  assert.match(source, /deploy:\s*\n\s+needs: validate/m);
+  assert.match(source, /concurrency:\s*\n\s+group: pages\s*\n\s+cancel-in-progress: false/m);
+  assert.match(source, /permissions:\s*\n\s+actions: read\s*\n\s+pages: write\s*\n\s+id-token: write/m);
+  assert.match(source, /environment:\s*\n\s+name: github-pages/m);
+  assert.match(source, /actions\/download-artifact@v4/);
+  assert.match(source, /name: profile-validation/);
+  assert.match(source, /actions\/upload-pages-artifact@v3/);
+  assert.match(source, /path: dist/);
+  assert.match(source, /actions\/deploy-pages@v4/);
+  assert.match(source, /smoke:\s*\n\s+needs: deploy/m);
+  assert.match(source, /curl --fail --show-error --silent --location "\$PROFILE_SITE_BASE_URL"/);
+  assert.match(source, /curl --fail --show-error --silent --location "\$\{PROFILE_SITE_BASE_URL\}read\/"/);
+  assert.match(source, /curl --fail --show-error --silent --location "\$\{PROFILE_SITE_BASE_URL\}cv\/eduardo-nogueira-fraguio-cv\.pdf"/);
+  assert.match(source, /test -s interactive-experience\.html/);
+  assert.match(source, /test -s web-cv\.html/);
+  assert.match(source, /test -s cv\.pdf/);
+  assert.match(source, /head -c 5 cv\.pdf \| grep -Fx '%PDF-'/);
+  assert.equal(
+    (source.match(/continue-on-error: true/g) ?? []).length,
+    3,
+    "cada superficie debe comprobarse aunque falle otra",
+  );
+  assert.match(source, /if: always\(\)/);
+  assert.match(source, /actions\/upload-artifact@v4/);
+  assert.match(source, /name: profile-public-smoke/);
+  assert.match(source, /steps\.interactive-experience\.outcome/);
+  assert.match(source, /steps\.web-cv\.outcome/);
+  assert.match(source, /steps\.cv\.outcome/);
+  assert.ok(
+    source.indexOf('test "$GITHUB_REF" = "refs/heads/main"') <
+      source.indexOf("pnpm validate:publishable-profile-data-revision"),
+    "la ref debe rechazarse antes de validar o adquirir la revisión curricular",
+  );
+  assert.ok(
+    source.indexOf("validate-profile-gates.yml") < source.indexOf("environment:"),
+    "los gates deben terminar antes de solicitar la aprobación protegida",
+  );
+  assert.ok(
+    source.indexOf("actions/upload-pages-artifact@v3") <
+      source.indexOf("actions/deploy-pages@v4"),
+    "el artefacto completo debe subirse antes del deploy",
+  );
+  assert.ok(
+    source.indexOf("actions/deploy-pages@v4") < source.indexOf("curl --fail"),
+    "los smoke tests deben ejecutarse después del deploy",
+  );
+  assert.doesNotMatch(source, /push:|repository_dispatch|latest-wins|superseded|PROFILE_SITE_DISPATCH_TOKEN/);
 });
