@@ -1,0 +1,60 @@
+name: Validate profile gates
+
+on:
+  workflow_call:
+    inputs:
+      profile_data_sha:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      PROFILE_SITE_BASE_URL: https://fraguio.github.io/profile-site/
+      PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
+      PROFILE_DATA_REF: ${{ inputs.profile_data_sha }}
+      PROFILE_DATA_SOURCE_REF: main
+      PROFILE_DATA_PATH: data/resume.json
+      RESUME_PATH: .profile-data/resume.json
+      PERFORMANCE_ENFORCE_BUDGETS: true
+      PERFORMANCE_EVENT: ${{ github.event_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:unit
+      - run: pnpm test:browser
+      - run: mkdir -p .profile-data
+      - id: acquired-profile-data
+        name: Adquirir la Revisión curricular efectiva
+        run: |
+          pnpm acquire:profile-data | tee acquisition.log
+          grep '^resolved_profile_data_sha=' acquisition.log >> "$GITHUB_ENV"
+          grep '^resolved_profile_data_sha=' acquisition.log >> "$GITHUB_OUTPUT"
+      - name: Record effective revisions
+        run: |
+          echo "profile_site_sha=$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "profile_data_sha=${{ steps.acquired-profile-data.outputs.resolved_profile_data_sha }}" >> "$GITHUB_STEP_SUMMARY"
+      - run: pnpm build
+      - run: |
+          status=0
+          pnpm measure:performance || status=$?
+          cat "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: profile-validation
+          path: dist
+          if-no-files-found: error
