@@ -45,8 +45,8 @@ jobs:
           grep '^resolved_profile_data_sha=' acquisition.log >> "$GITHUB_OUTPUT"
       - name: Record effective revisions
         run: |
-          echo "profile_site_sha=$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo "profile_data_sha=${{ steps.acquired-profile-data.outputs.resolved_profile_data_sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "profile_site_sha=$GITHUB_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "profile_data_sha=${{ steps.acquired-profile-data.outputs.resolved_profile_data_sha }}" | tee -a "$GITHUB_STEP_SUMMARY"
       - run: pnpm build
       - run: |
           status=0

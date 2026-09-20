@@ -15,7 +15,6 @@ jobs:
     env:
       PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
       PROFILE_DATA_PATH: data/resume.json
-      PROFILE_DATA_RESOLUTION_MODE: resolve
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
