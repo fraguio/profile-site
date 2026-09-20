@@ -1,0 +1,36 @@
+name: Validate profile integration
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-profile-data:
+    runs-on: ubuntu-latest
+    outputs:
+      resolved_profile_data_sha: ${{ steps.current-profile-data.outputs.resolved_profile_data_sha }}
+    env:
+      PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
+      PROFILE_DATA_PATH: data/resume.json
+      PROFILE_DATA_RESOLUTION_MODE: resolve
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - id: current-profile-data
+        name: Resolver la Revisión curricular vigente
+        run: pnpm check:current-profile-data-revision
+
+  validate:
+    needs: resolve-profile-data
+    uses: ./.github/workflows/validate-profile-gates.yml
+    with:
+      profile_data_sha: ${{ needs.resolve-profile-data.outputs.resolved_profile_data_sha }}
+    secrets: inherit
