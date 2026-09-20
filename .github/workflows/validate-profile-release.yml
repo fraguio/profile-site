@@ -1,0 +1,44 @@
+name: Validate profile release
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile_data_sha:
+        description: SHA completo de la revisión curricular que se validará
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate-profile-data:
+    runs-on: ubuntu-latest
+    outputs:
+      resolved_profile_data_sha: ${{ steps.publishable-profile-data.outputs.resolved_profile_data_sha }}
+    env:
+      PROFILE_DATA_READ_TOKEN: ${{ secrets.PROFILE_DATA_READ_TOKEN }}
+      PROFILE_DATA_SHA: ${{ inputs.profile_data_sha }}
+    steps:
+      - name: Comprobar la rama de ejecución
+        run: test "$GITHUB_REF" = "refs/heads/main"
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
+      - id: publishable-profile-data
+        name: Validar la Revisión curricular publicable
+        run: |
+          pnpm validate:publishable-profile-data-revision | tee validation.log
+          grep '^resolved_profile_data_sha=' validation.log >> "$GITHUB_OUTPUT"
+
+  validate:
+    needs: validate-profile-data
+    uses: ./.github/workflows/validate-profile-gates.yml
+    with:
+      profile_data_sha: ${{ needs.validate-profile-data.outputs.resolved_profile_data_sha }}
+    secrets: inherit

@@ -12,9 +12,23 @@ const automaticValidationWorkflowPath = fileURLToPath(
 const validationGatesWorkflowPath = fileURLToPath(
   new URL("../.github/workflows/validate-profile-gates.yml", import.meta.url),
 );
+const manualValidationWorkflowPath = fileURLToPath(
+  new URL("../.github/workflows/validate-profile-release.yml", import.meta.url),
+);
 
 function readWorkflowSource(path) {
   return readFileSync(path, "utf8");
+}
+
+function workflowDispatchInputNames(source) {
+  const inputs = source.match(
+    /^  workflow_dispatch:\s*\n    inputs:\s*\n((?: {6,}.*\n)*)/m,
+  )?.[1];
+
+  assert.ok(inputs, "el workflow debe declarar inputs manuales");
+  return [...inputs.matchAll(/^      ([a-z_]+):/gm)].map(
+    (match) => match[1],
+  );
 }
 
 test("el workflow de pull request ejecuta los gates con el fixture ficticio sin secrets ni publicación", () => {
@@ -83,4 +97,31 @@ test("los gates reutilizables adquieren una Revisión curricular efectiva, regis
     "un fallo de build no debe conservar un artefacto parcial",
   );
   assert.doesNotMatch(source, /repository_dispatch|pages:|environment:|upload-pages-artifact|deploy-pages|curl --fail/);
+});
+
+test("la validación manual acepta un único SHA publicable desde main y reutiliza los gates sin publicar", () => {
+  const source = readWorkflowSource(manualValidationWorkflowPath);
+
+  assert.match(source, /^on:\s*\n\s+workflow_dispatch:\s*\n\s+inputs:\s*\n\s+profile_data_sha:/m);
+  assert.match(source, /profile_data_sha:\s*\n\s+description:.*\n\s+required: true\s*\n\s+type: string/);
+  assert.deepEqual(workflowDispatchInputNames(source), ["profile_data_sha"]);
+  assert.match(source, /^permissions:\s*\n\s+contents: read$/m);
+  assert.match(source, /test "\$GITHUB_REF" = "refs\/heads\/main"/);
+  assert.match(source, /PROFILE_DATA_SHA: \$\{\{ inputs\.profile_data_sha \}\}/);
+  assert.match(source, /pnpm validate:publishable-profile-data-revision/);
+  assert.match(
+    source,
+    /outputs:\s*\n\s+resolved_profile_data_sha: \$\{\{ steps\.publishable-profile-data\.outputs\.resolved_profile_data_sha \}\}/,
+  );
+  assert.match(source, /grep '\^resolved_profile_data_sha=' validation\.log >> "\$GITHUB_OUTPUT"/);
+  assert.match(source, /uses: \.\/\.github\/workflows\/validate-profile-gates\.yml/);
+  assert.match(source, /needs: validate-profile-data/);
+  assert.match(source, /profile_data_sha: \$\{\{ needs\.validate-profile-data\.outputs\.resolved_profile_data_sha \}\}/);
+  assert.match(source, /secrets: inherit/);
+  assert.ok(
+    source.indexOf('test "$GITHUB_REF" = "refs/heads/main"') <
+      source.indexOf("pnpm validate:publishable-profile-data-revision"),
+    "la ref debe rechazarse antes de validar o adquirir la revisión curricular",
+  );
+  assert.doesNotMatch(source, /pages:|environment:|upload-pages-artifact|deploy-pages|curl --fail/);
 });
