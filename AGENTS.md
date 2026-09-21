@@ -12,6 +12,10 @@ El triage utiliza las cinco etiquetas canónicas predeterminadas. Consulta `docs
 
 Este repositorio utiliza una estructura de contexto único. Consulta `docs/agents/domain.md`.
 
+### Exploración de la Experiencia interactiva
+
+Para diseñar, prototipar o evaluar el rediseño de la Experiencia interactiva, consulta `docs/design/interactive-experience-redesign-brief.md`.
+
 ## Idioma
 
 Redacta en español la prosa de toda la documentación del repositorio, incluidos issues, PRs, especificaciones, ADRs, comentarios de código y docstrings.

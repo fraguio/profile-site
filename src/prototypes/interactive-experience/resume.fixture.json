@@ -1,0 +1,576 @@
+{
+  "basics": {
+    "name": "Eduardo Manuel Nogueira Fraguío",
+    "email": "fraguio@gmail.com",
+    "url": "https://github.com/fraguio",
+    "label": "Senior Backend Developer",
+    "summary": "Senior Backend Developer con más de 20 años de experiencia en el análisis, desarrollo y evolución de sistemas corporativos, especializado en Java y arquitecturas orientadas a servicios. Amplia trayectoria en plataformas empresariales, core bancario y procesos de modernización de soluciones legacy. Perfil autónomo, orientado a la toma de decisiones técnicas, comprometido con la calidad del software, mantenibilidad y rendimiento.",
+    "location": {
+      "city": "A Coruña",
+      "region": "Galicia",
+      "countryCode": "ES"
+    }
+  },
+  "work": [
+    {
+      "name": "Evolutio Cloud Enabler",
+      "position": "Senior Backend Developer en Proyecto Enel",
+      "startDate": "2024-01-16",
+      "endDate": "2024-05-27",
+      "summary": "Participación en un proyecto de migración de soluciones de contact center hacia la plataforma Genesys Cloud para Enel.",
+      "highlights": [
+        "Desarrollo de microservicios backend con Spring Boot para la integración con la API de Genesys Cloud.",
+        "Contribución a la evolución del framework corporativo, reutilizando y extendiendo componentes comunes de la plataforma.",
+        "Implementación de servicios backend para recuperación de ventas, reasignación de procesos de recuperación y exportación de vistas para reporting histórico.",
+        "Integración de servicios backend en un entorno corporativo distribuido."
+      ],
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "Microservicios",
+        "Genesys Cloud",
+        "Integración con APIs de terceros",
+        "Modernización de sistemas legacy"
+      ]
+    },
+    {
+      "name": "Evolutio Cloud Enabler",
+      "position": "Senior Backend Developer en Proyecto Mapfre – Integraciones WhatsApp / Genesys Cloud",
+      "startDate": "2023-07-01",
+      "endDate": "2024-05-27",
+      "summary": "Desarrollo de integraciones específicas para la migración del canal WhatsApp a Genesys Cloud.",
+      "highlights": [
+        "Diseño y desarrollo de funciones serverless (AWS Lambda con Node.js) para la extracción de interacciones de mensajería (WhatsApp) desde Genesys Cloud, con generación de documentos PDF enriquecidos (conversaciones y adjuntos multimedia) y su envío al gestor documental corporativo de Mapfre para el cumplimiento de requisitos legales.",
+        "Implementación de procesos batch para la regularización histórica de miles de interacciones de mensajería (WhatsApp) existentes en Genesys Cloud con anterioridad a la entrada en vigor de la normativa."
+      ],
+      "skills": [
+        "Node.js",
+        "AWS Lambda",
+        "API Gateway",
+        "Amazon CloudWatch",
+        "Genesys Cloud",
+        "Procesos batch",
+        "Integración con APIs de terceros",
+        "Modernización de sistemas legacy"
+      ]
+    },
+    {
+      "name": "Evolutio Cloud Enabler",
+      "position": "Senior Backend Developer – Middleware / Integrations",
+      "startDate": "2022-10-01",
+      "endDate": "2024-05-27",
+      "summary": "Proyecto Nébula – Mapfre. Análisis, diseño y desarrollo del ecosistema de microservicios para la migración progresiva de los contact centers de Mapfre (España y otros países) hacia la plataforma Genesys Cloud.",
+      "highlights": [
+        "Diseño y desarrollo de un ecosistema de microservicios backend con Spring Boot, orientado a centralizar la lógica de negocio y la integración con la API REST de Genesys Cloud diseñado para su despliegue en entornos AWS.",
+        "Desarrollo de un framework corporativo con componentes comunes y transversales para la plataforma, incluyendo autenticación, auditoría, gestión de caché distribuida con Redis y capacidades de observabilidad mediante logging estructurado en formato JSON, así como capas de abstracción propias para simplificar el acceso a los SDKs de Genesys Cloud y a servicios de AWS (S3, Secrets Manager).",
+        "Implementación de una capa middleware de abstracción para desacoplar las aplicaciones de negocio internas de la plataforma Genesys Cloud y facilitar la evolución de las soluciones legacy, incorporando la gestión centralizada de reglas de negocio como colas, agendas, horarios y festivos.",
+        "Diseño y desarrollo de funciones serverless (AWS Lambda con Node.js) para la extracción de interacciones de mensajería (WhatsApp) desde Genesys Cloud, generación de documentos PDF enriquecidos (multimedia) y su integración con el gestor documental corporativo de Mapfre, incluyendo su reutilización en procesos batch para la generación histórica de documentación por requisitos legales."
+      ],
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "Microservicios",
+        "Middleware e integración de sistemas",
+        "Modernización de sistemas legacy",
+        "Genesys Cloud",
+        "AWS",
+        "AWS Lambda",
+        "Amazon S3",
+        "AWS Secrets Manager",
+        "Redis",
+        "Logging estructurado (JSON)",
+        "Node.js"
+      ]
+    },
+    {
+      "name": "COMTEC Software Factory / BT España / Evolutio Cloud Enabler",
+      "position": "Senior Backend Developer en Proyecto Abanca - Área Ingeniería",
+      "startDate": "2008-03-03",
+      "endDate": "2022-09-30",
+      "summary": "Evolutio Cloud Enabler nace en 2020 tras la adquisición de parte de BT España, manteniendo continuidad total de funciones y antigüedad.",
+      "highlights": [
+        "Proyecto Abanca (sector bancario) / Área de ingeniería / Marzo 2008 a Septiembre 2022.",
+        "Proyecto iniciado a través de un proveedor anterior y continuado posteriormente en BT España / Evolutio Cloud Enabler, manteniendo continuidad funcional y técnica.",
+        "Participación en el análisis, diseño y desarrollo de un framework web corporativo propio, basado en JSF y Spring Web Flow, con alta autonomía en la toma de decisiones técnicas, siendo responsable único del mismo durante varios años.",
+        "Participación en el análisis, diseño y desarrollo del core bancario en un entorno corporativo de gran escala, basado en arquitectura SOA y tecnologías Java.",
+        "Diseño y desarrollo de integraciones específicas del core bancario con Google APIs y de un sistema de logging estructurado en formato JSON, integrado con Elasticsearch para su explotación en Kibana.",
+        "Soporte técnico y acompañamiento a equipos de otras áreas de negocio como usuarios finales del core bancario y del framework web corporativo desarrollado por el área de ingeniería.",
+        "Participación en iniciativas de seguridad y corrección de vulnerabilidades detectadas en auditorías."
+      ],
+      "skills": [
+        "Java",
+        "Java EE (Jakarta EE)",
+        "Spring Framework",
+        "JSF",
+        "HTML",
+        "JavaScript",
+        "CSS",
+        "Spring Web Flow",
+        "Arquitectura orientada a servicios (SOA)",
+        "Integración con APIs de terceros",
+        "Elasticsearch",
+        "Kibana",
+        "Logging estructurado (JSON)",
+        "Seguridad y corrección de vulnerabilidades"
+      ]
+    },
+    {
+      "name": "COMTEC Software Factory",
+      "position": "Backend Developer en Proyecto Inditex",
+      "startDate": "2007-05-07",
+      "endDate": "2008-02-29",
+      "summary": "Participación en proyectos Java EE de gestión interna y Terminales de Gestión de Tienda (TGT).",
+      "highlights": [
+        "Desarrollo backend en entornos Java EE en proyectos corporativos."
+      ],
+      "skills": [
+        "Java",
+        "Java EE (Jakarta EE)",
+        "HTML",
+        "JavaScript",
+        "CSS"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Lenguajes",
+      "keywords": [
+        "Java",
+        "JavaScript",
+        "Node.js"
+      ]
+    },
+    {
+      "name": "Lenguajes (secundarios)",
+      "keywords": [
+        "HTML",
+        "CSS"
+      ]
+    },
+    {
+      "name": "Backend & Arquitectura",
+      "keywords": [
+        "Arquitectura orientada a servicios (SOA)",
+        "Middleware e integración de sistemas",
+        "Modernización de sistemas legacy",
+        "Microservicios",
+        "Diseño de APIs REST"
+      ]
+    },
+    {
+      "name": "Frameworks & Ecosistema Java",
+      "keywords": [
+        "Spring Framework",
+        "Spring Boot",
+        "JSF",
+        "Spring Web Flow",
+        "Hibernate / JPA",
+        "Spring Data JPA",
+        "JUnit 5",
+        "Mockito",
+        "Java EE (Jakarta EE)"
+      ]
+    },
+    {
+      "name": "Cloud (AWS)",
+      "keywords": [
+        "AWS",
+        "AWS Lambda",
+        "API Gateway",
+        "Amazon S3",
+        "AWS Secrets Manager",
+        "Amazon CloudWatch",
+        "Amazon RDS / Aurora",
+        "AWS CLI",
+        "IAM"
+      ]
+    },
+    {
+      "name": "Datos & Observabilidad",
+      "keywords": [
+        "Elasticsearch",
+        "Kibana",
+        "Redis",
+        "Logging estructurado (JSON)",
+        "Auditoría y trazabilidad",
+        "Bases de datos relacionales y NoSQL"
+      ]
+    },
+    {
+      "name": "Otros",
+      "keywords": [
+        "Genesys Cloud",
+        "Integración con APIs de terceros",
+        "Seguridad y corrección de vulnerabilidades"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "title": "Full Stack Open",
+      "institution": "Universidad de Helsinki",
+      "startDate": "2025-06",
+      "endDate": "2026-01",
+      "status": "in_progress",
+      "details": [
+        "Curso universitario orientado a buenas prácticas profesionales cuyo enfoque principal es crear aplicaciones de una sola página con ReactJS que usan REST API creadas con Node.js",
+        "Desarrollo full stack moderno basado en Javascript con React, Redux, Node.js, Express, MongoDB, GraphQL y TypeScript",
+        "Arquitecturas SPA, diseño de APIs REST, testing, CI/CD y despliegue"
+      ],
+      "notes": "7 de 13 partes completadas",
+      "skills": [
+        "JavaScript",
+        "React",
+        "Redux",
+        "Node.js",
+        "Express",
+        "MongoDB",
+        "TypeScript",
+        "Diseño de APIs REST",
+        "Testing",
+        "CI/CD"
+      ]
+    },
+    {
+      "title": "Desarrollo de Aplicaciones de IA",
+      "institution": "DataCamp",
+      "startDate": "2025-09",
+      "endDate": "2025-10",
+      "details": [
+        "Diseño y desarrollo de aplicaciones basadas en modelos de lenguaje (LLM)",
+        "Uso de APIs de OpenAI (GPT, Whisper) para análisis de texto, chatbots y audio",
+        "Aplicación de técnicas avanzadas de prompt engineering",
+        "Integración de modelos open source mediante Hugging Face Transformers",
+        "Desarrollo de sistemas de IA con enfoque ético y privacidad de datos"
+      ],
+      "skills": [
+        "Aplicaciones con LLM",
+        "APIs de OpenAI",
+        "GPT",
+        "Prompt engineering",
+        "Hugging Face Transformers",
+        "Ética y privacidad en IA"
+      ]
+    },
+    {
+      "title": "Ingeniero Asociado de IA para Desarrolladores",
+      "institution": "DataCamp",
+      "startDate": "2025-08",
+      "endDate": "2025-09",
+      "details": [
+        "Integración de capacidades de inteligencia artificial en aplicaciones software",
+        "Uso de APIs de modelos de lenguaje (OpenAI) y modelos open source (Hugging Face)",
+        "Diseño de flujos con LangChain, prompts, cadenas y agentes",
+        "Uso de bases de datos vectoriales para búsqueda semántica y sistemas de recomendación",
+        "Buenas prácticas de LLMOps para sistemas de IA listos para producción"
+      ],
+      "skills": [
+        "Aplicaciones con LLM",
+        "APIs de OpenAI",
+        "Hugging Face",
+        "LangChain",
+        "Prompt engineering",
+        "Agentes de IA",
+        "Bases de datos vectoriales",
+        "LLMOps"
+      ]
+    },
+    {
+      "title": "Formación avanzada Backend: Python, Flask y Django",
+      "institution": "IBM / Experiencia Fundae",
+      "startDate": "2025-03",
+      "endDate": "2025-05",
+      "details": [
+        "Desarrollo backend avanzado con Python aplicado a entornos profesionales",
+        "Diseño e implementación de APIs REST con Flask",
+        "Desarrollo de aplicaciones web escalables con Django",
+        "Gestión de bases de datos, autenticación y despliegue de aplicaciones"
+      ],
+      "skills": [
+        "Python",
+        "Flask",
+        "Django",
+        "Diseño de APIs REST",
+        "Bases de datos",
+        "Autenticación",
+        "Despliegue de aplicaciones"
+      ]
+    },
+    {
+      "title": "Python Essentials 1 y 2",
+      "institution": "Cisco Networking Academy",
+      "startDate": "2024-11",
+      "endDate": "2025-02",
+      "details": [
+        "Fundamentos y conceptos intermedios de programación en Python",
+        "Estructuras de datos, control de flujo y manejo de excepciones",
+        "Programación orientada a objetos, módulos y paquetes",
+        "Buenas prácticas de desarrollo y resolución de problemas mediante programación"
+      ],
+      "skills": [
+        "Python",
+        "Estructuras de datos",
+        "Manejo de excepciones",
+        "Programación orientada a objetos",
+        "Módulos y paquetes"
+      ]
+    },
+    {
+      "title": "Inteligencia Artificial aplicada al desarrollo de software",
+      "institution": "Femxa",
+      "startDate": "2024-10",
+      "endDate": "2024-11",
+      "details": [
+        "Fundamentos de inteligencia artificial y modelos de lenguaje",
+        "Funcionamiento y arquitectura de ChatGPT y modelos GPT",
+        "Procesamiento del lenguaje natural (NLP) y técnicas asociadas",
+        "Uso de ChatGPT en entornos profesionales y proyectos reales",
+        "Integración de ChatGPT en aplicaciones web y móviles",
+        "Consideraciones éticas, privacidad y seguridad en el uso de IA"
+      ],
+      "skills": [
+        "Inteligencia artificial",
+        "Modelos de lenguaje",
+        "ChatGPT",
+        "GPT",
+        "Procesamiento del lenguaje natural (NLP)",
+        "Integración de IA",
+        "Ética, privacidad y seguridad en IA"
+      ]
+    },
+    {
+      "title": "AWS Cloud Technical Essentials",
+      "institution": "Coursera",
+      "startDate": "2022-10",
+      "endDate": "2022-10",
+      "details": [
+        "Fundamentos de computación en la nube con AWS",
+        "Diseño de arquitecturas básicas en AWS",
+        "Servicios de cómputo: EC2, contenedores y serverless (AWS Lambda)",
+        "Almacenamiento y bases de datos: S3, RDS y DynamoDB",
+        "Conceptos de redes, escalabilidad y alta disponibilidad",
+        "Monitorización y optimización de soluciones en AWS"
+      ],
+      "skills": [
+        "AWS",
+        "Amazon EC2",
+        "Contenedores",
+        "AWS Lambda",
+        "Amazon S3",
+        "Amazon RDS",
+        "DynamoDB",
+        "Redes cloud",
+        "Escalabilidad y alta disponibilidad",
+        "Monitorización cloud"
+      ]
+    },
+    {
+      "title": "Spring MVC, Spring Boot y Controladores REST",
+      "institution": "Coursera",
+      "startDate": "2022-10",
+      "endDate": "2022-10",
+      "details": [
+        "Desarrollo de aplicaciones backend en Java con Spring MVC y Spring Boot",
+        "Diseño e implementación de microservicios RESTful",
+        "Consumo y exposición de servicios con JSON y XML",
+        "Arquitectura Modelo-Vista-Controlador (MVC)",
+        "Gestión de configuración y dependencias en Spring",
+        "Comunicación entre servicios y clientes Java y Angular"
+      ],
+      "skills": [
+        "Java",
+        "Spring MVC",
+        "Spring Boot",
+        "Microservicios",
+        "Diseño de APIs REST",
+        "JSON",
+        "XML",
+        "Modelo-Vista-Controlador (MVC)",
+        "Angular"
+      ]
+    },
+    {
+      "title": "Carrera Programador Full Stack MEVN",
+      "institution": "OpenWebinars",
+      "startDate": "2021-04",
+      "endDate": "2021-06",
+      "details": [
+        "Desarrollo web full stack con JavaScript",
+        "Backend con Node.js y Express",
+        "Frontend con Vue.js y gestión de estado",
+        "Diseño de APIs REST y arquitecturas web modernas",
+        "Gestión de bases de datos NoSQL con MongoDB",
+        "Control de versiones con Git"
+      ],
+      "skills": [
+        "JavaScript",
+        "Node.js",
+        "Express",
+        "Vue.js",
+        "Gestión de estado",
+        "Diseño de APIs REST",
+        "MongoDB",
+        "Git"
+      ]
+    },
+    {
+      "title": "Formación técnica inicial",
+      "institution": "Diversas instituciones",
+      "startDate": "1997-10",
+      "endDate": "2001-04",
+      "details": [
+        "Formación técnica en programación y sistemas previa al inicio de la carrera profesional",
+        "Java, C++, Visual Basic y redes informáticas"
+      ],
+      "skills": [
+        "Java",
+        "C++",
+        "Visual Basic",
+        "Redes informáticas"
+      ]
+    },
+    {
+      "title": "FPII Informática de Gestión",
+      "institution": "I.F.P. Fernando Wirtz",
+      "startDate": "1995-10",
+      "endDate": "1997-06",
+      "details": [
+        "Formación profesional de grado superior en informática de gestión",
+        "Programación, bases de datos, sistemas de información y análisis de aplicaciones",
+        "Base académica previa al inicio de la carrera profesional en desarrollo de software"
+      ],
+      "location": "A Coruña, España",
+      "skills": [
+        "Programación",
+        "Bases de datos",
+        "Sistemas de información",
+        "Análisis de aplicaciones"
+      ]
+    },
+    {
+      "title": "B.U.P.",
+      "institution": "I.N.B. Elviña",
+      "startDate": "1981-10",
+      "endDate": "1984-06",
+      "details": [
+        "Educación secundaria reglada"
+      ],
+      "location": "A Coruña, España",
+      "skills": [
+        "Formación general"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "profile-site",
+      "description": "Sitio público de perfil profesional que presenta una Experiencia interactiva y un CV web a partir de una revisión curricular JSON Resume fijada de forma reproducible.",
+      "highlights": [
+        "Aplicación web construida con Astro y TypeScript con experiencias diferenciadas para la Experiencia interactiva y el CV web.",
+        "Adquisición y validación de una revisión curricular exacta mediante profile_data_sha.",
+        "Verificación automatizada de accesibilidad, comportamiento, rendimiento y generación del CV PDF.",
+        "Publicación reproducible mediante GitHub Actions y GitHub Pages."
+      ],
+      "keywords": [
+        "TypeScript",
+        "Astro",
+        "JSON Resume",
+        "Playwright",
+        "Accesibilidad web",
+        "Rendimiento web",
+        "CI/CD",
+        "GitHub Actions",
+        "GitHub Pages"
+      ],
+      "startDate": "2026-09-08",
+      "url": "https://github.com/fraguio/profile-site",
+      "roles": [
+        "Autor",
+        "Desarrollador"
+      ],
+      "entity": "Proyecto personal",
+      "type": "application"
+    },
+    {
+      "name": "profile-engine",
+      "description": "Pipeline backend determinista para validar y transformar datos de perfil estructurados mediante una CLI automatizable.",
+      "highlights": [
+        "Validación de contratos JSON Resume y transformación a YAML compatible con RenderCV.",
+        "Generación de HTML mediante un pipeline reproducible utilizable en local y en CI.",
+        "Arquitectura por capas que separa CLI, validación y transformación.",
+        "Errores estables, tests automatizados y decisiones técnicas documentadas."
+      ],
+      "keywords": [
+        "Python",
+        "CLI",
+        "JSON Resume",
+        "RenderCV",
+        "Contratos de datos",
+        "Arquitectura por capas",
+        "pytest",
+        "CI/CD",
+        "GitHub Actions"
+      ],
+      "startDate": "2026-03-02",
+      "url": "https://github.com/fraguio/profile-engine-v0",
+      "roles": [
+        "Autor",
+        "Desarrollador"
+      ],
+      "entity": "Proyecto personal",
+      "type": "application"
+    }
+  ],
+  "languages": [
+    {
+      "language": "Español",
+      "fluency": "Nativo"
+    },
+    {
+      "language": "Gallego",
+      "fluency": "Nativo"
+    },
+    {
+      "language": "Inglés",
+      "fluency": "Lectura técnica y documentación profesional"
+    }
+  ],
+  "meta": {
+    "version": "0.1.0-prototype",
+    "prototypeFixture": {
+      "temporary": true,
+      "purpose": "Fixture común para comparar las variantes del rediseño de la Experiencia interactiva.",
+      "profileData": {
+        "repository": "fraguio/profile-data",
+        "path": "data/resume.json",
+        "sha": "d16f238c59718eaf6d44381b7498a3be44f0bf7d"
+      },
+      "projectSources": [
+        {
+          "repository": "fraguio/profile-site",
+          "sha": "ad96a1b8b6197f46f026bfbd35174545f1765a36",
+          "firstCommitSha": "ec35fc82918f0bf17ac7170e34bffe2c261cf612",
+          "startDateEvidence": "Fecha del primer commit público verificable."
+        },
+        {
+          "repository": "fraguio/profile-engine-v0",
+          "sha": "d6cb420cb86eac69b3b2a3bd3d6cccf903f71b6b",
+          "firstCommitSha": "79d6c401196da25e7035b0514b0de871e96432e0",
+          "startDateEvidence": "Fecha del primer commit público verificable."
+        }
+      ],
+      "curation": {
+        "removedFields": [
+          "basics.phone"
+        ],
+        "addedFields": [
+          "work[].skills",
+          "education[].skills",
+          "projects"
+        ],
+        "reviewStatus": "Validado por el titular del currículum el 2026-09-21."
+      }
+    }
+  }
+}

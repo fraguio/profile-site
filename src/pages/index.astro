@@ -1,53 +1,35 @@
 ---
-import {
-  formattedLocation,
-  professionalProfiles,
-  resume,
-  timeline,
-} from "../lib/resume";
-import type { TimelineCategory } from "../lib/resume";
 import PageMetadata from "../components/PageMetadata.astro";
-import "../styles/interactive-experience.css";
+import SemanticFallback from "../prototypes/interactive-experience/SemanticFallback.astro";
+import VariantA from "../prototypes/interactive-experience/variants/VariantA.astro";
+import VariantB from "../prototypes/interactive-experience/variants/VariantB.astro";
+import VariantC from "../prototypes/interactive-experience/variants/VariantC.astro";
+import { prototypeResume } from "../prototypes/interactive-experience/data";
+import "../styles/interactive-prototype.css";
 
 const readPath = `${import.meta.env.BASE_URL}read/`;
 const pdfPath = `${import.meta.env.BASE_URL}cv/eduardo-nogueira-fraguio-cv.pdf`;
-const location = formattedLocation;
-const profiles = professionalProfiles;
-const title = `${resume.basics.name} | ${resume.basics.label}`;
-const description = `Trayectoria profesional de ${resume.basics.name}, ${resume.basics.label.toLowerCase()}.`;
+const title = `${prototypeResume.basics.name} | ${prototypeResume.basics.label}`;
+const description = `Trayectoria profesional de ${prototypeResume.basics.name}, ${prototypeResume.basics.label.toLowerCase()}.`;
 const canonicalUrl = Astro.url.href;
 const personId = `${canonicalUrl}#person`;
-const timelineFilterOptions = [
-  { value: "all", label: "Toda la trayectoria" },
-  { value: "work", label: "Experiencia profesional" },
-  { value: "projects", label: "Proyectos" },
-  { value: "education", label: "Formación" },
-] satisfies Array<{ label: string; value: "all" | TimelineCategory }>;
-const availableTimelineFilters = timelineFilterOptions.filter(
-  (filter) =>
-    filter.value === "all" ||
-    timeline.some((milestone) => milestone.category === filter.value),
-);
 const structuredData = JSON.stringify({
   "@context": "https://schema.org",
   "@graph": [
     {
       "@id": personId,
       "@type": "Person",
-      name: resume.basics.name,
-      jobTitle: resume.basics.label,
-      description: resume.basics.summary,
-      ...(resume.basics.url && { url: resume.basics.url }),
-      ...(profiles.length > 0 && { sameAs: profiles.map((profile) => profile.url) }),
+      name: prototypeResume.basics.name,
+      jobTitle: prototypeResume.basics.label,
+      description: prototypeResume.basics.summary,
+      ...(prototypeResume.basics.url && { url: prototypeResume.basics.url }),
     },
     {
       "@type": "ProfilePage",
       name: title,
       description,
       url: canonicalUrl,
-      mainEntity: {
-        "@id": personId,
-      },
+      mainEntity: { "@id": personId },
     },
   ],
 }).replaceAll("<", "\\u003c");
@@ -61,626 +43,95 @@ const structuredData = JSON.stringify({
     <PageMetadata {canonicalUrl} {description} {structuredData} {title} />
   </head>
   <body>
-    <main class="interactive-experience">
-      <header class="profile-hero">
-        <p class="profile-hero__eyebrow">Perfil profesional</p>
-        <h1>{resume.basics.name}</h1>
-        <p class="profile-hero__role">{resume.basics.label}</p>
-        <nav class="profile-hero__actions" aria-label="Acciones principales">
-          <a href={readPath}>Leer CV web</a>
-          <a href={pdfPath}>Descargar CV PDF</a>
-          <a href={`mailto:${resume.basics.email}`}>Contactar</a>
-        </nav>
-        <p class="profile-hero__summary">{resume.basics.summary}</p>
-        {location && <p class="profile-hero__location">{location}</p>}
-        {timeline.length > 0 && (
-          <a class="profile-hero__explore" href="#timeline-heading">
-            Explorar trayectoria
-          </a>
-        )}
-        {(resume.basics.url || profiles.length > 0) && (
-          <nav class="profile-hero__profiles" aria-label="Enlaces profesionales">
-            {resume.basics.url && (
-              <a href={resume.basics.url}>Sitio web</a>
-            )}
-            {profiles.map((profile) => (
-              <a href={profile.url}>{profile.network}</a>
-            ))}
-          </nav>
-        )}
-      </header>
-      {timeline.length > 0 && (
-        <section class="timeline" aria-labelledby="timeline-heading">
-          <h2 id="timeline-heading">Trayectoria</h2>
-          <fieldset class="timeline__filters" data-contract="timeline-filters" hidden>
-            <legend>Filtrar trayectoria</legend>
-            <div class="timeline__filter-options">
-              {availableTimelineFilters.map((filter) => (
-                <label class="timeline__filter-option">
-                  <input
-                    aria-controls="timeline-rail"
-                    checked={filter.value === "all"}
-                    data-timeline-filter-label={filter.label}
-                    name="timeline-filter"
-                    type="radio"
-                    value={filter.value}
-                  />
-                  {filter.label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <p
-            aria-atomic="true"
-            class="visually-hidden"
-            data-contract="timeline-filter-status"
-            role="status"
-          ></p>
-          <div class="timeline__experience">
-            <ol
-              aria-label="Hitos de la trayectoria"
-              class="timeline__list timeline__rail"
-              data-contract="timeline-rail"
-              id="timeline-rail"
-            >
-              {timeline.map((milestone) => (
-                <li class="timeline__item" data-timeline-category={milestone.category}>
-                  <article class="milestone">
-                    <div class="milestone__summary" data-contract="milestone-summary">
-                      <p class="milestone__category">{milestone.categoryLabel}</p>
-                      {milestone.title && <h3>{milestone.title}</h3>}
-                      {milestone.entity && <p class="milestone__entity">{milestone.entity}</p>}
-                      <p class="milestone__period">
-                        <time datetime={milestone.startDate}>
-                          {milestone.startDateLabel}
-                        </time>
-                        {milestone.endDate ? (
-                          <>
-                            {" - "}
-                            <time datetime={milestone.endDate}>
-                              {milestone.endDateLabel}
-                            </time>
-                          </>
-                        ) : (
-                          " - Actualidad"
-                        )}
-                      </p>
-                    </div>
-                    <div class="milestone__detail" data-contract="milestone-detail">
-                      {milestone.location && <p class="milestone__location">{milestone.location}</p>}
-                      {milestone.description && <p class="milestone__description">{milestone.description}</p>}
-                      {milestone.summary && <p class="milestone__summary">{milestone.summary}</p>}
-                      {milestone.roles.length > 0 && (
-                        <>
-                          <h4>Roles</h4>
-                          <ul class="milestone__roles">
-                            {milestone.roles.map((role) => (
-                              <li>{role}</li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-                      {milestone.highlights.length > 0 && (
-                        <>
-                          <h4>Hitos destacados</h4>
-                          <ul class="milestone__highlights">
-                            {milestone.highlights.map((highlight) => (
-                              <li>{highlight}</li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-                      {milestone.skills.length > 0 && (
-                        <>
-                          <h4>Habilidades asociadas</h4>
-                          <ul class="milestone__skills">
-                            {milestone.skills.map((skill) => (
-                              <li>{skill}</li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-                    </div>
-                  </article>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-      )}
-    </main>
+    <SemanticFallback {pdfPath} {readPath} />
+    <main aria-live="polite" hidden id="prototype-variant-app"></main>
+    <template id="prototype-variant-A"><VariantA /></template>
+    <template id="prototype-variant-B"><VariantB /></template>
+    <template id="prototype-variant-C"><VariantC /></template>
     <script>
-      let gsap: typeof import("gsap").gsap | undefined;
+      const variants = [
+        { id: "A", name: "Capítulos editoriales" },
+        { id: "B", name: "Sistema en evolución" },
+        { id: "C", name: "Dossier de modernización" },
+      ] as const;
+      const app = document.querySelector<HTMLElement>("#prototype-variant-app");
+      const fallback = document.querySelector<HTMLElement>("#prototype-fallback");
+      const selector = document.createElement("aside");
+      const previous = document.createElement("button");
+      const next = document.createElement("button");
+      const status = document.createElement("p");
 
-      try {
-        ({ gsap } = await import("gsap"));
-      } catch {
-        // El HTML accesible sigue siendo util si no carga la mejora opcional.
+      let activeIndex = 0;
+
+      selector.className = "prototype-selector";
+      selector.setAttribute("aria-label", "Selector del prototipo");
+      previous.type = "button";
+      next.type = "button";
+      status.className = "prototype-selector__status";
+      status.setAttribute("aria-live", "polite");
+      selector.append(previous, status, next);
+      document.body.append(selector);
+
+      function requestedIndex() {
+        const requested = new URL(window.location.href).searchParams
+          .get("variant")
+          ?.toUpperCase();
+        const index = variants.findIndex((variant) => variant.id === requested);
+
+        return index === -1 ? 0 : index;
       }
 
-      const filters = document.querySelector<HTMLFieldSetElement>(
-        '[data-contract="timeline-filters"]',
-      );
-      const status = document.querySelector<HTMLElement>(
-        '[data-contract="timeline-filter-status"]',
-      );
-      const rail = document.querySelector<HTMLOListElement>(
-        '[data-contract="timeline-rail"]',
-      );
-      const milestones = [
-        ...document.querySelectorAll<HTMLElement>("[data-timeline-category]"),
-      ];
-      const summaries = [
-        ...document.querySelectorAll<HTMLElement>(
-          '[data-contract="milestone-summary"]',
-        ),
-      ];
-
-      if (filters && status && rail && milestones.length > 0 && summaries.length > 0 && gsap) {
-        document.documentElement.classList.add("timeline-enhanced");
-        filters.hidden = false;
-        rail.tabIndex = 0;
-        const motionControl = document.createElement("button");
-        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-        const transientPauses = new Set<string>();
-        const programmaticFocusReturns = new WeakSet<HTMLElement>();
-        let manuallyPaused = reducedMotion.matches;
-        let motion:
-          | { kill(): void; pause(): void; play(): void }
-          | undefined;
-        let isResetting = false;
-        let closeDetail: (restoreFocus?: boolean) => void = () => {};
-        let selectedTrigger: HTMLButtonElement | undefined;
-
-        motionControl.type = "button";
-        motionControl.className = "timeline__motion-control";
-        motionControl.dataset.contract = "timeline-motion-control";
-        filters.after(motionControl);
-
-        function maximumScrollTop() {
-          return Math.max(0, rail.scrollHeight - rail.clientHeight);
+      function render(index: number, replace = false) {
+        if (!app || !fallback) {
+          return;
         }
 
-        function restartMotion() {
-          motion?.kill();
-          const distance = maximumScrollTop();
+        activeIndex = index;
+        const active = variants[activeIndex];
+        const template = document.querySelector<HTMLTemplateElement>(
+          `#prototype-variant-${active.id}`,
+        );
+        const url = new URL(window.location.href);
 
-          if (distance === 0) {
-            motion = undefined;
-            return;
-          }
-
-          motion = gsap.to(rail, {
-            duration: Math.max(6, distance / 120),
-            ease: "none",
-            repeat: -1,
-            scrollTop: distance,
-            onRepeat: () => {
-              rail.scrollTop = 0;
-            },
-          });
-        }
-
-        function synchronizeMotion() {
-          const isPaused = manuallyPaused || transientPauses.size > 0;
-
-          rail.dataset.timelineMotion = isPaused ? "paused" : "running";
-          motionControl.textContent = selectedTrigger
-            ? "Cerrar detalle y reanudar"
-            : isPaused
-              ? "Reanudar movimiento"
-              : "Pausar movimiento";
-
-          if (isPaused) {
-            motion?.pause();
-          } else if (isResetting) {
-            return;
-          } else if (motion) {
-            motion.play();
-          } else {
-            restartMotion();
-          }
-        }
-
-        function setTransientPause(reason: string, paused: boolean) {
-          if (paused) {
-            transientPauses.add(reason);
-          } else {
-            transientPauses.delete(reason);
-          }
-          synchronizeMotion();
-        }
-
-        rail.addEventListener("pointerenter", () => setTransientPause("hover", true));
-        rail.addEventListener("pointerleave", () => setTransientPause("hover", false));
-        rail.addEventListener("touchstart", () => setTransientPause("touch", true), {
-          passive: true,
-        });
-        rail.addEventListener("touchend", () => setTransientPause("touch", false), {
-          passive: true,
-        });
-        rail.addEventListener("touchcancel", () => setTransientPause("touch", false), {
-          passive: true,
-        });
-        rail.addEventListener("focusin", (event) => {
-          const target = event.target;
-
-          if (
-            target instanceof HTMLElement &&
-            programmaticFocusReturns.has(target)
-          ) {
-            programmaticFocusReturns.delete(target);
-            return;
-          }
-
-          setTransientPause("focus", true);
-        });
-        rail.addEventListener("focusout", (event) => {
-          if (event.target instanceof HTMLElement) {
-            delete event.target.dataset.timelineSuppressFocusOutline;
-          }
-
-          if (!(event.relatedTarget instanceof Node) || !rail.contains(event.relatedTarget)) {
-            setTransientPause("focus", false);
-          }
-        });
-        function synchronizeSelectionPause() {
-          const selection = document.getSelection();
-          const anchor = selection?.anchorNode;
-          const focus = selection?.focusNode;
-          const hasRailSelection =
-            !selection?.isCollapsed &&
-            ((anchor && rail.contains(anchor)) || (focus && rail.contains(focus)));
-
-          setTransientPause("selection", hasRailSelection);
-        }
-
-        document.addEventListener("selectionchange", synchronizeSelectionPause);
-
-        function resetForFilter() {
-          transientPauses.clear();
-          if (rail.matches(":hover")) {
-            transientPauses.add("hover");
-          }
-          if (rail.contains(document.activeElement)) {
-            transientPauses.add("focus");
-          }
-          synchronizeSelectionPause();
-          isResetting = true;
-          motion?.kill();
-          motion = undefined;
-          rail.scrollTo({
-            behavior: reducedMotion.matches ? "auto" : "smooth",
-            top: 0,
-          });
-          window.setTimeout(
-            () => {
-              rail.scrollTop = 0;
-              isResetting = false;
-              restartMotion();
-              synchronizeMotion();
-            },
-            reducedMotion.matches ? 0 : 300,
-          );
-          synchronizeMotion();
-        }
-
-        motionControl.addEventListener("click", () => {
-          const closesDetail = Boolean(selectedTrigger);
-          const wasPaused = manuallyPaused || transientPauses.size > 0;
-
-          if (closesDetail) {
-            closeDetail(true);
-          }
-
-          transientPauses.clear();
-          manuallyPaused = closesDetail
-            ? false
-            : wasPaused
-              ? false
-              : true;
-          synchronizeMotion();
-        });
-
-        if (window.matchMedia("(min-width: 52.001rem)").matches) {
-          const reader = document.createElement("aside");
-          const readerArticle = document.createElement("article");
-          const readerHeader = document.createElement("header");
-          const readerBody = document.createElement("div");
-          const summariesByTrigger = new Map<HTMLButtonElement, HTMLElement>();
-          reader.className = "timeline__reader";
-          reader.dataset.contract = "timeline-reader";
-          reader.setAttribute("aria-label", "Detalle del hito");
-          reader.hidden = true;
-          readerArticle.className = "timeline__reader-content";
-          readerHeader.dataset.contract = "timeline-reader-header";
-          readerBody.dataset.contract = "timeline-reader-body";
-          readerArticle.append(readerHeader, readerBody);
-          reader.append(readerArticle);
-          rail.parentElement?.append(reader);
-
-          closeDetail = (restoreFocus = false) => {
-            if (!selectedTrigger) {
-              return;
-            }
-
-            selectedTrigger.setAttribute("aria-pressed", "false");
-            reader.hidden = true;
-            readerHeader.replaceChildren();
-            readerBody.replaceChildren();
-            const trigger = selectedTrigger;
-            selectedTrigger = undefined;
-            setTransientPause("detail", false);
-            synchronizeMotion();
-
-            if (restoreFocus) {
-              trigger.dataset.timelineSuppressFocusOutline = "true";
-              programmaticFocusReturns.add(trigger);
-              trigger.focus();
-            }
-          };
-
-          function detailFor(summary: HTMLElement) {
-            return summary
-              .closest<HTMLElement>("[data-timeline-category]")
-              ?.querySelector<HTMLElement>('[data-contract="milestone-detail"]');
-          }
-
-          function clonedChildren(element: HTMLElement) {
-            return [...element.children].map((child) => child.cloneNode(true));
-          }
-
-          function openDetail(trigger: HTMLButtonElement) {
-            const summary = summariesByTrigger.get(trigger);
-            const detail = summary && detailFor(summary);
-
-            if (!summary || !detail) {
-              return;
-            }
-
-            closeDetail();
-            const closeButton = document.createElement("button");
-
-            closeButton.type = "button";
-            closeButton.className = "timeline__reader-close";
-            closeButton.textContent = "Cerrar detalle";
-            closeButton.addEventListener("click", () => closeDetail(true));
-            readerHeader.append(
-              closeButton,
-              ...clonedChildren(summary),
-            );
-            readerBody.append(...clonedChildren(detail));
-            trigger.setAttribute("aria-pressed", "true");
-            selectedTrigger = trigger;
-            reader.hidden = false;
-            setTransientPause("detail", true);
-          }
-
-          for (const summary of summaries) {
-            const detail = detailFor(summary);
-
-            if (!detail) {
-              continue;
-            }
-
-            const trigger = document.createElement("button");
-
-            trigger.type = "button";
-            trigger.className = "milestone__trigger";
-            trigger.dataset.contract = "milestone-trigger";
-            trigger.setAttribute("aria-pressed", "false");
-            trigger.append(...clonedChildren(summary));
-            summariesByTrigger.set(trigger, summary);
-            summary.before(trigger);
-            summary.hidden = true;
-            detail.hidden = true;
-            trigger.addEventListener("click", () => {
-              if (selectedTrigger === trigger) {
-                closeDetail();
-              } else {
-                openDetail(trigger);
-              }
-            });
-          }
-
-          document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape" && selectedTrigger) {
-              event.preventDefault();
-              closeDetail(true);
-              transientPauses.clear();
-              manuallyPaused = false;
-              synchronizeMotion();
-            }
-          });
-        } else {
-          const panel = document.createElement("section");
-          const panelArticle = document.createElement("article");
-          const panelHeader = document.createElement("header");
-          const panelBody = document.createElement("div");
-          const summariesByTrigger = new Map<HTMLButtonElement, HTMLElement>();
-          const experience = rail.parentElement;
-          let frozenPosition:
-            | { railScrollTop: number; windowScrollY: number }
-            | undefined;
-
-          panel.className = "timeline__mobile-panel";
-          panel.dataset.contract = "timeline-mobile-panel";
-          panel.setAttribute("aria-label", "Detalle del hito");
-          panel.hidden = true;
-          panelArticle.className = "timeline__mobile-panel-content";
-          panelHeader.dataset.contract = "timeline-mobile-panel-header";
-          panelHeader.tabIndex = -1;
-          panelBody.dataset.contract = "timeline-mobile-panel-body";
-          panelArticle.append(panelHeader, panelBody);
-          panel.append(panelArticle);
-          experience?.append(panel);
-
-          closeDetail = (restoreFocus = false) => {
-            if (!selectedTrigger || !frozenPosition) {
-              return;
-            }
-
-            selectedTrigger.setAttribute("aria-pressed", "false");
-            panel.hidden = true;
-            panelHeader.replaceChildren();
-            panelBody.replaceChildren();
-            rail.hidden = false;
-            experience?.style.removeProperty("min-block-size");
-            experience?.style.removeProperty("padding-block-end");
-            rail.scrollTop = frozenPosition.railScrollTop;
-            window.scrollTo({ top: frozenPosition.windowScrollY, behavior: "auto" });
-            const trigger = selectedTrigger;
-            selectedTrigger = undefined;
-            frozenPosition = undefined;
-            setTransientPause("detail", false);
-            synchronizeMotion();
-
-            if (restoreFocus) {
-              trigger.dataset.timelineFocusReturn = "programmatic";
-              programmaticFocusReturns.add(trigger);
-              trigger.focus({ preventScroll: true });
-            }
-          };
-
-          function detailFor(summary: HTMLElement) {
-            return summary
-              .closest<HTMLElement>("[data-timeline-category]")
-              ?.querySelector<HTMLElement>('[data-contract="milestone-detail"]');
-          }
-
-          function clonedChildren(element: HTMLElement) {
-            return [...element.children].map((child) => child.cloneNode(true));
-          }
-
-          function openDetail(trigger: HTMLButtonElement) {
-            const summary = summariesByTrigger.get(trigger);
-            const detail = summary && detailFor(summary);
-
-            if (!summary || !detail) {
-              return;
-            }
-
-            frozenPosition = {
-              railScrollTop: rail.scrollTop,
-              windowScrollY: window.scrollY,
-            };
-            experience?.style.setProperty(
-              "min-block-size",
-              `${rail.getBoundingClientRect().height}px`,
-            );
-            const closeButton = document.createElement("button");
-
-            closeButton.type = "button";
-            closeButton.className = "timeline__mobile-panel-close";
-            closeButton.textContent = "Cerrar detalle";
-            closeButton.addEventListener("click", () => closeDetail(true));
-            panelHeader.append(closeButton, ...clonedChildren(summary));
-            panelBody.append(...clonedChildren(detail));
-            trigger.setAttribute("aria-pressed", "true");
-            selectedTrigger = trigger;
-            rail.hidden = true;
-            panel.hidden = false;
-            setTransientPause("detail", true);
-            panelHeader.focus({ preventScroll: true });
-
-            const panelTop = panel.getBoundingClientRect().top + window.scrollY;
-            const panelMargin = Number.parseFloat(
-              window.getComputedStyle(panel).scrollMarginTop,
-            );
-            const targetScrollY = panelTop - panelMargin;
-            const additionalSpace = Math.max(
-              0,
-              targetScrollY -
-                (document.documentElement.scrollHeight - window.innerHeight),
-            );
-
-            if (additionalSpace > 0) {
-              experience?.style.setProperty(
-                "padding-block-end",
-                `${additionalSpace}px`,
-              );
-            }
-
-            window.scrollTo({ top: targetScrollY, behavior: "auto" });
-          }
-
-          for (const summary of summaries) {
-            const detail = detailFor(summary);
-
-            if (!detail) {
-              continue;
-            }
-
-            const trigger = document.createElement("button");
-
-            trigger.type = "button";
-            trigger.className = "milestone__trigger";
-            trigger.dataset.contract = "milestone-trigger";
-            trigger.setAttribute("aria-pressed", "false");
-            trigger.append(...clonedChildren(summary));
-            summariesByTrigger.set(trigger, summary);
-            summary.before(trigger);
-            summary.hidden = true;
-            detail.hidden = true;
-            trigger.addEventListener("click", () => {
-              if (selectedTrigger === trigger) {
-                closeDetail(true);
-              } else {
-                openDetail(trigger);
-              }
-            });
-          }
-
-          document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape" && selectedTrigger) {
-              event.preventDefault();
-              closeDetail(true);
-            }
-          });
-        }
-
-        filters.addEventListener("change", (event) => {
-          const selectedFilter = event.target;
-
-          if (
-            !(selectedFilter instanceof HTMLInputElement) ||
-            selectedFilter.name !== "timeline-filter"
-          ) {
-            return;
-          }
-
-          closeDetail();
-          const visibleMilestones = milestones.filter((milestone) => {
-            const matchesFilter =
-              selectedFilter.value === "all" ||
-              milestone.dataset.timelineCategory === selectedFilter.value;
-
-            milestone.hidden = !matchesFilter;
-
-            return matchesFilter;
-          });
-          const milestoneLabel =
-            visibleMilestones.length === 1 ? "hito" : "hitos";
-          const verb = visibleMilestones.length === 1 ? "muestra" : "muestran";
-          const filterLabel = selectedFilter.dataset.timelineFilterLabel?.toLowerCase();
-          const announcement = `Se ${verb} ${visibleMilestones.length} ${milestoneLabel} de ${filterLabel}.`;
-
-          resetForFilter();
-
-          function announceWhenRailResets() {
-            if (rail.scrollTop <= 1) {
-              status.textContent = announcement;
-              return;
-            }
-
-            requestAnimationFrame(announceWhenRailResets);
-          }
-
-          announceWhenRailResets();
-        });
-
-        synchronizeMotion();
+        url.searchParams.set("variant", active.id);
+        history[replace ? "replaceState" : "pushState"]({}, "", url);
+        app.replaceChildren(template?.content.cloneNode(true) ?? document.createTextNode(""));
+        fallback.hidden = true;
+        app.hidden = false;
+        previous.textContent = `Anterior: ${variants[(activeIndex + variants.length - 1) % variants.length].id}`;
+        next.textContent = `Siguiente: ${variants[(activeIndex + 1) % variants.length].id}`;
+        status.textContent = `Variante ${active.id}: ${active.name}`;
       }
+
+      previous.addEventListener("click", () => {
+        render((activeIndex + variants.length - 1) % variants.length);
+      });
+      next.addEventListener("click", () => {
+        render((activeIndex + 1) % variants.length);
+      });
+      window.addEventListener("popstate", () => render(requestedIndex(), true));
+      document.addEventListener("keydown", (event) => {
+        const target = event.target;
+
+        if (
+          target instanceof HTMLElement &&
+          target.matches("input, textarea, select, [contenteditable='true']")
+        ) {
+          return;
+        }
+
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          render((activeIndex + variants.length - 1) % variants.length);
+        }
+
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          render((activeIndex + 1) % variants.length);
+        }
+      });
+
+      render(requestedIndex(), true);
     </script>
   </body>
 </html>

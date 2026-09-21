@@ -8,7 +8,10 @@
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "build:prototype:interactive-experience": "node scripts/build-interactive-prototype.mjs",
+    "check:prototype:interactive-experience": "node scripts/check-interactive-prototype.mjs",
     "measure:performance": "node scripts/measure-performance.mjs",
+    "prototype:interactive-experience": "node scripts/start-interactive-prototype.mjs",
     "generate:pdf": "node scripts/generate-cv-pdf.mjs",
     "acquire:profile-data": "node scripts/acquire-profile-data.mjs",
     "check:current-profile-data-revision": "node scripts/check-current-profile-data-revision.mjs",

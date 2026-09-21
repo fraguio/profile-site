@@ -1,0 +1,90 @@
+---
+import {
+  associatedSkills,
+  formatPeriod,
+  prototypeResume,
+  type ResumeEntry,
+} from "./data";
+
+type Props = {
+  pdfPath: string;
+  readPath: string;
+};
+
+const { pdfPath, readPath } = Astro.props;
+const sections = [
+  { entries: prototypeResume.work, id: "work", label: "Experiencia profesional", type: "work" },
+  { entries: prototypeResume.projects, id: "projects", label: "Proyectos", type: "projects" },
+  { entries: prototypeResume.education, id: "education", label: "Formación", type: "education" },
+] as const;
+
+function titleFor(entry: ResumeEntry, type: "education" | "projects" | "work") {
+  if (type === "work") {
+    return entry.position ?? entry.name;
+  }
+
+  return type === "education" ? entry.title ?? entry.institution : entry.name;
+}
+
+function entityFor(entry: ResumeEntry, type: "education" | "projects" | "work") {
+  if (type === "work") {
+    return entry.name;
+  }
+
+  return type === "education" ? entry.institution : entry.entity;
+}
+---
+
+<main class="prototype-fallback" id="prototype-fallback">
+  <header class="prototype-fallback__hero">
+    <h1>{prototypeResume.basics.name}</h1>
+    <p class="prototype-fallback__role">{prototypeResume.basics.label}</p>
+    <p class="prototype-fallback__summary">{prototypeResume.basics.summary}</p>
+    <nav aria-label="Acciones principales" class="prototype-fallback__actions">
+      <a href={readPath}>Leer CV web</a>
+      <a href={pdfPath}>Descargar CV PDF</a>
+      <a href={`mailto:${prototypeResume.basics.email}`}>Contactar</a>
+    </nav>
+    {prototypeResume.basics.url && (
+      <p><a href={prototypeResume.basics.url}>Sitio web</a></p>
+    )}
+  </header>
+  <section aria-labelledby="fallback-content-title" class="prototype-fallback__content">
+    <h2 id="fallback-content-title">Trayectoria profesional</h2>
+    {sections.map((section) =>
+      section.entries.length > 0 && (
+        <section aria-labelledby={`fallback-${section.id}`} class="prototype-fallback__section">
+          <h3 id={`fallback-${section.id}`}>{section.label}</h3>
+          {section.entries.map((entry) => (
+            <article>
+              {titleFor(entry, section.type) && <h4>{titleFor(entry, section.type)}</h4>}
+              {entityFor(entry, section.type) && <p>{entityFor(entry, section.type)}</p>}
+              <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+              {entry.location && <p>{entry.location}</p>}
+              {entry.description && <p>{entry.description}</p>}
+              {entry.summary && <p>{entry.summary}</p>}
+              {entry.notes && <p>{entry.notes}</p>}
+              {(entry.highlights ?? entry.details ?? []).length > 0 && (
+                <ul>{(entry.highlights ?? entry.details ?? []).map((detail) => <li>{detail}</li>)}</ul>
+              )}
+              {(entry.roles ?? []).length > 0 && (
+                <>
+                  <h5>Roles</h5>
+                  <ul>{entry.roles?.map((role) => <li>{role}</li>)}</ul>
+                </>
+              )}
+              {associatedSkills(entry, section.type).length > 0 && (
+                <>
+                  <h5>Habilidades asociadas</h5>
+                  <ul class="prototype-fallback__skills">
+                    {associatedSkills(entry, section.type).map((skill) => <li>{skill}</li>)}
+                  </ul>
+                </>
+              )}
+            </article>
+          ))}
+        </section>
+      ),
+    )}
+  </section>
+</main>
