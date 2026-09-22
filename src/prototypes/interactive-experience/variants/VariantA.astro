@@ -1,5 +1,260 @@
-<section aria-labelledby="variant-a-title" class="prototype-space" data-prototype-variant="A">
-  <p>UI prototype · Variante A</p>
-  <h1 id="variant-a-title">Capítulos editoriales</h1>
-  <p>Espacio independiente preparado para responder si una narrativa editorial comunica modernización, seniority y continuidad con claridad y personalidad.</p>
-</section>
+---
+import {
+  associatedSkills,
+  formatPeriod,
+  prototypeResume,
+  type ResumeEntry,
+} from "../data";
+
+const [enel, whatsapp, nebula, abanca, inditex] = prototypeResume.work;
+const recentLearning = prototypeResume.education.filter((entry) => entry.startDate >= "2021");
+const foundations = prototypeResume.education.filter((entry) => entry.startDate < "2021");
+const { pdfPath, readPath } = Astro.props;
+
+function entryTitle(entry: ResumeEntry, type: "education" | "projects" | "work") {
+  if (type === "work") {
+    return entry.position ?? entry.name;
+  }
+
+  return type === "education" ? entry.title ?? entry.institution : entry.name;
+}
+
+function entryEntity(entry: ResumeEntry, type: "education" | "projects" | "work") {
+  if (type === "work") {
+    return entry.name;
+  }
+
+  return type === "education" ? entry.institution : entry.entity;
+}
+
+function formatDuration(entry: ResumeEntry) {
+  const [startYear, startMonth = 1] = entry.startDate.split("-").map(Number);
+  const [endYear, endMonth = 1] = (entry.endDate ?? entry.startDate).split("-").map(Number);
+  const months = (endYear - startYear) * 12 + endMonth - startMonth;
+
+  return `${Math.floor(months / 12)} años y ${months % 12} meses`;
+}
+---
+
+<main class="editorial-a" data-prototype-variant="A">
+  <header class="editorial-a__hero" id="inicio">
+    <div class="editorial-a__hero-copy">
+      <h1 id="variant-a-title">{prototypeResume.basics.name}</h1>
+      <p class="editorial-a__role">{prototypeResume.basics.label}</p>
+      <p class="editorial-a__proposition">Modernizar sistemas corporativos desde backend.</p>
+      <p class="editorial-a__summary">{prototypeResume.basics.summary}</p>
+      <nav aria-label="Acciones principales" class="editorial-a__actions">
+        <a class="editorial-a__action editorial-a__action--primary" href="#modernizacion">Ver evidencia de modernización</a>
+        <a class="editorial-a__action" href={`mailto:${prototypeResume.basics.email}`}>Contactar por email</a>
+        <a class="editorial-a__action" href={readPath}>Leer CV web</a>
+        <a class="editorial-a__action" href={pdfPath}>Descargar CV PDF</a>
+      </nav>
+    </div>
+    <aside aria-label="Señal de credibilidad" class="editorial-a__hero-mark">
+      <span>Más de</span>
+      <strong>20</strong>
+      <span>años de experiencia<br />documentable</span>
+    </aside>
+  </header>
+
+  <nav aria-label="Capítulos de la trayectoria" class="editorial-a__chapter-nav">
+    <a href="#modernizacion">Modernización</a>
+    <a href="#continuidad">Continuidad</a>
+    <a href="#practica">Proyectos</a>
+  </nav>
+
+  <section aria-labelledby="continuidad-title" class="editorial-a__chapter editorial-a__chapter--continuity" id="continuidad">
+    <div class="editorial-a__chapter-aside">
+      <p>2008 - 2022</p>
+      <span aria-hidden="true"></span>
+      <p>{formatDuration(abanca)}</p>
+    </div>
+    <div class="editorial-a__chapter-content">
+      <h2 id="continuidad-title">Continuidad y responsabilidad en sistemas corporativos.</h2>
+      <p class="editorial-a__lede">Una etapa sostenida en el entorno Abanca, con continuidad funcional y técnica a través de COMTEC Software Factory, BT España y Evolutio Cloud Enabler.</p>
+      <article class="editorial-a__feature">
+        <header>
+          <p><time datetime={abanca.startDate}>{formatPeriod(abanca)}</time></p>
+          <h3>{entryTitle(abanca, "work")}</h3>
+          {entryEntity(abanca, "work") && <p>{entryEntity(abanca, "work")}</p>}
+        </header>
+        {abanca.summary && <p class="editorial-a__entry-summary">{abanca.summary}</p>}
+        {abanca.highlights && (
+          <ul class="editorial-a__evidence-list">
+            {abanca.highlights.map((highlight) => <li>{highlight}</li>)}
+          </ul>
+        )}
+        {associatedSkills(abanca, "work").length > 0 && (
+          <section aria-labelledby="abanca-skills">
+            <h4 id="abanca-skills">Habilidades asociadas a esta etapa</h4>
+            <ul class="editorial-a__skills">
+              {associatedSkills(abanca, "work").map((skill) => <li>{skill}</li>)}
+            </ul>
+          </section>
+        )}
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="modernizacion-title" class="editorial-a__chapter editorial-a__chapter--modernization" id="modernizacion">
+    <div class="editorial-a__chapter-aside">
+      <p>2022 - 2024</p>
+      <span aria-hidden="true"></span>
+      <p>Tres registros<br />solapados</p>
+    </div>
+    <div class="editorial-a__chapter-content">
+      <h2 id="modernizacion-title">De la continuidad al cambio: microservicios, cloud e integraciones.</h2>
+      <p class="editorial-a__lede">Los tres registros de Evolutio Cloud Enabler comparten un contexto de modernización de contact centers e integración con Genesys Cloud. Sus periodos se muestran como intervenciones relacionadas, no como una sucesión de empleos.</p>
+      <div class="editorial-a__interventions">
+        {[nebula, whatsapp, enel].map((entry, index) => (
+          <article class="editorial-a__intervention">
+            <header>
+              <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+              <h3>{entryTitle(entry, "work")}</h3>
+              {entryEntity(entry, "work") && <p>{entryEntity(entry, "work")}</p>}
+            </header>
+            {entry.summary && <p class="editorial-a__entry-summary">{entry.summary}</p>}
+            {entry.highlights && index === 0 && (
+              <ul class="editorial-a__evidence-list">
+                {entry.highlights.map((highlight) => <li>{highlight}</li>)}
+              </ul>
+            )}
+            {associatedSkills(entry, "work").length > 0 && index === 0 && (
+              <section aria-labelledby={`${entry.startDate}-skills`}>
+                <h4 id={`${entry.startDate}-skills`}>Habilidades asociadas a esta intervención</h4>
+                <ul class="editorial-a__skills">
+                  {associatedSkills(entry, "work").map((skill) => <li>{skill}</li>)}
+                </ul>
+              </section>
+            )}
+            {index > 0 && (
+              <details>
+                <summary>Consultar responsabilidades y habilidades asociadas</summary>
+                {entry.highlights && (
+                  <ul class="editorial-a__evidence-list">
+                    {entry.highlights.map((highlight) => <li>{highlight}</li>)}
+                  </ul>
+                )}
+                {associatedSkills(entry, "work").length > 0 && (
+                  <section aria-labelledby={`${entry.startDate}-skills`}>
+                    <h4 id={`${entry.startDate}-skills`}>Habilidades asociadas a esta intervención</h4>
+                    <ul class="editorial-a__skills">
+                      {associatedSkills(entry, "work").map((skill) => <li>{skill}</li>)}
+                    </ul>
+                  </section>
+                )}
+              </details>
+            )}
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="origen-title" class="editorial-a__chapter editorial-a__chapter--origin" id="origen">
+    <div class="editorial-a__chapter-aside">
+      <p>1995 - 2008</p>
+      <span aria-hidden="true"></span>
+      <p>Prólogo</p>
+    </div>
+    <div class="editorial-a__chapter-content">
+      <h2 id="origen-title">La base técnica precede a la continuidad.</h2>
+      <div class="editorial-a__origin-grid">
+        <article>
+          <h3>{entryTitle(inditex, "work")}</h3>
+          <p><time datetime={inditex.startDate}>{formatPeriod(inditex)}</time></p>
+          {inditex.summary && <p>{inditex.summary}</p>}
+          {inditex.highlights && <ul>{inditex.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+          {associatedSkills(inditex, "work").length > 0 && (
+            <ul aria-label="Habilidades asociadas" class="editorial-a__skills">
+              {associatedSkills(inditex, "work").map((skill) => <li>{skill}</li>)}
+            </ul>
+          )}
+        </article>
+        <div>
+          <h3>Formación técnica inicial</h3>
+          {foundations.map((entry) => (
+            <article class="editorial-a__education-entry">
+              <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+              <h4>{entryTitle(entry, "education")}</h4>
+              {entryEntity(entry, "education") && <p>{entryEntity(entry, "education")}</p>}
+              {entry.details && <p>{entry.details.join(" ")}</p>}
+              {associatedSkills(entry, "education").length > 0 && (
+                <ul aria-label={`Habilidades asociadas a ${entryTitle(entry, "education")}`} class="editorial-a__skills">
+                  {associatedSkills(entry, "education").map((skill) => <li>{skill}</li>)}
+                </ul>
+              )}
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="practice-title" class="editorial-a__chapter editorial-a__chapter--practice" id="practica">
+    <div class="editorial-a__chapter-aside">
+      <p>Práctica</p>
+      <span aria-hidden="true"></span>
+      <p>Proyectos</p>
+    </div>
+    <div class="editorial-a__chapter-content">
+      <h2 id="practice-title">La misma atención al diseño de sistemas continúa en proyectos actuales.</h2>
+      <div class="editorial-a__projects">
+        {prototypeResume.projects.map((entry) => (
+          <article>
+            <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+            <h3>{entryTitle(entry, "projects")}</h3>
+            {entryEntity(entry, "projects") && <p>{entryEntity(entry, "projects")}</p>}
+            {entry.description && <p>{entry.description}</p>}
+            {entry.highlights && <ul>{entry.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+            {associatedSkills(entry, "projects").length > 0 && (
+              <ul aria-label={`Habilidades asociadas a ${entryTitle(entry, "projects")}`} class="editorial-a__skills">
+                {associatedSkills(entry, "projects").map((skill) => <li>{skill}</li>)}
+              </ul>
+            )}
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="aprendizaje-title" class="editorial-a__chapter editorial-a__chapter--learning" id="aprendizaje">
+    <div class="editorial-a__chapter-aside">
+      <p>2021 - 2026</p>
+      <span aria-hidden="true"></span>
+      <p>Aprendizaje<br />continuo</p>
+    </div>
+    <div class="editorial-a__chapter-content">
+      <h2 id="aprendizaje-title">Aprender amplía el campo técnico; no sustituye la experiencia práctica.</h2>
+      <div class="editorial-a__learning-list">
+        {recentLearning.map((entry) => (
+          <article>
+            <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+            <h3>{entryTitle(entry, "education")}</h3>
+            {entryEntity(entry, "education") && <p>{entryEntity(entry, "education")}</p>}
+            {entry.notes && <p>{entry.notes}</p>}
+            {entry.details && <details>
+              <summary>Consultar contenido de la formación</summary>
+              <ul>{entry.details.map((detail) => <li>{detail}</li>)}</ul>
+            </details>}
+            {associatedSkills(entry, "education").length > 0 && (
+              <ul aria-label={`Habilidades asociadas a ${entryTitle(entry, "education")}`} class="editorial-a__skills">
+                {associatedSkills(entry, "education").map((skill) => <li>{skill}</li>)}
+              </ul>
+            )}
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <footer class="editorial-a__closing">
+    <p>Una trayectoria de backend sostenida por responsabilidad técnica, continuidad y adaptación.</p>
+    <h2>Hablemos de la próxima modernización.</h2>
+    <nav aria-label="Acciones de cierre" class="editorial-a__actions">
+      <a class="editorial-a__action editorial-a__action--primary" href={`mailto:${prototypeResume.basics.email}`}>Contactar</a>
+      <a class="editorial-a__action" href={readPath}>Leer CV web completo</a>
+      <a class="editorial-a__action" href={pdfPath}>Descargar CV PDF</a>
+    </nav>
+  </footer>
+</main>
