@@ -1,5 +1,212 @@
-<section aria-labelledby="variant-c-title" class="prototype-space" data-prototype-variant="C">
-  <p>UI prototype · Variante C</p>
-  <h1 id="variant-c-title">Dossier de modernización</h1>
-  <p>Espacio independiente preparado para evaluar una interfaz de consulta precisa sin sustituir el propósito documental del CV web.</p>
-</section>
+---
+import {
+  associatedSkills,
+  formatPeriod,
+  prototypeResume,
+  type ResumeEntry,
+} from "../data";
+
+const [enel, whatsapp, nebula, abanca, inditex] = prototypeResume.work;
+const recentLearning = prototypeResume.education.filter((entry) => entry.startDate >= "2021");
+const foundations = prototypeResume.education.filter((entry) => entry.startDate < "2021");
+const { pdfPath, readPath } = Astro.props;
+
+function entryTitle(entry: ResumeEntry, type: "education" | "projects" | "work") {
+  if (type === "work") {
+    return entry.position ?? entry.name;
+  }
+
+  return type === "education" ? entry.title ?? entry.institution : entry.name;
+}
+
+function entryEntity(entry: ResumeEntry, type: "education" | "projects" | "work") {
+  if (type === "work") {
+    return entry.name;
+  }
+
+  return type === "education" ? entry.institution : entry.entity;
+}
+---
+
+<main class="dossier-c" data-prototype-variant="C">
+  <header class="dossier-c__hero" id="inicio">
+    <div>
+      <h1 id="variant-c-title">{prototypeResume.basics.name}</h1>
+      <p class="dossier-c__role">{prototypeResume.basics.label}</p>
+      <h2>Modernizar sistemas corporativos desde backend.</h2>
+    </div>
+    <div class="dossier-c__hero-brief">
+      <p>Más de veinte años de experiencia documentable conectan aplicaciones web, core bancario, microservicios, cloud e integraciones. La continuidad corporativa sostiene la modernización posterior.</p>
+      <nav aria-label="Acciones principales" class="dossier-c__actions">
+        <a class="dossier-c__action dossier-c__action--primary" href={`mailto:${prototypeResume.basics.email}`}>Contactar</a>
+        <a class="dossier-c__action" href={readPath}>Leer CV web</a>
+        <a class="dossier-c__action" href={pdfPath}>Descargar CV PDF</a>
+      </nav>
+      <p class="dossier-c__summary">{prototypeResume.basics.summary}</p>
+    </div>
+  </header>
+
+  <div class="dossier-c__workspace">
+    <aside class="dossier-c__index">
+      <nav aria-label="Índice del dossier">
+        <h2>Ámbitos de consulta</h2>
+        <ol>
+          <li><a href="#abanca"><span>Responsabilidad corporativa</span><small>Abanca · 2008-2022</small></a></li>
+          <li><a href="#evolutio"><span>Modernización e integraciones</span><small>Evolutio · 2022-2024</small></a></li>
+          <li><a href="#origen"><span>Base y origen técnico</span><small>1995-2008</small></a></li>
+          <li><a href="#expansion"><span>Práctica y actualización</span><small>2021-2026</small></a></li>
+        </ol>
+      </nav>
+      <div class="dossier-c__index-actions">
+        <a href={`mailto:${prototypeResume.basics.email}`}>Iniciar contacto</a>
+        <a href={readPath}>CV web completo</a>
+      </div>
+    </aside>
+
+    <div class="dossier-c__reader">
+      <section aria-labelledby="reader-title" class="dossier-c__opening">
+        <h2 id="reader-title">La continuidad corporativa explica la modernización posterior.</h2>
+        <div>
+          <p>La trayectoria se organiza por contextos de responsabilidad, no como una línea de hitos equivalentes. Cada registro mantiene su periodo, entidad, responsabilidades y habilidades asociadas.</p>
+          <p>La evidencia principal está en el entorno Abanca. Las intervenciones posteriores se agrupan bajo Evolutio para hacer visible su solapamiento real. <a href="#abanca">Consultar continuidad corporativa</a> y <a href="#evolutio">consultar modernización e integraciones</a>.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="abanca-title" class="dossier-c__case dossier-c__case--abanca" id="abanca">
+        <header class="dossier-c__case-header">
+          <h2 id="abanca-title">Continuidad técnica en el entorno Abanca.</h2>
+          <p>Marzo de 2008 a septiembre de 2022: una etapa sostenida a través de COMTEC Software Factory, BT España y Evolutio Cloud Enabler.</p>
+        </header>
+        <article class="dossier-c__record dossier-c__record--lead">
+          <header>
+            <p><time datetime={abanca.startDate}>{formatPeriod(abanca)}</time></p>
+            <h3>{entryTitle(abanca, "work")}</h3>
+            {entryEntity(abanca, "work") && <p>{entryEntity(abanca, "work")}</p>}
+          </header>
+          {abanca.summary && <p class="dossier-c__record-summary">{abanca.summary}</p>}
+          {abanca.highlights && <ul>{abanca.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+          {associatedSkills(abanca, "work").length > 0 && (
+            <section aria-labelledby="abanca-skills">
+              <h4 id="abanca-skills">Habilidades asociadas a esta etapa</h4>
+              <ul class="dossier-c__skills">{associatedSkills(abanca, "work").map((skill) => <li>{skill}</li>)}</ul>
+            </section>
+          )}
+        </article>
+      </section>
+
+      <section aria-labelledby="evolutio-title" class="dossier-c__case dossier-c__case--evolutio" id="evolutio">
+        <header class="dossier-c__case-header">
+          <h2 id="evolutio-title">Tres intervenciones solapadas, un contexto de cambio.</h2>
+          <p>Los registros de Evolutio Cloud Enabler comparten una transición hacia microservicios, cloud e integraciones con Genesys Cloud. No representan tres empleos consecutivos.</p>
+        </header>
+        <div class="dossier-c__overlap-note" role="note">
+          <strong>Octubre de 2022 - mayo de 2024</strong>
+          <span>Las tres intervenciones siguientes se desarrollan dentro de este intervalo y se solapan parcialmente.</span>
+        </div>
+        <div class="dossier-c__records">
+          {[nebula, whatsapp, enel].map((entry, index) => (
+            <details class="dossier-c__record" open={index === 0}>
+              <summary>
+                <span>{index === 0 ? "Nébula para Mapfre" : index === 1 ? "WhatsApp y Genesys Cloud para Mapfre" : "Migración de contact center para Enel"}</span>
+                <time datetime={entry.startDate}>{formatPeriod(entry)}</time>
+              </summary>
+              <article>
+                <h3>{entryTitle(entry, "work")}</h3>
+                {entryEntity(entry, "work") && <p>{entryEntity(entry, "work")}</p>}
+                {entry.summary && <p class="dossier-c__record-summary">{entry.summary}</p>}
+                {entry.highlights && <ul>{entry.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+                {associatedSkills(entry, "work").length > 0 && (
+                  <section aria-labelledby={`evolutio-${index}-skills`}>
+                    <h4 id={`evolutio-${index}-skills`}>Habilidades asociadas a esta intervención</h4>
+                    <ul class="dossier-c__skills">{associatedSkills(entry, "work").map((skill) => <li>{skill}</li>)}</ul>
+                  </section>
+                )}
+              </article>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="origen-title" class="dossier-c__case dossier-c__case--origin" id="origen">
+        <header class="dossier-c__case-header">
+          <h2 id="origen-title">La especialización actual parte de una base anterior.</h2>
+          <p>La etapa inicial se mantiene compacta para preservar la jerarquía de la continuidad corporativa posterior.</p>
+        </header>
+        <div class="dossier-c__compact-grid">
+          <details class="dossier-c__record" open>
+            <summary><span>Proyecto Inditex</span><time datetime={inditex.startDate}>{formatPeriod(inditex)}</time></summary>
+            <article>
+              <h3>{entryTitle(inditex, "work")}</h3>
+              {entryEntity(inditex, "work") && <p>{entryEntity(inditex, "work")}</p>}
+              {inditex.summary && <p class="dossier-c__record-summary">{inditex.summary}</p>}
+              {inditex.highlights && <ul>{inditex.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+              {associatedSkills(inditex, "work").length > 0 && <ul aria-label="Habilidades asociadas" class="dossier-c__skills">{associatedSkills(inditex, "work").map((skill) => <li>{skill}</li>)}</ul>}
+            </article>
+          </details>
+          <details class="dossier-c__record">
+            <summary><span>Formación técnica inicial</span><span>1995-2001</span></summary>
+            <div class="dossier-c__entry-list">
+              {foundations.map((entry) => (
+                <article>
+                  <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+                  <h3>{entryTitle(entry, "education")}</h3>
+                  {entryEntity(entry, "education") && <p>{entryEntity(entry, "education")}</p>}
+                  {entry.details && <p>{entry.details.join(" ")}</p>}
+                  {associatedSkills(entry, "education").length > 0 && <ul aria-label={`Habilidades asociadas a ${entryTitle(entry, "education")}`} class="dossier-c__skills">{associatedSkills(entry, "education").map((skill) => <li>{skill}</li>)}</ul>}
+                </article>
+              ))}
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section aria-labelledby="expansion-title" class="dossier-c__case dossier-c__case--expansion" id="expansion">
+        <header class="dossier-c__case-header">
+          <h2 id="expansion-title">Proyectos actuales y aprendizaje continuo.</h2>
+          <p>Estas evidencias amplían el campo técnico. La formación no se presenta como experiencia laboral.</p>
+        </header>
+        <div class="dossier-c__compact-grid">
+          <details class="dossier-c__record" open>
+            <summary><span>Proyectos personales</span><span>2026</span></summary>
+            <div class="dossier-c__entry-list">
+              {prototypeResume.projects.map((entry) => (
+                <article>
+                  <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+                  <h3>{entryTitle(entry, "projects")}</h3>
+                  {entryEntity(entry, "projects") && <p>{entryEntity(entry, "projects")}</p>}
+                  {entry.description && <p class="dossier-c__record-summary">{entry.description}</p>}
+                  {entry.highlights && <ul>{entry.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+                  {associatedSkills(entry, "projects").length > 0 && <ul aria-label={`Habilidades asociadas a ${entryTitle(entry, "projects")}`} class="dossier-c__skills">{associatedSkills(entry, "projects").map((skill) => <li>{skill}</li>)}</ul>}
+                </article>
+              ))}
+            </div>
+          </details>
+          <details class="dossier-c__record">
+            <summary><span>Aprendizaje continuo</span><span>2021-2026</span></summary>
+            <div class="dossier-c__entry-list">
+              {recentLearning.map((entry) => (
+                <article>
+                  <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+                  <h3>{entryTitle(entry, "education")}</h3>
+                  {entryEntity(entry, "education") && <p>{entryEntity(entry, "education")}</p>}
+                  {entry.notes && <p>{entry.notes}</p>}
+                  {entry.details && <details><summary>Consultar contenido de la formación</summary><ul>{entry.details.map((detail) => <li>{detail}</li>)}</ul></details>}
+                  {associatedSkills(entry, "education").length > 0 && <ul aria-label={`Habilidades asociadas a ${entryTitle(entry, "education")}`} class="dossier-c__skills">{associatedSkills(entry, "education").map((skill) => <li>{skill}</li>)}</ul>}
+                </article>
+              ))}
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <footer class="dossier-c__closing">
+        <h2>¿Hablamos de la siguiente modernización?</h2>
+        <nav aria-label="Acciones de cierre" class="dossier-c__actions">
+          <a class="dossier-c__action dossier-c__action--primary" href={`mailto:${prototypeResume.basics.email}`}>Contactar</a>
+          <a class="dossier-c__action" href={readPath}>Leer CV web completo</a>
+          <a class="dossier-c__action" href={pdfPath}>Descargar CV PDF</a>
+        </nav>
+      </footer>
+    </div>
+  </div>
+</main>
