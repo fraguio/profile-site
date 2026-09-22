@@ -1,5 +1,248 @@
-<section aria-labelledby="variant-b-title" class="prototype-space" data-prototype-variant="B">
-  <p>UI prototype · Variante B</p>
-  <h1 id="variant-b-title">Sistema en evolución</h1>
-  <p>Espacio independiente preparado para evaluar una metáfora abstracta de acumulación y transformación vinculada a evidencias reales.</p>
-</section>
+---
+import {
+  associatedSkills,
+  formatPeriod,
+  prototypeResume,
+  type ResumeEntry,
+} from "../data";
+
+const [enel, whatsapp, nebula, abanca, inditex] = prototypeResume.work;
+const recentLearning = prototypeResume.education.filter((entry) => entry.startDate >= "2021");
+const foundations = prototypeResume.education.filter((entry) => entry.startDate < "2021");
+const { pdfPath, readPath } = Astro.props;
+
+function entryTitle(entry: ResumeEntry, type: "education" | "projects" | "work") {
+  if (type === "work") {
+    return entry.position ?? entry.name;
+  }
+
+  return type === "education" ? entry.title ?? entry.institution : entry.name;
+}
+
+function entryEntity(entry: ResumeEntry, type: "education" | "projects" | "work") {
+  if (type === "work") {
+    return entry.name;
+  }
+
+  return type === "education" ? entry.institution : entry.entity;
+}
+---
+
+<main class="system-b" data-prototype-variant="B">
+  <header class="system-b__hero" id="inicio">
+    <div class="system-b__hero-copy">
+      <h1 id="variant-b-title">{prototypeResume.basics.name}</h1>
+      <p class="system-b__role">{prototypeResume.basics.label}</p>
+      <nav aria-label="Acciones principales" class="system-b__actions">
+        <a class="system-b__action system-b__action--primary" href="#transformacion">Ver caso de modernización</a>
+        <a class="system-b__action" href={`mailto:${prototypeResume.basics.email}`}>Contactar</a>
+        <a class="system-b__action" href={readPath}>Leer CV web</a>
+        <a class="system-b__action" href={pdfPath}>Descargar CV PDF</a>
+      </nav>
+      <h2>Modernizar sistemas corporativos desde backend.</h2>
+      <p class="system-b__summary">{prototypeResume.basics.summary}</p>
+      <p class="system-b__experience">Más de veinte años de experiencia documentable sostienen la transición desde aplicaciones web y core bancario hacia microservicios, cloud e integraciones.</p>
+    </div>
+    <figure aria-labelledby="system-b-hero-caption" class="system-b__hero-system">
+      <div aria-hidden="true" class="system-b__system system-b__system--hero">
+        <span class="system-b__plane system-b__plane--origin"></span>
+        <span class="system-b__plane system-b__plane--continuity"></span>
+        <span class="system-b__plane system-b__plane--transition"></span>
+        <span class="system-b__plane system-b__plane--expansion"></span>
+        <span class="system-b__connection system-b__connection--one"></span>
+        <span class="system-b__connection system-b__connection--two"></span>
+        <span class="system-b__connection system-b__connection--three"></span>
+      </div>
+      <figcaption id="system-b-hero-caption">Una metáfora visual de capas acumuladas: no representa la arquitectura de ningún sistema real.</figcaption>
+    </figure>
+  </header>
+
+  <nav aria-label="Contextos de la trayectoria" class="system-b__context-nav">
+    <a href="#continuidad">Caso Abanca</a>
+    <a href="#transformacion">Caso Evolutio</a>
+    <a href="#origen">Base inicial</a>
+    <a href="#expansion">Práctica y aprendizaje</a>
+  </nav>
+
+  <section aria-labelledby="continuidad-title" class="system-b__context system-b__context--continuity" id="continuidad">
+    <header class="system-b__context-heading">
+      <h2 id="continuidad-title">El entorno Abanca concentra catorce años de responsabilidad técnica.</h2>
+      <p>El entorno Abanca concentra la evidencia principal: catorce años y medio de continuidad funcional y técnica en sistemas corporativos.</p>
+    </header>
+    <div class="system-b__context-content">
+      <details class="system-b__evidence system-b__evidence--continuity" open>
+        <summary>
+          <span>Senior Backend Developer · Entorno Abanca</span>
+          <time datetime={abanca.startDate}>{formatPeriod(abanca)}</time>
+        </summary>
+        <article>
+          <h3>{entryTitle(abanca, "work")}</h3>
+          {entryEntity(abanca, "work") && <p class="system-b__entity">{entryEntity(abanca, "work")}</p>}
+          {abanca.summary && <p class="system-b__entry-summary">{abanca.summary}</p>}
+          {abanca.highlights && <ul>{abanca.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+          {associatedSkills(abanca, "work").length > 0 && (
+            <section aria-labelledby="abanca-skills">
+              <h4 id="abanca-skills">Habilidades asociadas a esta etapa</h4>
+              <ul class="system-b__skills">
+                {associatedSkills(abanca, "work").map((skill) => <li>{skill}</li>)}
+              </ul>
+            </section>
+          )}
+        </article>
+      </details>
+      <figure aria-hidden="true" class="system-b__context-system">
+        <div class="system-b__system system-b__system--continuity">
+          <span class="system-b__plane system-b__plane--origin"></span>
+          <span class="system-b__plane system-b__plane--continuity"></span>
+          <span class="system-b__connection system-b__connection--one"></span>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="transformacion-title" class="system-b__context system-b__context--transition" id="transformacion">
+    <header class="system-b__context-heading">
+      <h2 id="transformacion-title">Evolutio conecta la experiencia corporativa con microservicios, cloud e integraciones.</h2>
+      <p>Las tres intervenciones de Evolutio Cloud Enabler se solapan entre octubre de 2022 y mayo de 2024. Son proyectos relacionados, no tres empleos consecutivos.</p>
+    </header>
+    <div class="system-b__context-content">
+      <div class="system-b__evidence-stack">
+        {[nebula, whatsapp, enel].map((entry, index) => (
+          <details class:list={["system-b__evidence", "system-b__evidence--transition", `system-b__evidence--transition-${index}`]} open={index === 0}>
+            <summary>
+              <span>{index === 0 ? "Senior Backend Developer · Evolutio — Integraciones" : index === 1 ? "Senior Backend Developer · Evolutio — WhatsApp y Genesys Cloud" : "Senior Backend Developer · Evolutio — Migración Enel"}</span>
+              <time datetime={entry.startDate}>{formatPeriod(entry)}</time>
+            </summary>
+            <article>
+              <h3>{entryTitle(entry, "work")}</h3>
+              {entryEntity(entry, "work") && <p class="system-b__entity">{entryEntity(entry, "work")}</p>}
+              {entry.summary && <p class="system-b__entry-summary">{entry.summary}</p>}
+              {entry.highlights && <ul>{entry.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+              {associatedSkills(entry, "work").length > 0 && (
+                <section aria-labelledby={`transition-${index}-skills`}>
+                  <h4 id={`transition-${index}-skills`}>Habilidades asociadas a esta intervención</h4>
+                  <ul class="system-b__skills">
+                    {associatedSkills(entry, "work").map((skill) => <li>{skill}</li>)}
+                  </ul>
+                </section>
+              )}
+            </article>
+          </details>
+        ))}
+      </div>
+      <figure aria-hidden="true" class="system-b__context-system">
+        <div class="system-b__system system-b__system--transition">
+          <span class="system-b__plane system-b__plane--continuity"></span>
+          <span class="system-b__plane system-b__plane--transition"></span>
+          <span class="system-b__plane system-b__plane--expansion"></span>
+          <span class="system-b__connection system-b__connection--one"></span>
+          <span class="system-b__connection system-b__connection--two"></span>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="origen-title" class="system-b__context system-b__context--origin" id="origen">
+    <header class="system-b__context-heading">
+      <h2 id="origen-title">La base inicial explica la trayectoria que precede a la especialización.</h2>
+      <p>La etapa inicial se mantiene compacta: presenta base técnica y aplicaciones corporativas sin competir con la responsabilidad sostenida posterior.</p>
+    </header>
+    <div class="system-b__context-content">
+      <div class="system-b__evidence-stack">
+        <details class="system-b__evidence system-b__evidence--origin" open>
+          <summary>
+            <span>Backend Developer · COMTEC Software Factory — Proyecto Inditex</span>
+            <time datetime={inditex.startDate}>{formatPeriod(inditex)}</time>
+          </summary>
+          <article>
+            <h3>{entryTitle(inditex, "work")}</h3>
+            {entryEntity(inditex, "work") && <p class="system-b__entity">{entryEntity(inditex, "work")}</p>}
+            {inditex.summary && <p class="system-b__entry-summary">{inditex.summary}</p>}
+            {inditex.highlights && <ul>{inditex.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+            {associatedSkills(inditex, "work").length > 0 && <ul aria-label="Habilidades asociadas" class="system-b__skills">{associatedSkills(inditex, "work").map((skill) => <li>{skill}</li>)}</ul>}
+          </article>
+        </details>
+        <details class="system-b__evidence system-b__evidence--origin">
+          <summary><span>Formación técnica inicial</span><span>1995 - 2001</span></summary>
+          <div class="system-b__education-list">
+            {foundations.map((entry) => (
+              <article>
+                <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+                <h3>{entryTitle(entry, "education")}</h3>
+                {entryEntity(entry, "education") && <p class="system-b__entity">{entryEntity(entry, "education")}</p>}
+                {entry.details && <p>{entry.details.join(" ")}</p>}
+                {associatedSkills(entry, "education").length > 0 && <ul aria-label={`Habilidades asociadas a ${entryTitle(entry, "education")}`} class="system-b__skills">{associatedSkills(entry, "education").map((skill) => <li>{skill}</li>)}</ul>}
+              </article>
+            ))}
+          </div>
+        </details>
+      </div>
+      <figure aria-hidden="true" class="system-b__context-system">
+        <div class="system-b__system system-b__system--origin">
+          <span class="system-b__plane system-b__plane--origin"></span>
+          <span class="system-b__plane system-b__plane--continuity"></span>
+          <span class="system-b__connection system-b__connection--one"></span>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="expansion-title" class="system-b__context system-b__context--expansion" id="expansion">
+    <header class="system-b__context-heading">
+      <h2 id="expansion-title">La práctica y el aprendizaje recientes amplían el campo técnico.</h2>
+      <p>Los proyectos personales y la formación reciente amplían el campo técnico. Se presentan como tales, sin atribuirles experiencia práctica no documentada.</p>
+    </header>
+    <div class="system-b__context-content">
+      <div class="system-b__evidence-stack">
+        <details class="system-b__evidence system-b__evidence--expansion" open>
+          <summary><span>Práctica actual</span><span>Proyectos personales</span></summary>
+          <div class="system-b__project-list">
+            {prototypeResume.projects.map((entry) => (
+              <article>
+                <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+                <h3>{entryTitle(entry, "projects")}</h3>
+                {entryEntity(entry, "projects") && <p class="system-b__entity">{entryEntity(entry, "projects")}</p>}
+                {entry.description && <p class="system-b__entry-summary">{entry.description}</p>}
+                {entry.highlights && <ul>{entry.highlights.map((highlight) => <li>{highlight}</li>)}</ul>}
+                {associatedSkills(entry, "projects").length > 0 && <ul aria-label={`Habilidades asociadas a ${entryTitle(entry, "projects")}`} class="system-b__skills">{associatedSkills(entry, "projects").map((skill) => <li>{skill}</li>)}</ul>}
+              </article>
+            ))}
+          </div>
+        </details>
+        <details class="system-b__evidence system-b__evidence--expansion">
+          <summary><span>Aprendizaje continuo</span><span>2021 - 2026</span></summary>
+          <div class="system-b__education-list">
+            {recentLearning.map((entry) => (
+              <article>
+                <p><time datetime={entry.startDate}>{formatPeriod(entry)}</time></p>
+                <h3>{entryTitle(entry, "education")}</h3>
+                {entryEntity(entry, "education") && <p class="system-b__entity">{entryEntity(entry, "education")}</p>}
+                {entry.notes && <p>{entry.notes}</p>}
+                {entry.details && <details><summary>Consultar contenido de la formación</summary><ul>{entry.details.map((detail) => <li>{detail}</li>)}</ul></details>}
+                {associatedSkills(entry, "education").length > 0 && <ul aria-label={`Habilidades asociadas a ${entryTitle(entry, "education")}`} class="system-b__skills">{associatedSkills(entry, "education").map((skill) => <li>{skill}</li>)}</ul>}
+              </article>
+            ))}
+          </div>
+        </details>
+      </div>
+      <figure aria-hidden="true" class="system-b__context-system">
+        <div class="system-b__system system-b__system--expansion">
+          <span class="system-b__plane system-b__plane--continuity"></span>
+          <span class="system-b__plane system-b__plane--transition"></span>
+          <span class="system-b__plane system-b__plane--expansion"></span>
+          <span class="system-b__connection system-b__connection--two"></span>
+          <span class="system-b__connection system-b__connection--three"></span>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <footer class="system-b__closing">
+    <h2>Una trayectoria de backend que acumula responsabilidad y abre nuevas integraciones.</h2>
+    <nav aria-label="Acciones de cierre" class="system-b__actions">
+      <a class="system-b__action system-b__action--primary" href={`mailto:${prototypeResume.basics.email}`}>Contactar</a>
+      <a class="system-b__action" href={readPath}>Leer CV web completo</a>
+      <a class="system-b__action" href={pdfPath}>Descargar CV PDF</a>
+    </nav>
+  </footer>
+</main>

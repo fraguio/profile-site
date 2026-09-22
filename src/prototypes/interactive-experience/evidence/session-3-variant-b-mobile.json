@@ -1,0 +1,62 @@
+[
+  {
+    "antipattern": "cramped-padding",
+    "name": "Cramped padding",
+    "description": "Text is too close to the edge of its container. Add at least 8px of padding inside bordered, outlined, or colored containers.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "http://localhost:4321/profile-site/?variant=B",
+    "line": 0,
+    "snippet": "<section> system-b__context: children flush against border-top and background"
+  },
+  {
+    "antipattern": "cramped-padding",
+    "name": "Cramped padding",
+    "description": "Text is too close to the edge of its container. Add at least 8px of padding inside bordered, outlined, or colored containers.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "http://localhost:4321/profile-site/?variant=B",
+    "line": 0,
+    "snippet": "<section> system-b__context: children flush against border-top and background"
+  },
+  {
+    "antipattern": "repeated-container-text",
+    "name": "Same text repeated inside one container",
+    "description": "The same literal text rendered three or more times in structurally different spots inside a single card or panel is redundant messaging — usually a status or label wired into every slot of a template. Say it once, in the slot where it matters most.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "http://localhost:4321/profile-site/?variant=B",
+    "line": 0,
+    "snippet": "\"Evolutio Cloud Enabler\" rendered 3x in distinct spots inside section.system-b__context.system-b__context--transition"
+  },
+  {
+    "antipattern": "repeated-container-text",
+    "name": "Same text repeated inside one container",
+    "description": "The same literal text rendered three or more times in structurally different spots inside a single card or panel is redundant messaging — usually a status or label wired into every slot of a template. Say it once, in the slot where it matters most.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "http://localhost:4321/profile-site/?variant=B",
+    "line": 0,
+    "snippet": "\"Habilidades asociadas a esta intervencion\" rendered 3x in distinct spots inside section.system-b__context.system-b__context--transition"
+  },
+  {
+    "antipattern": "repeated-container-text",
+    "name": "Same text repeated inside one container",
+    "description": "The same literal text rendered three or more times in structurally different spots inside a single card or panel is redundant messaging — usually a status or label wired into every slot of a template. Say it once, in the slot where it matters most.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "http://localhost:4321/profile-site/?variant=B",
+    "line": 0,
+    "snippet": "\"Modernizacion de sistemas legacy\" rendered 3x in distinct spots inside section.system-b__context.system-b__context--transition"
+  },
+  {
+    "antipattern": "repeated-container-text",
+    "name": "Same text repeated inside one container",
+    "description": "The same literal text rendered three or more times in structurally different spots inside a single card or panel is redundant messaging — usually a status or label wired into every slot of a template. Say it once, in the slot where it matters most.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "http://localhost:4321/profile-site/?variant=B",
+    "line": 0,
+    "snippet": "\"Genesys Cloud\" rendered 3x in distinct spots inside section.system-b__context.system-b__context--transition"
+  }
+]

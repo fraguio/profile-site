@@ -46,7 +46,7 @@ const structuredData = JSON.stringify({
     <SemanticFallback {pdfPath} {readPath} />
     <main aria-live="polite" hidden id="prototype-variant-app"></main>
     <template id="prototype-variant-A"><VariantA {pdfPath} {readPath} /></template>
-    <template id="prototype-variant-B"><VariantB /></template>
+    <template id="prototype-variant-B"><VariantB {pdfPath} {readPath} /></template>
     <template id="prototype-variant-C"><VariantC /></template>
     <script>
       const variants = [
