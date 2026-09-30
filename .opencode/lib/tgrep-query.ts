@@ -17,11 +17,15 @@ interface TgrepArgs {
 
 interface QueryContext {
   worktree: string
+  abort?: AbortSignal
 }
 
 interface QueryCommand {
   executable: string
   args?: readonly string[]
+  // Plazos internos reducidos para subprocesses controlados; no forman parte del schema.
+  timeoutMs?: number
+  cleanupTimeoutMs?: number
 }
 
 interface QueryResult {
@@ -40,6 +44,11 @@ interface SearchRecord {
   text: string
   kind: "match" | "context"
 }
+
+type QueryInterruption =
+  | { kind: "cancelled" }
+  | { kind: "timeout" }
+  | { kind: "truncated", reason: string }
 
 // Reserva separada para cabecera/avisos y stderr dentro de los 48 000 bytes del output.
 const RECORD_BYTES = 38_000
@@ -123,8 +132,10 @@ export async function queryTgrep(
   context: QueryContext,
   command: QueryCommand = { executable: "tgrep" },
 ): Promise<QueryResult> {
+  if (context.abort?.aborted) throw new Error("Consulta tgrep cancelada antes del lanzamiento.")
   validateArgs(args)
   const { root, scope } = await resolveScope(context.worktree, args.path ?? ".")
+  if (context.abort?.aborted) throw new Error("Consulta tgrep cancelada antes del lanzamiento.")
   const options = ["--json", "-n", "-H"]
   options.push("--context", String(args.context_lines ?? 0))
   if (args.freshness === "current") options.push("--no-index")
@@ -155,23 +166,71 @@ export async function queryTgrep(
     let activePathBytes = 0
     const decoder = new TextDecoder("utf-8", { fatal: true })
     let stderrBuffer = Buffer.alloc(0)
-    let truncationReason: string | undefined
+    let interruption: QueryInterruption | undefined
     let cleanupTimer: ReturnType<typeof setTimeout> | undefined
     let cleanupError: Error | undefined
-    const truncate = (reason: string) => {
-      if (truncationReason) return
-      truncationReason = reason
-      if (child.exitCode !== null || child.signalCode !== null) return
-      if (!child.kill()) cleanupError = new Error("No se pudo terminar el cliente tgrep por límites.")
+    let terminationRejected = false
+    let terminationRequested = false
+    let settled = false
+    let streamError: Error | undefined
+    // Los 30 s cuentan desde spawn; el cierre tiene un presupuesto separado de 5 s.
+    const queryTimer = setTimeout(() => {
+      if (settled || child.exitCode !== null || child.signalCode !== null) return
+      interrupt({ kind: "timeout" })
+    }, command.timeoutMs ?? 30_000)
+    const release = () => {
+      clearTimeout(queryTimer)
+      clearTimeout(cleanupTimer)
+      context.abort?.removeEventListener("abort", onAbort)
+      child.stdout.removeListener("data", onStdout)
+      child.stderr.removeListener("data", onStderr)
+      child.stdout.removeListener("error", onStreamError)
+      child.stderr.removeListener("error", onStreamError)
+      child.removeListener("exit", onExit)
+      child.removeListener("close", onClose)
+      child.removeListener("error", onError)
+    }
+    const awaitClose = () => {
+      if (cleanupTimer || settled) return
       cleanupTimer = setTimeout(() => {
+        if (settled) return
+        settled = true
+        release()
         child.stdout.destroy()
         child.stderr.destroy()
         child.unref()
-        reject(new Error("El cliente tgrep no cerró durante el cleanup por límites."))
-      }, 5_000)
+        reject(new Error("El cliente tgrep no cerró durante el cleanup."))
+      }, command.cleanupTimeoutMs ?? 5_000)
+    }
+    const stop = () => {
+      clearTimeout(queryTimer)
+      if (!terminationRequested && child.exitCode === null && child.signalCode === null) {
+        terminationRequested = true
+        if (!child.kill()) {
+          terminationRejected = true
+        }
+      }
+      awaitClose()
+    }
+    const interrupt = (cause: QueryInterruption) => {
+      if (interruption) return
+      interruption = cause
+      stop()
+    }
+    const onExit = () => {
+      clearTimeout(queryTimer)
+      context.abort?.removeEventListener("abort", onAbort)
+      awaitClose()
+    }
+    const onAbort = () => {
+      if (settled || child.exitCode !== null || child.signalCode !== null) return
+      interrupt({ kind: "cancelled" })
+    }
+    const truncate = (reason: string) => {
+      interrupt({ kind: "truncated", reason })
     }
     const consume = (line: string) => {
-      if (protocolError || truncationReason) return
+      if (protocolError || interruption) return
       try {
         const event: unknown = JSON.parse(line)
         if (!isObject(event) || !isObject(event.data)) throw new Error("Evento JSON inválido.")
@@ -238,7 +297,7 @@ export async function queryTgrep(
     }
     const read = (text: string) => {
       let offset = 0
-      while (offset < text.length && !truncationReason && !protocolError) {
+      while (offset < text.length && !interruption && !protocolError) {
         const boundary = text.indexOf("\n", offset)
         const end = boundary === -1 ? text.length : boundary
         const fragment = text.slice(offset, end)
@@ -254,44 +313,60 @@ export async function queryTgrep(
         offset = boundary + 1
       }
     }
-    child.stdout.on("data", (chunk: Buffer) => {
-      if (protocolError || truncationReason) return
+    const onStdout = (chunk: Buffer) => {
+      if (protocolError || interruption) return
       try {
         read(decoder.decode(chunk, { stream: true }))
       } catch (error) {
         protocolError = error
       }
-    })
-    child.stderr.on("data", (chunk: Buffer) => {
+    }
+    const onStderr = (chunk: Buffer) => {
       const remaining = STDERR_BYTES - stderrBuffer.length
       stderrBuffer = Buffer.concat([stderrBuffer, chunk.subarray(0, remaining)])
       if (chunk.length > remaining || Buffer.byteLength(new TextDecoder().decode(stderrBuffer, { stream: true })) > STDERR_BYTES) {
         truncate("stderr_bytes")
       }
-    })
+    }
     let launchError: NodeJS.ErrnoException | undefined
-    child.on("error", (error) => { launchError = error })
-    child.on("close", (code, signal) => {
-      clearTimeout(cleanupTimer)
+    const onError = (error: NodeJS.ErrnoException) => {
+      if (child.pid === undefined) launchError = error
+      else cleanupError = new Error(`Falló la terminación del cliente tgrep: ${error.message}`, { cause: error })
+      awaitClose()
+    }
+    const onStreamError = (error: Error) => { streamError = error; stop() }
+    const onClose = (code: number | null, signal: NodeJS.Signals | null) => {
+      if (settled) return
+      settled = true
+      release()
+      // kill puede perder la carrera con una salida natural antes de recibir exit.
       if (cleanupError) { reject(cleanupError); return }
+      if (terminationRejected && code === null) { reject(new Error("No se pudo terminar el cliente tgrep durante el cleanup.")); return }
       if (launchError) {
         reject(launchFailure(launchError, command.executable))
         return
       }
+      if (streamError) { reject(new Error(`Error de lectura del cliente tgrep: ${streamError.message}`)); return }
       // No finalizar el decoder evita introducir un carácter de reemplazo si el presupuesto corta UTF-8.
       const stderr = stderrText(stderrBuffer)
       const warning = stderr.trim() ? `\nAdvertencias de tgrep:\n${stderr.trim()}` : ""
-      if (code !== 0 && code !== 1 && !(truncationReason && signal === "SIGTERM")) {
+      if (interruption && interruption.kind !== "truncated") {
+        reject(new Error(protocolError ? `Error de protocolo de tgrep: ${String(protocolError)}${warning}` : `${interruption.kind === "timeout" ? "Timeout de consulta tgrep" : "Consulta tgrep cancelada"}; cliente recogido sin detener el daemon compartido, que puede seguir procesando la consulta.${warning}`))
+        return
+      }
+      if (code !== 0 && code !== 1 && !(interruption?.kind === "truncated" && signal === "SIGTERM")) {
         reject(new Error(`tgrep terminó con código ${code}.${stderr.trim() ? `\n${stderr.trim()}` : ""}`))
         return
       }
-      if (!protocolError && !truncationReason) {
+      if (!protocolError && !interruption) {
         try {
           read(decoder.decode())
           if (pending) consume(pending)
-          if (!summarySeen) throw new Error("Stream incompleto: falta summary.")
-          if ((code === 0 && matchCount === 0) || (code === 1 && records.length > 0)) {
-            throw new Error("El código de salida contradice los registros recibidos.")
+          if (!interruption) {
+            if (!summarySeen) throw new Error("Stream incompleto: falta summary.")
+            if ((code === 0 && matchCount === 0) || (code === 1 && records.length > 0)) {
+              throw new Error("El código de salida contradice los registros recibidos.")
+            }
           }
         } catch (error) {
           protocolError ??= error
@@ -301,10 +376,16 @@ export async function queryTgrep(
         reject(new Error(`Error de protocolo de tgrep: ${String(protocolError)}${warning}`))
         return
       }
+      const truncationReason = interruption?.kind === "truncated" ? interruption.reason : undefined
       const metadata: QueryResult["metadata"] = { search_mode: args.freshness === "current" ? "current_scan" : "indexed_or_scan", truncated: !!truncationReason, record_count: records.length }
       if (truncationReason) metadata.truncation_reason = truncationReason
       const lines = records.map(renderRecord).join("")
       resolve({ output: `Modo de búsqueda: ${metadata.search_mode}\nTruncado: ${truncationReason ? `sí (${truncationReason}); estrecha la consulta. El cliente se interrumpe sin detener el daemon compartido; este puede seguir procesando la consulta` : "no"}. Registros devueltos: ${records.length}.\n${code === 1 && !truncationReason ? "No se encontraron coincidencias." : lines}${warning}`, metadata })
-    })
+    }
+    child.stdout.on("data", onStdout).on("error", onStreamError)
+    child.stderr.on("data", onStderr).on("error", onStreamError)
+    child.on("error", onError).once("exit", onExit).once("close", onClose)
+    context.abort?.addEventListener("abort", onAbort, { once: true })
+    if (context.abort?.aborted) onAbort()
   })
 }

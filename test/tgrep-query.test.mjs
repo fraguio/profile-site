@@ -1,9 +1,162 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { setTimeout as delay } from "node:timers/promises";
+import { getEventListeners } from "node:events";
 import { queryTgrep } from "../.opencode/lib/tgrep-query.ts";
+
+async function waitForFile(path) {
+  const deadline = Date.now() + 5000;
+  while (!existsSync(path) && Date.now() < deadline) await delay(10);
+  assert.ok(existsSync(path), "El subprocess debe comunicar su lanzamiento dentro del plazo del fixture.");
+}
+
+function createClientFixture(t, name) {
+  const worktree = mkdtempSync(join(tmpdir(), `profile-site-tgrep-${name}-`));
+  const abort = new AbortController();
+  const pidFile = join(worktree, "pid.txt");
+  t.after(async () => {
+    abort.abort();
+    // Dar al event loop una vuelta para cerrar el handle del cwd en Windows.
+    await delay(100);
+    rmSync(worktree, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  });
+  return {
+    abort,
+    pidFile,
+    run(script = "setInterval(()=>{},1000);", commandOptions = {}) {
+      return queryTgrep({ pattern: "needle" }, { worktree, abort: abort.signal }, {
+        executable: process.execPath,
+        args: ["--input-type=module", "-e", `import {writeFileSync} from "node:fs"; const events=${events.toString()}; const emit=(...args)=>process.stdout.write(events(...args)); writeFileSync(${JSON.stringify(pidFile)},String(process.pid)); ${script}`, "--"],
+        ...commandOptions,
+      });
+    },
+  };
+}
+
+test("una cancelación previa impide lanzar el cliente", async (t) => {
+  const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-abort-"));
+  t.after(() => rmSync(worktree, { recursive: true, force: true }));
+  const marker = join(worktree, "launched.txt");
+  await assert.rejects(queryTgrep({ pattern: "needle" }, { worktree, abort: AbortSignal.abort() }, {
+    executable: process.execPath,
+    args: ["-e", `require("node:fs").writeFileSync(${JSON.stringify(marker)}, "launched")`, "--"],
+  }), /Consulta tgrep cancelada/);
+  assert.equal(existsSync(marker), false);
+});
+
+test("la cancelación en curso recoge el cliente, descarta resultados parciales y retira el listener", { timeout: 5000 }, async (t) => {
+  const { abort, pidFile, run } = createClientFixture(t, "cancel");
+  const result = run("emit(); setInterval(()=>{},1000);");
+  const rejected = assert.rejects(result, (error) => {
+    assert.match(error.message, /Consulta tgrep cancelada/);
+    assert.doesNotMatch(error.message, /timeout|\[coincidencia\]|No se encontraron|Truncado/);
+    return true;
+  });
+  await waitForFile(pidFile);
+  abort.abort();
+  await rejected;
+  assert.throws(() => process.kill(Number(readFileSync(pidFile, "utf8")), 0), /ESRCH/);
+  assert.equal(getEventListeners(abort.signal, "abort").length, 0);
+});
+
+test("el timeout recoge un cliente bloqueado y no devuelve sus resultados parciales", async (t) => {
+  const { abort, pidFile, run } = createClientFixture(t, "timeout");
+  await assert.rejects(run("emit(); setInterval(()=>{},1000);", { timeoutMs: 250 }), (error) => {
+    assert.match(error.message, /Timeout de consulta tgrep/);
+    assert.doesNotMatch(error.message, /cancelada|\[coincidencia\]|No se encontraron|Truncado/);
+    return true;
+  });
+  assert.throws(() => process.kill(Number(readFileSync(pidFile, "utf8")), 0), /ESRCH/);
+  assert.equal(getEventListeners(abort.signal, "abort").length, 0);
+});
+
+test("el plazo de producción vence a los treinta segundos desde el lanzamiento", async (t) => {
+  const { pidFile, run } = createClientFixture(t, "clock");
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const result = run();
+  let finished = false;
+  const rejected = assert.rejects(result, /Timeout de consulta tgrep/).then(() => { finished = true; });
+  await waitForFile(pidFile);
+  t.mock.timers.tick(29_999);
+  await delay(20);
+  assert.equal(finished, false);
+  t.mock.timers.tick(1);
+  await rejected;
+  assert.throws(() => process.kill(Number(readFileSync(pidFile, "utf8")), 0), /ESRCH/);
+});
+
+test("timeout y cancelación simultáneos conservan la primera causa de interrupción", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  for (const first of ["cancel", "timeout"]) {
+    const { abort, pidFile, run } = createClientFixture(t, "first");
+    const result = run();
+    const rejected = assert.rejects(result, first === "cancel" ? /Consulta tgrep cancelada/ : /Timeout de consulta tgrep/);
+    await waitForFile(pidFile);
+    t.mock.timers.tick(29_999);
+    if (first === "cancel") abort.abort();
+    t.mock.timers.tick(1);
+    if (first === "timeout") abort.abort();
+    await rejected;
+    assert.throws(() => process.kill(Number(readFileSync(pidFile, "utf8")), 0), /ESRCH/);
+    assert.equal(getEventListeners(abort.signal, "abort").length, 0);
+  }
+});
+
+test("las carreras de finalización, timeout y cancelación resuelven una vez y liberan recursos", { timeout: 10_000 }, async (t) => {
+  for (const abortAfter of [0, 5, 20, 100]) {
+    const { abort, pidFile, run } = createClientFixture(t, "race");
+    let timer;
+    t.after(() => clearTimeout(timer));
+    const result = run("setTimeout(()=>emit(),10);", { timeoutMs: 150 });
+    const outcome = result.then((value) => ({ value }), (error) => ({ error }));
+    await waitForFile(pidFile);
+    timer = setTimeout(() => abort.abort(), abortAfter);
+    const { value, error } = await outcome;
+    if (error) assert.match(error.message, /Consulta tgrep cancelada|Timeout de consulta tgrep/);
+    else assert.equal(value.metadata.truncated, false);
+    assert.throws(() => process.kill(Number(readFileSync(pidFile, "utf8")), 0), /ESRCH/);
+    assert.equal(getEventListeners(abort.signal, "abort").length, 0);
+    await delay(160);
+  }
+});
+
+test("si el cierre no se recoge dentro del plazo el cleanup falla explícitamente y libera el listener", async (t) => {
+  const { abort, pidFile, run } = createClientFixture(t, "cleanup");
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const result = run();
+  const rejected = assert.rejects(result, /no cerró durante el cleanup/);
+  await waitForFile(pidFile);
+  abort.abort();
+  // El reloj vence antes de que el event loop entregue close.
+  t.mock.timers.tick(5000);
+  await rejected;
+  assert.equal(getEventListeners(abort.signal, "abort").length, 0);
+  const pid = Number(readFileSync(pidFile, "utf8"));
+  let closed = false;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try { process.kill(pid, 0); } catch (error) { assert.equal(error.code, "ESRCH"); closed = true; break; }
+    await delay(10);
+  }
+  assert.ok(closed);
+});
+
+test("el cierre con pipes heredados tiene cleanup acotado y comunica su fallo", { skip: process.platform === "win32" ? "Windows cierra estos pipes al recoger el cliente; fixture de herencia POSIX." : false }, async (t) => {
+  const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-pipes-"));
+  const pidFile = join(worktree, "descendant.txt");
+  t.after(() => {
+    if (existsSync(pidFile)) { try { process.kill(Number(readFileSync(pidFile, "utf8"))); } catch {} }
+    rmSync(worktree, { recursive: true, force: true });
+  });
+  await assert.rejects(queryTgrep({ pattern: "needle" }, { worktree }, {
+    executable: process.execPath,
+    args: ["--input-type=module", "-e", `import {spawn} from "node:child_process"; import {writeFileSync} from "node:fs"; process.stdout.write(${JSON.stringify(events())}); const child=spawn(process.execPath,["-e","setInterval(()=>{},1000)"],{stdio:["ignore","inherit","inherit"]}); writeFileSync(${JSON.stringify(pidFile)},String(child.pid)); child.unref();`, "--"],
+    timeoutMs: 1000,
+    cleanupTimeoutMs: 100,
+  }), /no cerró durante el cleanup/);
+});
 
 function events(text = "  needle\n", path = "src/example.ts", line = 2) {
   return [
@@ -14,14 +167,29 @@ function events(text = "  needle\n", path = "src/example.ts", line = 2) {
   ].map((event) => JSON.stringify(event)).join("\n") + "\n";
 }
 
-function query(t, script, pattern = "needle", args = {}) {
+function query(t, script, pattern = "needle", args = {}, context = {}) {
   const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-"));
   t.after(() => rmSync(worktree, { recursive: true, force: true }));
-  return queryTgrep({ pattern, ...args }, { worktree }, {
+  return queryTgrep({ pattern, ...args }, { worktree, ...context }, {
     executable: process.execPath,
     args: ["--input-type=module", "-e", `const events = ${events.toString()}; const emit = (...args) => process.stdout.write(events(...args)); ${script}`, "--"],
   });
 }
+
+test("éxito, ausencia, error y truncamiento retiran la suscripción de cancelación", async (t) => {
+  for (const script of [
+    'emit();',
+    'process.stdout.write(JSON.stringify({type:"summary",data:{}})); process.exitCode=1;',
+    'process.stderr.write("regex inválida"); process.exitCode=2;',
+    'emit("needle\\nneedle\\n"); process.stderr.write("x".repeat(20000)); setInterval(()=>{},1000);',
+  ]) {
+    const abort = new AbortController();
+    const result = await query(t, script, "needle", { max_results: 1 }, { abort: abort.signal }).then((value) => value, (error) => error);
+    if (result instanceof Error) assert.match(result.message, /código 2/);
+    assert.equal(getEventListeners(abort.signal, "abort").length, 0);
+    abort.abort();
+  }
+});
 
 test("una consulta JSON devuelve líneas localizables y comunica la garantía conservadora del modo normal", async (t) => {
   const result = await query(t, `
@@ -60,6 +228,18 @@ test("el límite global distingue el fin natural del exceso y cuenta contexto, n
       assert.equal(result.metadata.truncation_reason, "max_results");
       assert.match(result.output, /Truncado: sí[\s\S]*max_results[\s\S]*estrecha/i);
     }
+  }
+});
+
+test("el límite en el último evento se comunica como truncamiento con y sin newline final", async (t) => {
+  const partial = events("needle\nneedle\n").split("\n").slice(0, 2).join("\n");
+  for (const ending of ["\n", ""]) {
+    const result = await query(t, `process.stdout.write(${JSON.stringify(partial + ending)});`, "needle", { max_results: 1 });
+    assert.equal(result.metadata.record_count, 1);
+    assert.equal(result.metadata.truncated, true);
+    assert.equal(result.metadata.truncation_reason, "max_results");
+    assert.match(result.output, /Truncado: sí/);
+    assert.doesNotMatch(result.output, /No se encontraron/);
   }
 });
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -33,10 +33,14 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   const worktree = mkdtempSync(join(tmpdir(), "profile-site-opencode-smoke-"));
   let daemon;
   let server;
+  const cancelPid = join(worktree, "cancel-client.txt");
   t.after(async () => {
     try {
       await stop(server);
     } finally {
+      if (existsSync(cancelPid)) {
+        try { process.kill(Number(readFileSync(cancelPid, "utf8"))); } catch (error) { if (error.code !== "ESRCH") throw error; }
+      }
       try {
         await stop(daemon);
       } finally {
@@ -52,6 +56,30 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   for (const path of ["lib/tgrep-query.ts", "tools/tgrep.ts", "plugins/tgrep-server.ts"]) {
     copyFileSync(join(projectRoot, ".opencode", path), join(worktree, ".opencode", path));
   }
+  // Un CLI controlado en PATH bloquea solo el patrón de cancelación. El adaptador
+  // y la consulta se copian intactos; los demás comandos usan el tgrep real.
+  const located = spawnSync("where.exe", ["tgrep"], { encoding: "utf8", timeout: 5000 });
+  assert.equal(located.status, 0, located.stderr);
+  const realTgrep = located.stdout.trim().split(/\r?\n/)[0];
+  const bin = join(worktree, ".fixture-bin");
+  mkdirSync(bin);
+  const shimSource = join(bin, "TgrepFixture.cs");
+  writeFileSync(shimSource, `using System; using System.Diagnostics; using System.IO; using System.Linq; using System.Threading;
+class TgrepFixture {
+  static int Main(string[] args) {
+    if (args.Contains("CancelNeedle72")) {
+      File.WriteAllText(${JSON.stringify(cancelPid)}, Process.GetCurrentProcess().Id.ToString());
+      Thread.Sleep(Timeout.Infinite);
+      return 0;
+    }
+    var start = new ProcessStartInfo(${JSON.stringify(realTgrep)}, string.Join(" ", args.Select(arg => "\\\"" + arg.Replace("\\\"", "\\\\\\\"") + "\\\"")));
+    start.UseShellExecute = false;
+    using (var child = Process.Start(start)) { child.WaitForExit(); return child.ExitCode; }
+  }
+}`);
+  const compiler = join(process.env.WINDIR, "Microsoft.NET", "Framework64", "v4.0.30319", "csc.exe");
+  const compiled = spawnSync(compiler, ["/nologo", `/out:${join(bin, "tgrep.exe")}`, shimSource], { encoding: "utf8", timeout: 15_000 });
+  assert.equal(compiled.status, 0, `${compiled.stdout}\n${compiled.stderr}`);
   symlinkSync(join(projectRoot, ".opencode", "node_modules"), join(worktree, ".opencode", "node_modules"), "junction");
   writeFileSync(join(worktree, ".gitignore"), ".opencode/\n.tgrep/\n.config/ignored.json\n");
   writeFileSync(join(worktree, "sample.txt"), "AlphaNeedle\nalphaNeedle\n");
@@ -87,6 +115,7 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   let serverError;
   server = spawn("opencode", ["serve", "--port", "0", "--hostname", "127.0.0.1"], {
     cwd: worktree, stdio: ["ignore", "pipe", "pipe"], windowsHide: true,
+    env: { ...process.env, PATH: `${bin};${process.env.PATH}` },
   });
   server.on("error", (error) => { serverError = error });
   server.stdout.setEncoding("utf8").on("data", (chunk) => { serverOutput += chunk });
@@ -198,6 +227,38 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   assert.equal(limited.metadata.truncation_reason, "max_results");
   assert.match(limited.output, /Truncado: sí[\s\S]*estrecha/);
   assert.ok(Buffer.byteLength(limited.output) <= 48_000);
+
+  const post = async (path, body) => {
+    const response = await fetch(`${url}${path}?${directory}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body), signal: AbortSignal.any([t.signal, AbortSignal.timeout(30_000)]),
+    });
+    assert.ok(response.ok, await response.clone().text());
+    return response.status === 204 ? undefined : response.json();
+  };
+  const session = await post("/session", {});
+  await post(`/session/${session.id}/prompt_async`, {
+    model: { providerID: provider, modelID: modelParts.join("/") },
+    parts: [{ type: "text", text: 'Ejecuta una única consulta con tgrep usando {"pattern":"CancelNeedle72"}. No uses otras tools ni modifiques archivos.' }],
+  });
+  const cancelDeadline = Date.now() + 60_000;
+  while (!existsSync(cancelPid) && Date.now() < cancelDeadline) await delay(100, undefined, { signal: t.signal });
+  assert.ok(existsSync(cancelPid), "OpenCode debe lanzar la consulta antes de cancelarla.");
+  const clientPid = Number(readFileSync(cancelPid, "utf8"));
+  process.kill(clientPid, 0);
+  await post(`/session/${session.id}/abort`, {});
+  let clientClosed = false;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try { process.kill(clientPid, 0); }
+    catch (error) { assert.equal(error.code, "ESRCH"); clientClosed = true; break; }
+    await delay(50, undefined, { signal: t.signal });
+  }
+  assert.ok(clientClosed, "context.abort debe terminar el cliente de la tool real.");
+  const messages = await get(`/session/${session.id}/message?${directory}`);
+  const cancelled = messages.flatMap((message) => message.parts).find((part) => part.type === "tool" && part.tool === "tgrep");
+  assert.ok(cancelled, JSON.stringify(messages));
+  assert.equal(cancelled.state.status, "error", JSON.stringify(cancelled));
+  assert.match(cancelled.state.error, /cancel|abort/i);
   assert.equal(daemon.exitCode, null, "El servicio compartido sigue disponible tras las consultas.");
   const status = spawnSync("tgrep", ["status", worktree], { encoding: "utf8", timeout: 5_000 });
   assert.equal(status.status, 0, status.stderr);
