@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -83,5 +83,56 @@ test("los patrones llegan intactos como un único argumento después de --", asy
 test("otros códigos de salida nunca se comunican como ausencia de coincidencias", async (t) => {
   for (const code of [3, 7, 127]) {
     await assert.rejects(query(t, `process.exitCode = ${code}`), new RegExp(`tgrep terminó con código ${code}`));
+  }
+});
+
+test("el ámbito relativo y absoluto selecciona un archivo del worktree desde otro cwd", async (t) => {
+  const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-scope-"));
+  t.after(() => rmSync(worktree, { recursive: true, force: true }));
+  mkdirSync(join(worktree, "src with spaces"));
+  const file = join(worktree, "src with spaces", "sample.txt");
+  writeFileSync(file, "contenido del ámbito seleccionado\n");
+  symlinkSync(join(worktree, "src with spaces"), join(worktree, "internal-link"), "junction");
+  assert.notEqual(process.cwd(), worktree);
+
+  for (const path of ["src with spaces/sample.txt", file, "internal-link/sample.txt"]) {
+    const result = await queryTgrep({ pattern: "contenido", path }, { worktree }, {
+      executable: process.execPath,
+      args: ["--input-type=module", "-e", 'import { readFileSync } from "node:fs"; process.stdout.write(readFileSync(process.argv.at(-1), "utf8"))', "--"],
+    });
+    assert.equal(result, "contenido del ámbito seleccionado\n");
+  }
+});
+
+test("se rechazan ámbitos inexistentes y destinos reales que escapan del worktree antes del lanzamiento", async (t) => {
+  const parent = mkdtempSync(join(tmpdir(), "profile-site-tgrep-boundary-"));
+  t.after(() => rmSync(parent, { recursive: true, force: true }));
+  const worktree = join(parent, "repo");
+  const outside = join(parent, "repo-sibling");
+  mkdirSync(worktree);
+  mkdirSync(outside);
+  writeFileSync(join(outside, "sample.txt"), "fuera del worktree\n");
+  symlinkSync(outside, join(worktree, "escape"), "junction");
+  const command = { executable: process.execPath, args: ["-e", 'process.stdout.write("cliente lanzado")', "--"] };
+
+  await assert.rejects(queryTgrep({ pattern: "needle", path: "missing" }, { worktree }, command), /ámbito.*(?:inexistente|inaccesible)/i);
+  for (const path of [outside, "../repo-sibling", "escape", "escape/sample.txt"]) {
+    await assert.rejects(queryTgrep({ pattern: "needle", path }, { worktree }, command), /ámbito.*fuera del worktree/i);
+  }
+});
+
+test("los tipos inválidos y los strings con NUL se rechazan antes de ejecutar el cliente", async (t) => {
+  const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-validation-"));
+  t.after(() => rmSync(worktree, { recursive: true, force: true }));
+  const command = { executable: process.execPath, args: ["-e", 'process.stdout.write("cliente lanzado")', "--"] };
+  const invalid = [
+    ["pattern", undefined], ["pattern", 42], ["pattern", "bad\0pattern"],
+    ["path", 42], ["path", null], ["path", "bad\0path"],
+    ["literal", "true"], ["ignore_case", 1], ["hidden", null],
+    ["glob", "*.ts"], ["glob", [42]], ["glob", ["*.ts", "bad\0glob"]], ["glob", Array(1)],
+    ["file_types", "js"], ["file_types", [null]], ["file_types", ["js\0"]],
+  ];
+  for (const [name, value] of invalid) {
+    await assert.rejects(queryTgrep({ pattern: "needle", [name]: value }, { worktree }, command), new RegExp(`${name}.*(?:tipo|NUL)`, "i"));
   }
 });
