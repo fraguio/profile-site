@@ -12,6 +12,7 @@ interface TgrepArgs {
   hidden?: boolean
   freshness?: "indexed" | "current"
   context_lines?: number
+  max_results?: number
 }
 
 interface QueryContext {
@@ -29,6 +30,7 @@ interface QueryResult {
     search_mode: "indexed_or_scan" | "current_scan"
     truncated: boolean
     record_count: number
+    truncation_reason?: string
   }
 }
 
@@ -37,6 +39,22 @@ interface SearchRecord {
   line: number
   text: string
   kind: "match" | "context"
+}
+
+// Reserva separada para cabecera/avisos y stderr dentro de los 48 000 bytes del output.
+const RECORD_BYTES = 38_000
+const STDERR_BYTES = 8_192
+const EVENT_BYTES = 256_000
+// Acotar tanto los bytes de rutas como el overhead del Set del protocolo.
+const ACTIVE_FILES = 1000
+
+function stderrText(buffer: Buffer): string {
+  const decoded = new TextDecoder().decode(buffer, { stream: true })
+  return new TextDecoder().decode(Buffer.from(decoded).subarray(0, STDERR_BYTES), { stream: true }).trim()
+}
+
+function renderRecord(record: SearchRecord): string {
+  return `[${record.kind === "match" ? "coincidencia" : "contexto"}] ${record.path}:${record.line}:${record.text}${record.text.endsWith("\n") ? "" : "\n"}`
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -59,6 +77,9 @@ function validateString(name: string, value: unknown): void {
 
 function validateArgs(args: TgrepArgs): void {
   validateString("pattern", args.pattern)
+  if (args.max_results !== undefined && (!Number.isInteger(args.max_results) || args.max_results < 1 || args.max_results > 1000)) {
+    throw new Error("max_results: tipo o rango inválido; se requiere un integer de 1–1000.")
+  }
   if (args.freshness !== undefined && args.freshness !== "indexed" && args.freshness !== "current") {
     throw new Error('freshness: valor inválido; se requiere "indexed" o "current".')
   }
@@ -126,14 +147,31 @@ export async function queryTgrep(
     }
     let pending = ""
     const records: SearchRecord[] = []
+    let recordBytes = 0
     let protocolError: unknown
     let summarySeen = false
     let matchCount = 0
     const activeFiles = new Set<string>()
+    let activePathBytes = 0
     const decoder = new TextDecoder("utf-8", { fatal: true })
-    let stderr = ""
+    let stderrBuffer = Buffer.alloc(0)
+    let truncationReason: string | undefined
+    let cleanupTimer: ReturnType<typeof setTimeout> | undefined
+    let cleanupError: Error | undefined
+    const truncate = (reason: string) => {
+      if (truncationReason) return
+      truncationReason = reason
+      if (child.exitCode !== null || child.signalCode !== null) return
+      if (!child.kill()) cleanupError = new Error("No se pudo terminar el cliente tgrep por límites.")
+      cleanupTimer = setTimeout(() => {
+        child.stdout.destroy()
+        child.stderr.destroy()
+        child.unref()
+        reject(new Error("El cliente tgrep no cerró durante el cleanup por límites."))
+      }, 5_000)
+    }
     const consume = (line: string) => {
-      if (protocolError) return
+      if (protocolError || truncationReason) return
       try {
         const event: unknown = JSON.parse(line)
         if (!isObject(event) || !isObject(event.data)) throw new Error("Evento JSON inválido.")
@@ -157,12 +195,19 @@ export async function queryTgrep(
         const path = destination.split(sep).join("/")
         if (event.type === "begin") {
           if (activeFiles.has(path)) throw new Error("Evento begin duplicado.")
+          const bytes = Buffer.byteLength(path)
+          if (activeFiles.size === ACTIVE_FILES || activePathBytes + bytes > EVENT_BYTES) {
+            truncate("protocol_state_bytes")
+            return
+          }
           activeFiles.add(path)
+          activePathBytes += bytes
           return
         }
         if (!activeFiles.has(path)) throw new Error("Evento sin begin correspondiente.")
         if (event.type === "end") {
           activeFiles.delete(path)
+          activePathBytes -= Buffer.byteLength(path)
           return
         }
         if (event.type === "match" || event.type === "context") {
@@ -172,7 +217,18 @@ export async function queryTgrep(
           }
           const lines = data.lines.text.match(/[^\n]*\n|[^\n]+$/g) ?? []
           for (const [offset, text] of lines.entries()) {
-            records.push({ path, line: data.line_number + offset, text, kind: event.type })
+            if (records.length === (args.max_results ?? 100)) {
+              truncate("max_results")
+              return
+            }
+            const record: SearchRecord = { path, line: data.line_number + offset, text, kind: event.type }
+            const bytes = Buffer.byteLength(renderRecord(record))
+            if (recordBytes + bytes > RECORD_BYTES) {
+              truncate("output_bytes")
+              return
+            }
+            recordBytes += bytes
+            records.push(record)
           }
           if (event.type === "match") matchCount++
         }
@@ -180,37 +236,56 @@ export async function queryTgrep(
         protocolError = error
       }
     }
-    child.stderr.setEncoding("utf8")
     const read = (text: string) => {
-      pending += text
-      let boundary
-      while ((boundary = pending.indexOf("\n")) !== -1) {
-        consume(pending.slice(0, boundary))
-        pending = pending.slice(boundary + 1)
+      let offset = 0
+      while (offset < text.length && !truncationReason && !protocolError) {
+        const boundary = text.indexOf("\n", offset)
+        const end = boundary === -1 ? text.length : boundary
+        const fragment = text.slice(offset, end)
+        if (Buffer.byteLength(pending) + Buffer.byteLength(fragment) > EVENT_BYTES) {
+          pending = ""
+          truncate("event_bytes")
+          return
+        }
+        pending += fragment
+        if (boundary === -1) return
+        consume(pending)
+        pending = ""
+        offset = boundary + 1
       }
     }
     child.stdout.on("data", (chunk: Buffer) => {
-      if (protocolError) return
+      if (protocolError || truncationReason) return
       try {
         read(decoder.decode(chunk, { stream: true }))
       } catch (error) {
         protocolError = error
       }
     })
-    child.stderr.on("data", (chunk: string) => { stderr += chunk })
+    child.stderr.on("data", (chunk: Buffer) => {
+      const remaining = STDERR_BYTES - stderrBuffer.length
+      stderrBuffer = Buffer.concat([stderrBuffer, chunk.subarray(0, remaining)])
+      if (chunk.length > remaining || Buffer.byteLength(new TextDecoder().decode(stderrBuffer, { stream: true })) > STDERR_BYTES) {
+        truncate("stderr_bytes")
+      }
+    })
     let launchError: NodeJS.ErrnoException | undefined
     child.on("error", (error) => { launchError = error })
-    child.on("close", (code) => {
+    child.on("close", (code, signal) => {
+      clearTimeout(cleanupTimer)
+      if (cleanupError) { reject(cleanupError); return }
       if (launchError) {
         reject(launchFailure(launchError, command.executable))
         return
       }
+      // No finalizar el decoder evita introducir un carácter de reemplazo si el presupuesto corta UTF-8.
+      const stderr = stderrText(stderrBuffer)
       const warning = stderr.trim() ? `\nAdvertencias de tgrep:\n${stderr.trim()}` : ""
-      if (code !== 0 && code !== 1) {
+      if (code !== 0 && code !== 1 && !(truncationReason && signal === "SIGTERM")) {
         reject(new Error(`tgrep terminó con código ${code}.${stderr.trim() ? `\n${stderr.trim()}` : ""}`))
         return
       }
-      if (!protocolError) {
+      if (!protocolError && !truncationReason) {
         try {
           read(decoder.decode())
           if (pending) consume(pending)
@@ -226,9 +301,10 @@ export async function queryTgrep(
         reject(new Error(`Error de protocolo de tgrep: ${String(protocolError)}${warning}`))
         return
       }
-      const metadata: QueryResult["metadata"] = { search_mode: args.freshness === "current" ? "current_scan" : "indexed_or_scan", truncated: false, record_count: records.length }
-      const lines = records.map((record) => `[${record.kind === "match" ? "coincidencia" : "contexto"}] ${record.path}:${record.line}:${record.text}${record.text.endsWith("\n") ? "" : "\n"}`).join("")
-      resolve({ output: `Modo de búsqueda: ${metadata.search_mode}\nTruncado: no. Registros devueltos: ${records.length}.\n${code === 1 ? "No se encontraron coincidencias." : lines}${warning}`, metadata })
+      const metadata: QueryResult["metadata"] = { search_mode: args.freshness === "current" ? "current_scan" : "indexed_or_scan", truncated: !!truncationReason, record_count: records.length }
+      if (truncationReason) metadata.truncation_reason = truncationReason
+      const lines = records.map(renderRecord).join("")
+      resolve({ output: `Modo de búsqueda: ${metadata.search_mode}\nTruncado: ${truncationReason ? `sí (${truncationReason}); estrecha la consulta. El cliente se interrumpe sin detener el daemon compartido; este puede seguir procesando la consulta` : "no"}. Registros devueltos: ${records.length}.\n${code === 1 && !truncationReason ? "No se encontraron coincidencias." : lines}${warning}`, metadata })
     })
   })
 }
