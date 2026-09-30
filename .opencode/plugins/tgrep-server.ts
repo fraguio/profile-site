@@ -1,11 +1,19 @@
-import type { Plugin } from "@opencode-ai/plugin"
+import type { Hooks, Plugin } from "@opencode-ai/plugin"
 
 export const TgrepServerPlugin: Plugin = async ({ $, worktree, client }) => {
+  const hooks: Hooks = {
+    "tool.execute.after": async (input, output) => {
+      // OpenCode sustituye truncated por su propio recorte; conservar también los límites de la consulta.
+      if (input.tool === "tgrep" && output.metadata?.truncation_reason) {
+        output.metadata.truncated = true
+      }
+    },
+  }
   try {
     const status = await $`tgrep status ${worktree}`.quiet().nothrow()
 
     if (status.exitCode === 0 && status.text().includes("Server status")) {
-      return {}
+      return hooks
     }
 
     await $`powershell.exe -NoProfile -Command ${`
@@ -29,5 +37,5 @@ export const TgrepServerPlugin: Plugin = async ({ $, worktree, client }) => {
     })
   }
 
-  return {}
+  return hooks
 }

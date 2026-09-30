@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -44,11 +44,44 @@ test("una consulta sin coincidencias es válida y comunica la ausencia de result
   assert.match(result.output, /No se encontraron coincidencias/);
 });
 
+test("el límite global distingue el fin natural del exceso y cuenta contexto, no submatches", async (t) => {
+  for (const count of [1, 2, 3]) {
+    const result = await query(t, `
+      const path = {text:"sample.txt"};
+      process.stdout.write(JSON.stringify({type:"begin",data:{path}})+"\\n");
+      for (let line = 1; line <= ${count}; line++) {
+        process.stdout.write(JSON.stringify({type:line===1?"match":"context",data:{path,line_number:line,lines:{text:"needle needle\\n"},submatches:[{},{}]}})+"\\n");
+      }
+      process.stdout.write(JSON.stringify({type:"end",data:{path}})+"\\n"+JSON.stringify({type:"summary",data:{}})+"\\n");
+    `, "needle", { max_results: 2 });
+    assert.equal(result.metadata.record_count, Math.min(count, 2));
+    assert.equal(result.metadata.truncated, count > 2);
+    if (count > 2) {
+      assert.equal(result.metadata.truncation_reason, "max_results");
+      assert.match(result.output, /Truncado: sí[\s\S]*max_results[\s\S]*estrecha/i);
+    }
+  }
+});
+
 test("un fallo del CLI conserva el código de salida y el diagnóstico de stderr", async (t) => {
   await assert.rejects(
     query(t, 'process.stderr.write("regex inválida: falta ]\\n"); process.exitCode = 2'),
     /tgrep.*código 2[\s\S]*regex inválida: falta \]/,
   );
+});
+
+test("el presupuesto UTF-8 incluye cabecera y avisos y una fila enorme no parece ausencia de resultados", async (t) => {
+  const result = await query(t, `emit(("😀".repeat(300)+"\\n").repeat(100), "sample.txt", 1);`, "needle", { max_results: 1000 });
+  assert.ok(Buffer.byteLength(result.output) <= 48_000);
+  assert.equal(result.metadata.truncated, true);
+  assert.equal(result.metadata.truncation_reason, "output_bytes");
+  assert.ok(result.metadata.record_count > 0 && result.metadata.record_count < 100);
+  assert.doesNotMatch(result.output, /�/);
+  const huge = await query(t, 'emit("😀".repeat(20000)+"\\n")');
+  assert.equal(huge.metadata.record_count, 0);
+  assert.equal(huge.metadata.truncation_reason, "output_bytes");
+  assert.match(huge.output, /Truncado: sí/);
+  assert.doesNotMatch(huge.output, /No se encontraron/);
 });
 
 test("stderr acompaña como advertencia las consultas válidas con y sin coincidencias", async (t) => {
@@ -61,6 +94,28 @@ test("stderr acompaña como advertencia las consultas válidas con y sin coincid
 
     assert.match(result.output, code === 0 ? /example.ts:1:needle/ : /No se encontraron coincidencias/);
     assert.match(result.output, /Advertencias de tgrep:[\s\S]*archivo omitido: acceso denegado/);
+  }
+});
+
+test("los streams excesivos se interrumpen durante la lectura y el cliente ya está recogido al responder", { timeout: 15_000 }, async (t) => {
+  for (const [script, reason] of [
+    ['process.stdout.write("x".repeat(300000));', "event_bytes"],
+    ['process.stderr.write("diagnóstico 😀\\n".repeat(20000));', "stderr_bytes"],
+    ['emit("needle\\nneedle\\n");', "max_results"],
+  ]) {
+    const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-limit-"));
+    t.after(() => rmSync(worktree, { recursive: true, force: true }));
+    const pidFile = join(worktree, "pid.txt");
+    const result = await queryTgrep({ pattern: "needle", max_results: 1 }, { worktree }, {
+      executable: process.execPath,
+      args: ["--input-type=module", "-e", `import {writeFileSync} from "node:fs"; writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); const events=${events.toString()}; const emit=(...args)=>process.stdout.write(events(...args)); ${script} setInterval(()=>{},1000);`, "--"],
+    });
+    assert.equal(result.metadata.truncated, true);
+    assert.equal(result.metadata.truncation_reason, reason);
+    assert.ok(Buffer.byteLength(result.output) <= 48_000);
+    assert.ok(Buffer.byteLength(JSON.stringify(result.metadata)) < 256);
+    assert.doesNotMatch(result.output, /No se encontraron|�/);
+    assert.throws(() => process.kill(Number(readFileSync(pidFile, "utf8")), 0), /ESRCH/);
   }
 });
 
@@ -206,6 +261,39 @@ test("un fallo real del CLI conserva su clasificación aunque stdout no siga el 
   await assert.rejects(query(t, 'process.stdout.write("output inválido\\n"); process.stderr.write("regex inválida"); process.exitCode = 2;'), /tgrep terminó con código 2[\s\S]*regex inválida/);
 });
 
+test("un error de protocolo ya observado no queda oculto por un límite posterior", async (t) => {
+  await assert.rejects(query(t, 'process.stdout.write("no es JSON\\n"); setTimeout(()=>{process.stderr.write("x".repeat(20000));},50); setInterval(()=>{},1000);'), /Error de protocolo de tgrep/);
+});
+
+test("el default devuelve como máximo cien líneas y admite los extremos del rango", async (t) => {
+  const result = await query(t, 'emit("needle\\n".repeat(101))');
+  assert.equal(result.metadata.record_count, 100);
+  assert.equal(result.metadata.truncation_reason, "max_results");
+  for (const max_results of [1, 1000]) {
+    const complete = await query(t, 'emit("needle\\n")', "needle", { max_results });
+    assert.equal(complete.metadata.truncated, false);
+  }
+});
+
+test("stderr con bytes inválidos no puede ampliar el output por encima de su presupuesto", async (t) => {
+  const result = await query(t, 'emit("x".repeat(37000)); process.stderr.write(Buffer.alloc(8000,0x80));');
+  assert.ok(Buffer.byteLength(result.output) <= 48_000);
+  assert.equal(result.metadata.truncation_reason, "stderr_bytes");
+});
+
+test("el estado agregado de eventos abiertos queda acotado aunque no haya registros", async (t) => {
+  const result = await query(t, `
+    const send=(type,path,extra={})=>process.stdout.write(JSON.stringify({type,data:{path:{text:path},...extra}})+"\\n");
+    for(let i=0;i<1001;i++) send("begin","file"+i);
+    send("match","file0",{line_number:1,lines:{text:"needle\\n"}});
+    for(let i=0;i<1001;i++) send("end","file"+i);
+    process.stdout.write(JSON.stringify({type:"summary",data:{}})+"\\n");
+  `);
+  assert.equal(result.metadata.truncation_reason, "protocol_state_bytes");
+  assert.equal(result.metadata.record_count, 0);
+  assert.doesNotMatch(result.output, /No se encontraron/);
+});
+
 test("se rechazan ámbitos inexistentes y destinos reales que escapan del worktree antes del lanzamiento", async (t) => {
   const parent = mkdtempSync(join(tmpdir(), "profile-site-tgrep-boundary-"));
   t.after(() => rmSync(parent, { recursive: true, force: true }));
@@ -236,6 +324,8 @@ test("los tipos inválidos y los strings con NUL se rechazan antes de ejecutar e
     ["freshness", "latest"], ["freshness", null], ["freshness", 1],
     ["context_lines", -1], ["context_lines", 11], ["context_lines", 0.5],
     ["context_lines", "1"], ["context_lines", null], ["context_lines", NaN], ["context_lines", Infinity],
+    ["max_results", 0], ["max_results", 1001], ["max_results", 1.5], ["max_results", "1"],
+    ["max_results", null], ["max_results", NaN], ["max_results", Infinity],
   ];
   for (const [name, value] of invalid) {
     await assert.rejects(queryTgrep({ pattern: "needle", [name]: value }, { worktree }, command), new RegExp(`${name}.*(?:tipo|NUL|valor|rango)`, "i"));

@@ -6,6 +6,13 @@ export default tool({
     "Primary tool for repository-wide code search. Use tgrep to find text, regex patterns, symbols, usages, definitions, and configuration references across the current repository. For a repository-wide search, prefer this tool over Grep and do not repeat the same search with Grep unless tgrep fails or a narrower follow-up search is needed. Searches are case-sensitive and return line numbers. No matches is a valid result; CLI warnings are preserved in the response.",
 
   args: {
+    max_results: tool.schema
+      .number()
+      .int()
+      .min(1)
+      .max(1000)
+      .default(100)
+      .describe("Maximum returned lines across matches and context, from 1 to 1000. Default: 100. Output is also bounded to 48000 UTF-8 bytes; narrow the query when truncation is reported."),
     pattern: tool.schema
       .string()
       .describe("Regular-expression pattern by default; use literal to search for metacharacters as exact text and ignore_case for case-insensitive matching."),

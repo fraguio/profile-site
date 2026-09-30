@@ -56,6 +56,7 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   writeFileSync(join(worktree, ".gitignore"), ".opencode/\n.tgrep/\n.config/ignored.json\n");
   writeFileSync(join(worktree, "sample.txt"), "AlphaNeedle\nalphaNeedle\n");
   writeFileSync(join(worktree, "current.txt"), "antes\r\nOldNeedle70\r\ndespués\r\n");
+  writeFileSync(join(worktree, "limits.txt"), "LimitNeedle71 😀 LimitNeedle71\n".repeat(200));
   mkdirSync(join(worktree, "src with spaces"));
   mkdirSync(join(worktree, ".config"));
   writeFileSync(join(worktree, "src with spaces", "sample.ts"), "Alpha.Needle\nAlphaXNeedle\nalpha.needle\n");
@@ -112,7 +113,7 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   const tools = await get(`/experimental/tool?${directory}&provider=${encodeURIComponent(provider)}&model=${encodeURIComponent(modelParts.join("/"))}`);
   const tool = tools.find((item) => item.id === "tgrep");
   assert.ok(tool);
-  assert.deepEqual(Object.keys(tool.parameters.properties), ["pattern", "path", "literal", "ignore_case", "glob", "file_types", "hidden", "freshness", "context_lines"]);
+  assert.deepEqual(Object.keys(tool.parameters.properties), ["max_results", "pattern", "path", "literal", "ignore_case", "glob", "file_types", "hidden", "freshness", "context_lines"]);
   assert.deepEqual(tool.parameters.required, ["pattern"]);
   assert.equal(tool.parameters.properties.pattern.type, "string");
   assert.equal(tool.parameters.properties.path.type, "string");
@@ -133,10 +134,14 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   assert.equal(tool.parameters.properties.context_lines.maximum, 10);
   assert.equal(tool.parameters.properties.context_lines.default, 0);
   assert.ok(tool.parameters.properties.context_lines.description.includes("context"));
+  assert.equal(tool.parameters.properties.max_results.type, "integer");
+  assert.equal(tool.parameters.properties.max_results.minimum, 1);
+  assert.equal(tool.parameters.properties.max_results.maximum, 1000);
+  assert.equal(tool.parameters.properties.max_results.default, 100);
 
   t.signal.throwIfAborted();
   const run = spawnSync("opencode", ["run", "--attach", url, "--dir", worktree, "--model", model, "--format", "json",
-    'Verificación de la tool: ejecuta exactamente seis consultas con tgrep. Las tres primeras solo aportan pattern: "AlphaN(eedle)", "MissingNeedle68" y "[". La cuarta usa {"pattern":"Alpha.Needle","path":"src with spaces","literal":true,"ignore_case":true,"glob":["*.ts"],"file_types":["ts"]}. La quinta usa {"pattern":"ConfigNeedle69","hidden":true,"glob":["*.json","!ignored.json"],"file_types":["json"]}. La sexta usa {"pattern":"CurrentNeedle70","freshness":"current","context_lines":1}. No uses ninguna otra tool. No modifiques archivos. Resume las respuestas y distingue la ausencia de coincidencias del error de regex y las coincidencias del contexto.',
+    'Verificación de la tool: ejecuta exactamente siete consultas con tgrep. Las tres primeras solo aportan pattern: "AlphaN(eedle)", "MissingNeedle68" y "[". La cuarta usa {"pattern":"Alpha.Needle","path":"src with spaces","literal":true,"ignore_case":true,"glob":["*.ts"],"file_types":["ts"]}. La quinta usa {"pattern":"ConfigNeedle69","hidden":true,"glob":["*.json","!ignored.json"],"file_types":["json"]}. La sexta usa {"pattern":"CurrentNeedle70","freshness":"current","context_lines":1}. La séptima usa {"pattern":"LimitNeedle71","max_results":3}. No uses ninguna otra tool. No modifiques archivos. Resume las respuestas y distingue la ausencia de coincidencias del error de regex, las coincidencias del contexto y el truncamiento.',
   ], { cwd: worktree, encoding: "utf8", timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
   assert.equal(run.status, 0, `${run.stdout}\n${run.stderr}`);
   const events = run.stdout.split(/\r?\n/).filter((line) => line.startsWith("{")).map((line) => JSON.parse(line));
@@ -184,5 +189,17 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   assert.match(current.output, /\[coincidencia\] current\.txt:2:  CurrentNeedle70 niño 😀 CurrentNeedle70/);
   assert.match(current.output, /\[contexto\] current\.txt:3:\tdespués/);
   assert.deepEqual(current.metadata, { search_mode: "current_scan", truncated: false, record_count: 3 });
+  const limited = calls.find((call) => call.input.pattern === "LimitNeedle71");
+  assert.ok(limited, run.stdout);
+  assert.equal(limited.status, "completed");
+  assert.equal(limited.input.max_results, 3);
+  assert.equal(limited.metadata.record_count, 3);
+  assert.equal(limited.metadata.truncated, true, JSON.stringify(limited));
+  assert.equal(limited.metadata.truncation_reason, "max_results");
+  assert.match(limited.output, /Truncado: sí[\s\S]*estrecha/);
+  assert.ok(Buffer.byteLength(limited.output) <= 48_000);
   assert.equal(daemon.exitCode, null, "El servicio compartido sigue disponible tras las consultas.");
+  const status = spawnSync("tgrep", ["status", worktree], { encoding: "utf8", timeout: 5_000 });
+  assert.equal(status.status, 0, status.stderr);
+  assert.match(status.stdout, /Server status/);
 });
