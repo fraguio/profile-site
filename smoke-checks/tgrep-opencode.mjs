@@ -53,8 +53,13 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
     copyFileSync(join(projectRoot, ".opencode", path), join(worktree, ".opencode", path));
   }
   symlinkSync(join(projectRoot, ".opencode", "node_modules"), join(worktree, ".opencode", "node_modules"), "junction");
-  writeFileSync(join(worktree, ".gitignore"), ".opencode/\n.tgrep/\n");
+  writeFileSync(join(worktree, ".gitignore"), ".opencode/\n.tgrep/\n.config/ignored.json\n");
   writeFileSync(join(worktree, "sample.txt"), "AlphaNeedle\nalphaNeedle\n");
+  mkdirSync(join(worktree, "src with spaces"));
+  mkdirSync(join(worktree, ".config"));
+  writeFileSync(join(worktree, "src with spaces", "sample.ts"), "Alpha.Needle\nAlphaXNeedle\nalpha.needle\n");
+  writeFileSync(join(worktree, ".config", "settings.json"), '{"value":"ConfigNeedle69"}\n');
+  writeFileSync(join(worktree, ".config", "ignored.json"), '{"value":"ConfigNeedle69"}\n');
 
   // El fixture es propietario del daemon; el plugin lo reutiliza y el cleanup lo recoge.
   daemon = spawn("tgrep", ["serve", worktree], { cwd: worktree, stdio: "ignore", windowsHide: true });
@@ -105,12 +110,23 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   const tools = await get(`/experimental/tool?${directory}&provider=${encodeURIComponent(provider)}&model=${encodeURIComponent(modelParts.join("/"))}`);
   const tool = tools.find((item) => item.id === "tgrep");
   assert.ok(tool);
-  assert.deepEqual(Object.keys(tool.parameters.properties), ["pattern"]);
+  assert.deepEqual(Object.keys(tool.parameters.properties), ["pattern", "path", "literal", "ignore_case", "glob", "file_types", "hidden"]);
+  assert.deepEqual(tool.parameters.required, ["pattern"]);
   assert.equal(tool.parameters.properties.pattern.type, "string");
+  assert.equal(tool.parameters.properties.path.type, "string");
+  for (const name of ["literal", "ignore_case", "hidden"]) {
+    assert.equal(tool.parameters.properties[name].type, "boolean");
+    assert.ok(tool.parameters.properties[name].description);
+  }
+  for (const name of ["glob", "file_types"]) {
+    assert.equal(tool.parameters.properties[name].type, "array");
+    assert.equal(tool.parameters.properties[name].items.type, "string");
+    assert.ok(tool.parameters.properties[name].description);
+  }
 
   t.signal.throwIfAborted();
   const run = spawnSync("opencode", ["run", "--attach", url, "--dir", worktree, "--model", model, "--format", "json",
-    'Verificación de la tool: ejecuta exactamente tres consultas con tgrep, con los patrones "AlphaN(eedle)", "MissingNeedle68" y "[". No uses ninguna otra tool. No modifiques archivos. Resume las respuestas y distingue la ausencia de coincidencias del error de regex.',
+    'Verificación de la tool: ejecuta exactamente cinco consultas con tgrep. Las tres primeras solo aportan pattern: "AlphaN(eedle)", "MissingNeedle68" y "[". La cuarta usa {"pattern":"Alpha.Needle","path":"src with spaces","literal":true,"ignore_case":true,"glob":["*.ts"],"file_types":["ts"]}. La quinta usa {"pattern":"ConfigNeedle69","hidden":true,"glob":["*.json","!ignored.json"],"file_types":["json"]}. No uses ninguna otra tool. No modifiques archivos. Resume las respuestas y distingue la ausencia de coincidencias del error de regex.',
   ], { cwd: worktree, encoding: "utf8", timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
   assert.equal(run.status, 0, `${run.stdout}\n${run.stderr}`);
   const events = run.stdout.split(/\r?\n/).filter((line) => line.startsWith("{")).map((line) => JSON.parse(line));
@@ -126,5 +142,22 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   assert.match(empty.output, /No se encontraron coincidencias/);
   assert.equal(invalid.status, "error");
   assert.match(invalid.error, /tgrep.*código 2[\s\S]*regex/i);
+  const literal = calls.find((call) => call.input.pattern === "Alpha.Needle");
+  assert.ok(literal, run.stdout);
+  assert.equal(literal.status, "completed");
+  assert.equal(literal.input.path, "src with spaces");
+  assert.equal(literal.input.literal, true);
+  assert.equal(literal.input.ignore_case, true);
+  assert.deepEqual(literal.input.glob, ["*.ts"]);
+  assert.deepEqual(literal.input.file_types, ["ts"]);
+  assert.match(literal.output, /sample\.ts:1:Alpha\.Needle/);
+  assert.match(literal.output, /sample\.ts:3:alpha\.needle/);
+  assert.doesNotMatch(literal.output, /sample\.ts:2:/);
+  const hidden = calls.find((call) => call.input.pattern === "ConfigNeedle69");
+  assert.ok(hidden, run.stdout);
+  assert.equal(hidden.status, "completed");
+  assert.equal(hidden.input.hidden, true);
+  assert.match(hidden.output, /settings\.json:1:.*ConfigNeedle69/);
+  assert.doesNotMatch(hidden.output, /ignored\.json:/);
   assert.equal(daemon.exitCode, null, "El servicio compartido sigue disponible tras las consultas.");
 });
