@@ -30,7 +30,7 @@ function fixture(t) {
 
 test("tgrep real diferencia texto literal, regex y mayúsculas en un archivo con espacios", async (t) => {
   const worktree = fixture(t);
-  const query = (args) => queryTgrep({ pattern: "Alpha.Needle", path: "src with spaces/sample.ts", ...args }, { worktree });
+  const query = (args) => queryTgrep({ pattern: "Alpha.Needle", path: "src with spaces/sample.ts", ...args }, { worktree }).then((result) => result.output);
 
   const regex = await query({});
   assert.match(regex, /sample\.ts:1:Alpha\.Needle/);
@@ -48,7 +48,7 @@ test("tgrep real diferencia texto literal, regex y mayúsculas en un archivo con
 
 test("tgrep real aplica globs de inclusión y exclusión dentro del directorio seleccionado", async (t) => {
   const worktree = fixture(t);
-  const query = (args) => queryTgrep({ pattern: "FilterNeedle", path: "src with spaces", ...args }, { worktree });
+  const query = (args) => queryTgrep({ pattern: "FilterNeedle", path: "src with spaces", ...args }, { worktree }).then((result) => result.output);
   const result = await query({ glob: ["*.ts", "!skip.ts"] });
   assert.match(result, /sample\.ts:4:FilterNeedle/);
   assert.doesNotMatch(result, /(?:skip\.ts|sample\.py|outside\.txt):/);
@@ -58,7 +58,7 @@ test("tgrep real aplica globs de inclusión y exclusión dentro del directorio s
 
 test("tgrep real filtra por tipos y conserva los diagnósticos de tipos desconocidos", async (t) => {
   const worktree = fixture(t);
-  const query = (args) => queryTgrep({ pattern: "FilterNeedle", ...args }, { worktree });
+  const query = (args) => queryTgrep({ pattern: "FilterNeedle", ...args }, { worktree }).then((result) => result.output);
   const result = await query({ file_types: ["ts", "py"], glob: ["!skip.ts"] });
   assert.match(result, /sample\.ts:4:FilterNeedle/);
   assert.match(result, /sample\.py:1:FilterNeedle/);
@@ -69,7 +69,7 @@ test("tgrep real filtra por tipos y conserva los diagnósticos de tipos desconoc
 
 test("tgrep real incluye ocultos sin desactivar las ignore rules y respeta ámbitos explícitos", async (t) => {
   const worktree = fixture(t);
-  const query = (args) => queryTgrep({ pattern: "FilterNeedle", ...args }, { worktree });
+  const query = (args) => queryTgrep({ pattern: "FilterNeedle", ...args }, { worktree }).then((result) => result.output);
   assert.doesNotMatch(await query({}), /(?:\.hidden\.txt|settings\.txt|ignored\.txt):/);
   const result = await query({ hidden: true });
   assert.match(result, /\.hidden\.txt:1:FilterNeedle/);
@@ -83,7 +83,7 @@ test("los filtros sobre el corpus indexado no reincorporan archivos ignorados y 
   const worktree = fixture(t);
   const index = spawnSync("tgrep", ["index", "--hidden", worktree], { encoding: "utf8", timeout: 15_000 });
   assert.equal(index.status, 0, `${index.stdout}\n${index.stderr}`);
-  const query = (args, command) => queryTgrep({ pattern: "FilterNeedle", ...args }, { worktree }, command);
+  const query = (args) => queryTgrep({ pattern: "FilterNeedle", ...args }, { worktree }).then((result) => result.output);
 
   const typed = await query({ file_types: ["ts", "py"], glob: ["!skip.ts"] });
   assert.match(typed, /sample\.ts:4:FilterNeedle/);
@@ -95,8 +95,7 @@ test("los filtros sobre el corpus indexado no reincorporan archivos ignorados y 
   assert.match(hidden, /settings\.txt:1:FilterNeedle/);
   assert.doesNotMatch(hidden, /ignored\.txt:/);
   assert.match(await query({ glob: ["ignored.txt"] }), /No se encontraron coincidencias/);
-  // Se fuerza el scan solo en el fixture del CLI; freshness corresponde a #70.
-  assert.match(await query({ glob: ["ignored.txt"] }, { executable: "tgrep", args: ["--no-index"] }), /ignored\.txt:1:FilterNeedle/);
+  assert.match(await query({ glob: ["ignored.txt"], freshness: "current" }), /ignored\.txt:1:FilterNeedle/);
   assert.match(await query({ pattern: "Alpha.Needle", literal: true, ignore_case: true }), /sample\.ts:3:alpha\.needle/);
   await assert.rejects(query({ glob: ["["] }), /tgrep.*código 2[\s\S]*(?:glob|unclosed)/i);
   await assert.rejects(query({ file_types: ["unknown_type_69"] }), /tgrep.*código 2[\s\S]*unknown_type_69/i);
@@ -108,6 +107,6 @@ test("el scan de directorio no sigue junctions y el ámbito explícito rechaza u
   t.after(() => rmSync(outside, { recursive: true, force: true }));
   writeFileSync(join(outside, "external.txt"), "ExternalNeedle69\n");
   symlinkSync(outside, join(worktree, "escape"), "junction");
-  assert.match(await queryTgrep({ pattern: "ExternalNeedle69" }, { worktree }), /No se encontraron coincidencias/);
+  assert.match((await queryTgrep({ pattern: "ExternalNeedle69" }, { worktree })).output, /No se encontraron coincidencias/);
   await assert.rejects(queryTgrep({ pattern: "ExternalNeedle69", path: "escape/external.txt" }, { worktree }), /ámbito.*fuera del worktree/i);
 });

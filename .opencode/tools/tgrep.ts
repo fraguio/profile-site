@@ -33,6 +33,17 @@ export default tool({
       .boolean()
       .optional()
       .describe("Include non-ignored hidden files and directories, such as .opencode or .agents. Default: false. Does not disable ignore rules; explicitly named scopes retain CLI semantics."),
+    freshness: tool.schema
+      .enum(["indexed", "current"])
+      .default("indexed")
+      .describe('Use "current" to read edits directly from the filesystem, bypassing the index and service checks. Default: "indexed", allowing the CLI to select server, local index or scan; indexed_or_scan does not guarantee an up-to-date index. A current_scan is not an atomic filesystem snapshot.'),
+    context_lines: tool.schema
+      .number()
+      .int()
+      .min(0)
+      .max(10)
+      .default(0)
+      .describe("Lines before and after each match, from 0 to 10. Default: 0. Request context to interpret nearby code; output distinguishes matches from context and counts each returned line once, not each submatch."),
   },
 
   async execute(args, context: ToolContext): Promise<ToolResult> {

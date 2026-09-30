@@ -9,7 +9,7 @@ test("tgrep real conserva regex, mayúsculas, números de línea y argumentos en
   const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-smoke with spaces-"));
   t.after(() => rmSync(worktree, { recursive: true, force: true }));
   writeFileSync(join(worktree, "sample.txt"), "AlphaNeedle\nalphaNeedle\ntwo words\n\"double\" and 'single'\n-n\n--help\nserve\nsearch\nstatus\nindex\nhelp\n");
-  const query = (pattern) => queryTgrep({ pattern }, { worktree });
+  const query = (pattern) => queryTgrep({ pattern }, { worktree }).then((result) => result.output);
 
   const matches = await query("AlphaN(eedle)");
   assert.match(matches, /sample\.txt:1:AlphaNeedle/);

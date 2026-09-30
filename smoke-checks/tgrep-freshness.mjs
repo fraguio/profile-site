@@ -1,0 +1,39 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+import { queryTgrep } from "../.opencode/lib/tgrep-query.ts";
+
+test("current observa una edición posterior al indexado real y devuelve contexto normalizado", async (t) => {
+  const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-freshness with spaces-"));
+  t.after(() => rmSync(worktree, { recursive: true, force: true }));
+  const git = spawnSync("git", ["init", worktree], { encoding: "utf8", timeout: 5_000 });
+  assert.equal(git.status, 0, git.stderr);
+  writeFileSync(join(worktree, ".gitignore"), ".tgrep/\n");
+  mkdirSync(join(worktree, "src with spaces"));
+  const file = join(worktree, "src with spaces", "sample.txt");
+  writeFileSync(file, "antes\r\nIndexedNeedle70\r\ndespués\r\n");
+  const index = spawnSync("tgrep", ["index", worktree], { encoding: "utf8", timeout: 15_000 });
+  assert.equal(index.status, 0, `${index.stdout}\n${index.stderr}`);
+  const indexed = await queryTgrep({ pattern: "IndexedNeedle70" }, { worktree });
+  assert.match(indexed.output, /\[coincidencia\] src with spaces\/sample\.txt:2:IndexedNeedle70/);
+  assert.match(indexed.output, /Modo de búsqueda: indexed_or_scan/);
+  assert.deepEqual(indexed.metadata, { search_mode: "indexed_or_scan", truncated: false, record_count: 1 });
+
+  writeFileSync(file, "  antes: café\r\n  CurrentNeedle70 niño 😀 CurrentNeedle70\r\n\tdespués\r\n");
+  const current = await queryTgrep({ pattern: "CurrentNeedle70", freshness: "current", context_lines: 1 }, { worktree });
+  assert.match(current.output, /Modo de búsqueda: current_scan/);
+  assert.match(current.output, /\[contexto\] src with spaces\/sample\.txt:1:  antes: café\r?\n/);
+  assert.match(current.output, /\[coincidencia\] src with spaces\/sample\.txt:2:  CurrentNeedle70 niño 😀 CurrentNeedle70\r?\n/);
+  assert.match(current.output, /\[contexto\] src with spaces\/sample\.txt:3:\tdespués\r?\n/);
+  assert.doesNotMatch(current.output, /IndexedNeedle70|�/);
+  assert.deepEqual(current.metadata, { search_mode: "current_scan", truncated: false, record_count: 3 });
+  const empty = await queryTgrep({ pattern: "MissingNeedle70", freshness: "current", context_lines: 10 }, { worktree });
+  assert.match(empty.output, /No se encontraron coincidencias/);
+  assert.deepEqual(empty.metadata, { search_mode: "current_scan", truncated: false, record_count: 0 });
+  const status = spawnSync("tgrep", ["status", worktree], { encoding: "utf8", timeout: 5_000 });
+  assert.equal(status.status, 0, status.stderr);
+  assert.doesNotMatch(status.stdout, /Server status/, "Las consultas no arrancan un daemon para el fixture.");
+});
