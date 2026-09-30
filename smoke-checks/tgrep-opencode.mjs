@@ -55,6 +55,7 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   symlinkSync(join(projectRoot, ".opencode", "node_modules"), join(worktree, ".opencode", "node_modules"), "junction");
   writeFileSync(join(worktree, ".gitignore"), ".opencode/\n.tgrep/\n.config/ignored.json\n");
   writeFileSync(join(worktree, "sample.txt"), "AlphaNeedle\nalphaNeedle\n");
+  writeFileSync(join(worktree, "current.txt"), "antes\r\nOldNeedle70\r\ndespués\r\n");
   mkdirSync(join(worktree, "src with spaces"));
   mkdirSync(join(worktree, ".config"));
   writeFileSync(join(worktree, "src with spaces", "sample.ts"), "Alpha.Needle\nAlphaXNeedle\nalpha.needle\n");
@@ -78,6 +79,7 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
     await delay(100, undefined, { signal: t.signal });
   }
   assert.ok(available, "El daemon del fixture debe estar disponible antes de iniciar OpenCode.");
+  writeFileSync(join(worktree, "current.txt"), "  antes: café\r\n  CurrentNeedle70 niño 😀 CurrentNeedle70\r\n\tdespués\r\n");
   t.signal.throwIfAborted();
 
   let serverOutput = "";
@@ -110,7 +112,7 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   const tools = await get(`/experimental/tool?${directory}&provider=${encodeURIComponent(provider)}&model=${encodeURIComponent(modelParts.join("/"))}`);
   const tool = tools.find((item) => item.id === "tgrep");
   assert.ok(tool);
-  assert.deepEqual(Object.keys(tool.parameters.properties), ["pattern", "path", "literal", "ignore_case", "glob", "file_types", "hidden"]);
+  assert.deepEqual(Object.keys(tool.parameters.properties), ["pattern", "path", "literal", "ignore_case", "glob", "file_types", "hidden", "freshness", "context_lines"]);
   assert.deepEqual(tool.parameters.required, ["pattern"]);
   assert.equal(tool.parameters.properties.pattern.type, "string");
   assert.equal(tool.parameters.properties.path.type, "string");
@@ -123,10 +125,18 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
     assert.equal(tool.parameters.properties[name].items.type, "string");
     assert.ok(tool.parameters.properties[name].description);
   }
+  assert.deepEqual(tool.parameters.properties.freshness.enum, ["indexed", "current"]);
+  assert.equal(tool.parameters.properties.freshness.default, "indexed");
+  assert.ok(tool.parameters.properties.freshness.description.includes("filesystem"));
+  assert.equal(tool.parameters.properties.context_lines.type, "integer");
+  assert.equal(tool.parameters.properties.context_lines.minimum, 0);
+  assert.equal(tool.parameters.properties.context_lines.maximum, 10);
+  assert.equal(tool.parameters.properties.context_lines.default, 0);
+  assert.ok(tool.parameters.properties.context_lines.description.includes("context"));
 
   t.signal.throwIfAborted();
   const run = spawnSync("opencode", ["run", "--attach", url, "--dir", worktree, "--model", model, "--format", "json",
-    'Verificación de la tool: ejecuta exactamente cinco consultas con tgrep. Las tres primeras solo aportan pattern: "AlphaN(eedle)", "MissingNeedle68" y "[". La cuarta usa {"pattern":"Alpha.Needle","path":"src with spaces","literal":true,"ignore_case":true,"glob":["*.ts"],"file_types":["ts"]}. La quinta usa {"pattern":"ConfigNeedle69","hidden":true,"glob":["*.json","!ignored.json"],"file_types":["json"]}. No uses ninguna otra tool. No modifiques archivos. Resume las respuestas y distingue la ausencia de coincidencias del error de regex.',
+    'Verificación de la tool: ejecuta exactamente seis consultas con tgrep. Las tres primeras solo aportan pattern: "AlphaN(eedle)", "MissingNeedle68" y "[". La cuarta usa {"pattern":"Alpha.Needle","path":"src with spaces","literal":true,"ignore_case":true,"glob":["*.ts"],"file_types":["ts"]}. La quinta usa {"pattern":"ConfigNeedle69","hidden":true,"glob":["*.json","!ignored.json"],"file_types":["json"]}. La sexta usa {"pattern":"CurrentNeedle70","freshness":"current","context_lines":1}. No uses ninguna otra tool. No modifiques archivos. Resume las respuestas y distingue la ausencia de coincidencias del error de regex y las coincidencias del contexto.',
   ], { cwd: worktree, encoding: "utf8", timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
   assert.equal(run.status, 0, `${run.stdout}\n${run.stderr}`);
   const events = run.stdout.split(/\r?\n/).filter((line) => line.startsWith("{")).map((line) => JSON.parse(line));
@@ -137,9 +147,14 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   assert.ok(matches && empty && invalid, run.stdout);
   assert.equal(matches.status, "completed");
   assert.match(matches.output, /sample\.txt:1:AlphaNeedle/);
+  assert.match(matches.output, /Modo de búsqueda: indexed_or_scan/);
+  assert.equal(matches.metadata.search_mode, "indexed_or_scan");
+  assert.equal(matches.metadata.truncated, false);
+  assert.equal(matches.metadata.record_count, 1);
   assert.doesNotMatch(matches.output, /sample\.txt:2:/);
   assert.equal(empty.status, "completed");
   assert.match(empty.output, /No se encontraron coincidencias/);
+  assert.equal(empty.metadata.record_count, 0);
   assert.equal(invalid.status, "error");
   assert.match(invalid.error, /tgrep.*código 2[\s\S]*regex/i);
   const literal = calls.find((call) => call.input.pattern === "Alpha.Needle");
@@ -159,5 +174,15 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   assert.equal(hidden.input.hidden, true);
   assert.match(hidden.output, /settings\.json:1:.*ConfigNeedle69/);
   assert.doesNotMatch(hidden.output, /ignored\.json:/);
+  const current = calls.find((call) => call.input.pattern === "CurrentNeedle70");
+  assert.ok(current, run.stdout);
+  assert.equal(current.status, "completed");
+  assert.equal(current.input.freshness, "current");
+  assert.equal(current.input.context_lines, 1);
+  assert.match(current.output, /Modo de búsqueda: current_scan/);
+  assert.match(current.output, /\[contexto\] current\.txt:1:  antes: café/);
+  assert.match(current.output, /\[coincidencia\] current\.txt:2:  CurrentNeedle70 niño 😀 CurrentNeedle70/);
+  assert.match(current.output, /\[contexto\] current\.txt:3:\tdespués/);
+  assert.deepEqual(current.metadata, { search_mode: "current_scan", truncated: false, record_count: 3 });
   assert.equal(daemon.exitCode, null, "El servicio compartido sigue disponible tras las consultas.");
 });
