@@ -2,9 +2,11 @@
 
 ## Planteamiento del problema
 
-La integración inicial permite al modelo invocar `tgrep` desde OpenCode y favorece su uso para búsquedas de contenido en todo el repositorio. Sin embargo, la herramienta solo acepta un patrón, busca siempre en todo el worktree y devuelve el output textual del CLI. El modelo no puede expresar directamente filtros, búsqueda literal, inclusión de archivos ocultos, contexto ni lectura del contenido actual.
+La integración inicial permitía al modelo invocar `tgrep` desde OpenCode y favorecía su uso para búsquedas de contenido en todo el repositorio. Sin embargo, la herramienta solo aceptaba un patrón, buscaba siempre en todo el worktree y devolvía el output textual del CLI. El modelo no podía expresar directamente filtros, búsqueda literal, inclusión de archivos ocultos, contexto ni lectura del contenido actual.
 
-Una búsqueda sin coincidencias devuelve el código de salida `1` del CLI, que la implementación actual no diferencia de un fallo. El wrapper tampoco establece límites propios de resultados, timeout o cancelación. El plugin registra el lanzamiento del servidor sin comprobar después su disponibilidad.
+Una búsqueda sin coincidencias devuelve el código de salida `1` del CLI, que la implementación inicial no diferenciaba de un fallo. El wrapper tampoco establecía límites propios de resultados, timeout o cancelación. El plugin registraba el lanzamiento del servidor sin comprobar después su disponibilidad. Las entregas #68–#73 ya han resuelto esas limitaciones e incorporado ámbito, filtros, freshness y contexto.
+
+La necesidad actual es localizar los archivos cuyo contenido coincide con un patrón sin recibir todas sus líneas coincidentes. Una respuesta de contenido puede consumir el límite de resultados en un único archivo con muchas coincidencias y ocultar otros archivos relevantes. El agente necesita un modo que devuelva rutas únicas, aproveche los filtros y controles existentes y cuente el límite por archivos.
 
 El desarrollador necesita consultas precisas y resultados interpretables, con una ejecución acotada que se integre en Windows 10 y pueda construirse mediante entregas pequeñas, verificables y asumibles en sesiones independientes de OpenCode.
 
@@ -17,13 +19,28 @@ La integración inicial está documentada en la [issue #65](https://github.com/f
 - [x] Descripción de la tool que orienta al modelo a priorizarla para búsquedas de contenido en todo el repositorio.
 - [x] Exclusión del índice local `.tgrep/` en Git.
 
-La issue #65 registra verificaciones en Windows 10 de descubrimiento de la tool, selección autónoma por el modelo, arranque del servidor, watcher nativo y reutilización del servicio desde otra instancia de OpenCode. Esta especificación amplía ese trabajo completado.
+La issue #65 registra verificaciones en Windows 10 de descubrimiento de la tool, selección autónoma por el modelo, arranque del servidor, watcher nativo y reutilización del servicio desde otra instancia de OpenCode.
+
+La ampliación de la [issue #67](https://github.com/fraguio/profile-site/issues/67) se implementó mediante sus sub-issues:
+
+- [x] [#68](https://github.com/fraguio/profile-site/issues/68): resultados válidos sin coincidencias, errores diferenciados y ejecución con argumentos separados.
+- [x] [#69](https://github.com/fraguio/profile-site/issues/69): ámbito, texto literal, mayúsculas, globs, tipos y ocultos.
+- [x] [#70](https://github.com/fraguio/profile-site/issues/70): freshness, contexto, parsing incremental y metadata.
+- [x] [#71](https://github.com/fraguio/profile-site/issues/71): límites durante la lectura y truncamiento explícito.
+- [x] [#72](https://github.com/fraguio/profile-site/issues/72): timeout, cancelación y cleanup acotado del cliente.
+- [x] [#73](https://github.com/fraguio/profile-site/issues/73): disponibilidad, reutilización, fallback y recuperación del servicio compartido.
+
+Esta revisión amplía ese contrato con el modo `files`. La implementación existente constituye su base; #67 continúa siendo la issue padre.
 
 ## Solución
 
 Ampliar la custom tool existente para ofrecer un contrato de consulta explícito sobre el CLI de `tgrep`. El modelo elegirá la herramienta y sus argumentos a partir del schema y sus descripciones; OpenCode coordinará la llamada; la implementación aplicará el contrato, ejecutará el CLI y gestionará resultados y recursos.
 
 La herramienta permitirá acotar el ámbito, buscar texto literal o regex, filtrar archivos, incluir archivos ocultos, obtener contexto y consultar el contenido actual. Devolverá resultados legibles con rutas relativas al worktree y distinguirá coincidencias, ausencia de coincidencias, truncamiento, errores, timeout y cancelación.
+
+Añadir `output_mode` con valores `content` y `files`, y default `content`. El modo `content` conserva las líneas coincidentes y su contexto. El modo `files` devuelve únicamente las rutas únicas de los archivos cuyo contenido satisface el patrón, sin números de línea ni contenido del archivo. La consulta sigue siendo una búsqueda de contenido, no de nombres.
+
+El modo `files` obtiene las rutas directamente del CLI y aplica los límites por archivos. No deduce el listado a partir de una respuesta de contenido ya limitada. Esto mejora la cobertura de archivos relevantes y reduce el consumo de contexto. El esfuerzo se concentra en el contrato del nuevo modo y su protocolo de resultados, aprovechando los controles de proceso y servicio ya implementados.
 
 La consulta tendrá límites de resultados y output, lectura incremental y un ciclo de vida acotado. Las consultas indexadas comprobarán la disponibilidad del servidor y usarán un scan actual si falla el intento de asegurar el servicio. El plugin y la tool compartirán esa gestión del servidor.
 
@@ -43,9 +60,9 @@ Los defaults iniciales conservarán la interpretación regex del patrón y se re
 10. Como agente de programación, quiero filtrar por tipos de archivo del CLI, para concentrarme en los lenguajes que necesito examinar.
 11. Como agente de programación, quiero incluir archivos y directorios ocultos no ignorados, para consultar la configuración y las instrucciones del repositorio.
 12. Como agente de programación, quiero conocer la relación entre globs, archivos ocultos e ignore rules, para interpretar correctamente el ámbito de los resultados.
-13. Como agente de programación, quiero recibir números de línea y rutas relativas estables, para localizar el contenido encontrado.
-14. Como agente de programación, quiero añadir líneas de contexto, para interpretar una coincidencia sin solicitar inmediatamente otra lectura.
-15. Como agente de programación, quiero distinguir coincidencias y contexto, para identificar qué líneas satisfacen realmente el patrón.
+13. Como agente de programación, quiero recibir números de línea y rutas relativas estables en el modo `content`, para localizar el contenido encontrado.
+14. Como agente de programación, quiero añadir líneas de contexto en el modo `content`, para interpretar una coincidencia sin solicitar inmediatamente otra lectura.
+15. Como agente de programación, quiero distinguir coincidencias y contexto en el modo `content`, para identificar qué líneas satisfacen realmente el patrón.
 16. Como agente de programación, quiero permitir el uso del servidor y el índice, para aprovechar las búsquedas indexadas disponibles.
 17. Como agente de programación, quiero forzar la lectura del contenido actual, para comprobar cambios recientes sin depender de la actualización asíncrona del índice.
 18. Como agente de programación, quiero conocer el modo de ejecución, para interpretar las garantías de freshness de la respuesta.
@@ -66,6 +83,26 @@ Los defaults iniciales conservarán la interpretación regex del patrón y se re
 33. Como desarrollador, quiero verificaciones reproducibles en Windows, para conservar el entorno que motivó esta integración.
 34. Como desarrollador, quiero tickets autocontenidos y commits atómicos, para ejecutar cada entrega en una sesión con contexto acotado.
 35. Como desarrollador, quiero revisar los defaults mediante la intención y los resultados de consultas reales, para mejorar la interfaz con evidencia de uso.
+36. Como agente de programación, quiero elegir el modo `files`, para localizar los archivos que contienen un patrón con menos output.
+37. Como agente de programación, quiero recibir únicamente rutas relativas en `files`, para seleccionar qué archivos leer a continuación.
+38. Como agente de programación, quiero recibir cada ruta una sola vez, para que varias coincidencias en un archivo no consuman el límite de archivos.
+39. Como agente de programación, quiero que un archivo con muchas coincidencias no oculte otros archivos relevantes por agotar un límite de líneas, para conocer mejor el alcance de un cambio.
+40. Como agente de programación, quiero que omitir `output_mode` conserve el modo `content`, para mantener el comportamiento de las consultas existentes.
+41. Como agente de programación, quiero usar el mismo patrón, ámbito, globs, tipos, visibilidad y control de mayúsculas en ambos modos, para cambiar la presentación sin cambiar la intención de búsqueda.
+42. Como agente de programación, quiero forzar un scan actual también en `files`, para localizar archivos cuyo contenido acabo de modificar.
+43. Como agente de programación, quiero que `max_results` cuente rutas únicas en `files`, para limitar directamente el número de archivos que recibo.
+44. Como agente de programación, quiero que alcanzar exactamente el límite no se confunda con recibir una respuesta parcial, para saber si necesito estrechar la consulta.
+45. Como agente de programación, quiero recibir el modo de resultados y su número de registros en la metadata, para interpretar si cada registro es una línea o un archivo.
+46. Como agente de programación, quiero que `context_lines` solo afecte a `content`, para conservar una salida de rutas cuando selecciono `files`.
+47. Como agente de programación, quiero recibir una respuesta válida cuando ningún archivo contiene el patrón, para distinguir ese resultado de un fallo.
+48. Como desarrollador, quiero procesar incrementalmente las rutas y su delimitador, para tolerar chunks fragmentados sin acumular todo stdout.
+49. Como agente de programación, quiero que las rutas con espacios, Unicode o caracteres especiales se representen sin ambigüedad, para poder localizar el archivo correcto.
+50. Como desarrollador, quiero conservar el presupuesto de output y acotar una ruta incompleta excesiva, para que el nuevo modo mantenga los límites de memoria del wrapper.
+51. Como desarrollador, quiero conservar errores, advertencias, timeout, cancelación y cleanup en ambos modos, para aprovechar la ejecución acotada ya implementada.
+52. Como desarrollador, quiero que terminar una consulta `files` conserve el daemon compartido, para que otras sesiones sigan utilizándolo.
+53. Como desarrollador, quiero que un modo inválido se rechace antes de lanzar procesos, para disponer de un contrato explícito.
+54. Como desarrollador, quiero verificar el nuevo modo en la frontera pública existente y con el CLI real en Windows, para ampliar la tool sin introducir nuevas fronteras de tests.
+55. Como desarrollador, quiero documentar primero la ampliación y después crear su ticket de implementación como sub-issue de #67, para ejecutar el trabajo sobre un contrato integrado.
 
 ## Decisiones de implementación
 
@@ -78,21 +115,23 @@ Los defaults iniciales conservarán la interpretación regex del patrón y se re
 - Usar los tipos del SDK para el contexto y el resultado de la tool. La versión instalada aporta `context.abort` y resultados con `output` y `metadata`.
 - Mantener los helpers fuera de las ubicaciones que OpenCode descubre automáticamente como tools o plugins.
 - Orientar al modelo mediante descripciones operativas de cada parámetro. La elección de una combinación válida pero poco adecuada corresponde al modelo y no se resuelve mediante validación de tipos.
+- Ampliar la misma tool y la misma frontera pública de consulta con `output_mode`; la selección del protocolo de resultados es un detalle interno. Los modos comparten validación del ámbito, filtros, disponibilidad, límites, timeout, cancelación y cleanup.
 
 ### Contrato de entrada
 
 | Parámetro | Tipo | Valor predeterminado | Semántica |
 | --- | --- | --- | --- |
 | `pattern` | string | Obligatorio | Regex por defecto; texto exacto cuando `literal` es `true`. |
+| `output_mode` | enum | `"content"` | Valores `"content"` y `"files"`; selecciona líneas de contenido o rutas de archivos con coincidencias. |
 | `path` | string | `"."` | Archivo o directorio existente dentro del worktree. Las rutas relativas se resuelven respecto al worktree. |
 | `literal` | boolean | `false` | Activa la búsqueda de texto literal. |
 | `ignore_case` | boolean | `false` | Activa la búsqueda sin distinguir mayúsculas y minúsculas. |
 | `glob` | array de strings | Sin filtros | Globs del CLI, incluidas exclusiones. |
 | `file_types` | array de strings | Sin filtros | Nombres de tipos del CLI. |
 | `hidden` | boolean | `false` | Incluye archivos y directorios ocultos no ignorados. |
-| `context_lines` | integer | `0` | Líneas de contexto antes y después de una coincidencia; rango `0–10`. |
+| `context_lines` | integer | `0` | Líneas de contexto antes y después de una coincidencia en `content`; rango `0–10`. No modifica el listado en `files`. |
 | `freshness` | enum | `"indexed"` | Valores `"indexed"` y `"current"`. |
-| `max_results` | integer | `100` | Máximo de registros devueltos; rango `1–1000`. |
+| `max_results` | integer | `100` | Máximo de registros devueltos; rango `1–1000`. Cuenta líneas de coincidencia y contexto en `content`, y rutas únicas en `files`. |
 
 - Validar tipos y rangos antes de ejecutar el CLI. Rechazar strings con NUL, que no pueden representarse como argumentos del proceso.
 - Resolver el ámbito respecto al worktree, no respecto al directorio del proceso de OpenCode. Admitir rutas absolutas únicamente cuando su destino real esté dentro del worktree.
@@ -101,6 +140,7 @@ Los defaults iniciales conservarán la interpretación regex del patrón y se re
 - Aplicar los globs y tipos con la semántica del CLI. Los globs positivos de una búsqueda indexada filtran su corpus y no recuperan por sí solos archivos ignorados; un scan actual puede aplicar los overrides propios del recorrido del filesystem.
 - `hidden` modifica la visibilidad, no desactiva las ignore rules. Se conserva el comportamiento del CLI para ámbitos nombrados explícitamente.
 - Los defaults de regex, distinción de mayúsculas, visibilidad y contexto conservan la interpretación inicial de una consulta que solo aporta `pattern`.
+- Omitir `output_mode` equivale a seleccionar `content`. Rechazar valores distintos de `content` y `files` antes de ejecutar procesos. La validación de `context_lines` mantiene su tipo y rango también en `files`, aunque ese modo no lo utiliza.
 
 ### Freshness y gestión del servicio
 
@@ -118,20 +158,27 @@ Los defaults iniciales conservarán la interpretación regex del patrón y se re
 
 ### Resultados y errores
 
-- Solicitar JSON al CLI y procesarlo incrementalmente. No interpretar el output separando rutas, líneas y contenido mediante `:`.
-- Convertir los eventos de coincidencia y contexto en registros con ruta, número de línea, texto y clase de registro. Un registro corresponde a una línea devuelta, no a cada submatch individual.
-- Normalizar las rutas respecto al worktree y conservar el contenido textual de cada línea, incluida su indentación. El parsing debe tolerar chunks partidos entre eventos y entre caracteres UTF-8.
-- Devolver output legible y metadata del SDK. El output debe hacer visibles el modo de búsqueda y el truncamiento; la metadata debe incluir al menos `search_mode`, `truncated`, su motivo cuando exista y el número de registros devueltos.
+- En `content`, solicitar JSON al CLI y procesarlo incrementalmente. No interpretar el output separando rutas, líneas y contenido mediante `:`.
+- En `content`, convertir los eventos de coincidencia y contexto en registros con ruta, número de línea, texto y clase de registro. Un registro corresponde a una línea devuelta, no a cada submatch individual. Conservar el texto de cada línea, incluida su indentación.
+- En `files`, solicitar al CLI archivos con coincidencias mediante `--files-with-matches` y rutas delimitadas por NUL mediante `--null`, sin JSON de contenido, color ni cabeceras de agrupación. No usar `--files`, que enumera archivos sin buscar el patrón, ni deduplicar una respuesta de contenido ya truncada.
+- En `files`, procesar incrementalmente cada ruta completa delimitada por NUL. No separar por `:`, saltos de línea o espacios. Una ruta residual sin delimitador al finalizar naturalmente, UTF-8 inválido o una ruta vacía producen un error de protocolo, diferenciado de un fallo del CLI.
+- Normalizar las rutas de ambos modos respecto al worktree, con separadores `/`, y rechazar rutas de resultado que escapen de él. El parsing debe tolerar chunks partidos entre eventos, rutas y caracteres UTF-8.
+- En `files`, deduplicar las rutas normalizadas, conservando el orden de su primera aparición. El orden del listado depende del CLI y no constituye una ordenación estable entre consultas.
+- En `files`, representar cada archivo en una fila de output sin números de línea ni contenido. Escapar de forma inequívoca los caracteres de la ruta que puedan confundirse con separadores o romper esa fila, conservando el nombre del archivo; los bytes de esa representación cuentan para el presupuesto de output.
+- Devolver output legible y metadata del SDK. El output debe hacer visibles el modo de resultados, el modo de búsqueda y el truncamiento; la metadata debe incluir al menos `output_mode`, `search_mode`, `truncated`, su motivo cuando exista y `record_count`. En `files`, `record_count` cuenta rutas únicas devueltas, no líneas coincidentes ni submatches. La metadata no duplica el listado de registros.
 - Interpretar el código `0` como consulta con coincidencias y el código `1` como consulta válida sin coincidencias. Una consulta sin coincidencias debe comunicar explícitamente que no se encontraron resultados.
 - Diferenciar los errores del CLI, los fallos al lanzar el ejecutable y los errores del protocolo de resultados. Conservar un diagnóstico útil y acotado.
 - Conservar stderr relevante como advertencias en consultas válidas y como diagnóstico en consultas fallidas.
 - Diferenciar una consulta completa, una respuesta parcial por límites, un timeout y una cancelación. Los resultados parciales no deben presentarse como una consulta completa.
+- En una consulta `files` completa, el código `0` requiere al menos una ruta válida y el código `1` requiere un listado vacío. Una contradicción entre código y registros es un error de protocolo. Una interrupción intencional por límites se interpreta mediante su causa, conservando los errores reales ya observados.
+- `context_lines` no añade líneas ni modifica qué archivos aparecen en `files`; las descripciones del schema deben explicar ese comportamiento.
 
 ### Límites y ciclo de vida
 
-- `max_results` cuenta coincidencias y filas de contexto por igual.
+- En `content`, `max_results` cuenta coincidencias y filas de contexto por igual. En `files`, cuenta rutas normalizadas únicas; los duplicados no consumen unidades adicionales.
+- Recibir exactamente `max_results` registros y después un fin natural válido no implica truncamiento. En `files`, un archivo adicional distinto que exceda ese límite produce truncamiento; el listado devuelto no incluye esa ruta adicional.
 - Acotar el output textual completo a `48 000` bytes UTF-8, incluidos cabecera y avisos. Acotar también la metadata, sin duplicar en ella todos los registros.
-- Acotar por separado stderr y el buffer de un evento JSON incompleto mediante presupuestos documentados por la implementación. Una fila que no cabe o un evento excesivo deben producir truncamiento explícito, no un falso resultado sin coincidencias.
+- Acotar por separado stderr y el buffer de un evento JSON o una ruta incompletos mediante presupuestos documentados por la implementación. Una fila que no cabe, un evento excesivo o una ruta excesiva deben producir truncamiento explícito, no un falso resultado sin coincidencias. El estado de deduplicación de `files` queda acotado por el número y los bytes de las rutas retenidas.
 - Aplicar los límites durante la lectura. Recortar una respuesta después de haber acumulado todo stdout no satisface el límite de memoria del wrapper.
 - Cuando la lectura se interrumpe por límites, identificar esa causa y recoger el subprocess. Distinguir esa terminación intencional de los errores reales observados.
 - Aplicar un timeout de consulta de `30` segundos desde el lanzamiento del cliente. Las comprobaciones de disponibilidad del servicio tienen un plazo propio y acotado.
@@ -143,8 +190,9 @@ Los defaults iniciales conservarán la interpretación regex del patrón y se re
 ### Entregas y defaults
 
 - Dividir la implementación en tickets de comportamiento completo, cada uno verificable y asumible en una sesión nueva de OpenCode, con un commit atómico que incluya su verificación.
-- Publicar los tickets como sub-issues de la nueva issue de especificación, con `ready-for-agent` y dependencias nativas que reflejen bloqueos reales.
+- Publicar los tickets como sub-issues de #67, con `ready-for-agent` y dependencias nativas que reflejen bloqueos reales.
 - Usar GitHub para el estado y las decisiones de ejecución. Mantener este documento como contrato normativo y actualizarlo cuando cambie el comportamiento acordado.
+- La ampliación `files` sigue la secuencia documentación, PR de documentación integrada, publicación del ticket e implementación desde una nueva rama basada en el `origin/main` actualizado. Se prevé un único ticket vertical que incluya schema, consulta, output y verificación; la granularidad se confirma al preparar los tickets.
 - Revisar los defaults después de varias sesiones reales. Evaluar la intención, el resultado, las reformulaciones y el uso de otras herramientas, además de los parámetros enviados por el modelo.
 - Cualquier ajuste de defaults justificado por esa evidencia se realizará en un commit independiente y actualizará el contrato. La recogida manual de observaciones es suficiente para esa revisión.
 
@@ -155,6 +203,8 @@ Los defaults iniciales conservarán la interpretación regex del patrón y se re
 La frontera principal de tests es la ejecución pública de una consulta: argumentos, worktree y señal de cancelación como entrada; output, metadata o error como salida. Los tests deben verificar comportamiento observable, no la distribución interna de helpers ni una copia de las condiciones de implementación.
 
 La gestión del servidor se verifica por sus efectos externos: disponibilidad, reutilización, logs y fallback de la consulta. Los tests de procesos usan un ejecutable controlado para emitir eventos, errores o bloqueos reproducibles. Los smoke tests con el CLI real verifican que ese contrato coincide con `tgrep` en Windows.
+
+La ampliación `files` reutiliza esa misma frontera pública, `queryTgrep`, sin añadir fronteras de tests. El desarrollador confirmó esta decisión: argumentos, worktree y señal de cancelación como entrada; output, metadata o error como salida, complementados por el CLI real en Windows y el descubrimiento/schema de OpenCode. Los subprocesses controlados emiten rutas delimitadas por NUL para verificar el protocolo observable, sin comprobar helpers privados ni copiar la construcción de argumentos.
 
 ### Casos de aceptación
 
@@ -172,6 +222,16 @@ La gestión del servidor se verifica por sus efectos externos: disponibilidad, r
 12. Un arranque fallido produce un scan actual con diagnóstico; una consulta `current` evita comprobar o arrancar el servicio.
 13. La caída del servidor permite un nuevo intento en una consulta indexada posterior. Cancelar un cliente conserva el servicio compartido.
 14. OpenCode descubre la tool y el plugin y presenta al modelo el schema ampliado después de reiniciar la sesión.
+15. Omitir `output_mode` y seleccionar `content` explícitamente conservan el comportamiento de contenido. Un modo inválido, incluido `count`, se rechaza antes de lanzar procesos.
+16. En `files`, un fixture con muchas coincidencias en un archivo y coincidencias en otros devuelve las rutas correspondientes sin agotar el límite por líneas. No devuelve contenido ni números de línea, y normaliza y deduplica rutas.
+17. Ambos modos respetan patrones literales y regex, mayúsculas, ámbitos de archivo y directorio, globs de inclusión y exclusión, tipos, ocultos e ignore rules. Una consulta `files` actual refleja una edición posterior al indexado que cambia qué archivos coinciden.
+18. Las rutas delimitadas por NUL se procesan aunque el delimitador o un carácter UTF-8 lleguen en chunks distintos. Los fixtures cubren espacios, Unicode, separadores y caracteres que requieren escape en el output; las pruebas reales usan nombres admitidos por Windows.
+19. En `files`, se distinguen éxito, ausencia de coincidencias, regex inválida, ejecutable ausente, advertencias, ruta vacía, destino fuera del worktree, UTF-8 inválido, ruta residual incompleta y contradicciones entre código de salida y registros.
+20. El límite de `files` cuenta rutas únicas: los casos por debajo, exactamente en el límite y por encima, incluidos duplicados, distinguen fin natural y truncamiento. El output completo respeta los `48 000` bytes también cuando las rutas requieren escape o incluyen avisos.
+21. Una ruta incompleta excesiva o una ruta cuya representación no cabe produce truncamiento explícito sin acumular memoria ilimitada ni aparentar ausencia de coincidencias. La lectura se interrumpe y recoge el cliente.
+22. `context_lines` válido no cambia el listado de `files`; su tipo y rango se validan igualmente. La metadata identifica `output_mode` y `record_count` con la unidad correspondiente en ambos modos.
+23. En `files`, truncamiento, timeout, cancelación previa y en curso y errores conservan el cleanup acotado y el daemon compartido. Las consultas indexadas reutilizan el servicio o aplican el fallback existente; las consultas `current` evitan su gestión.
+24. Los smoke tests con el CLI real y una instancia recién iniciada de OpenCode verifican el enum y default de `output_mode`, las rutas y la metadata de `files` y la conservación del modo de contenido.
 
 ### Entorno y precedentes
 
@@ -186,7 +246,8 @@ La gestión del servidor se verifica por sus efectos externos: disponibilidad, r
 - Instalar o portar el bridge MCP oficial, introducir un servicio MCP adicional o migrar el entorno a Linux, macOS o WSL.
 - Reproducir todo el instalador oficial, su cache compartida, ownership, repair o uninstall.
 - Añadir búsqueda semántica: se conserva el motor de texto literal y regex de `tgrep`.
-- Añadir en esta entrega una herramienta de búsqueda por nombres equivalente a `find_files` o los modos de output `files` y `count`.
+- Añadir `output_mode: "count"`. Su valor para navegación de código es menor que el de localizar archivos; se reconsiderará si aparecen necesidades recurrentes de conteos. La paridad MCP por sí sola no justifica su coste.
+- Añadir una herramienta de búsqueda por nombres equivalente a `find_files`. OpenCode ya dispone de `Glob`; su posible ventaja de rendimiento con el listado indexado se reconsiderará si se observa un problema real de velocidad. El modo `files` busca contenido y no sustituye esa operación.
 - Prometer un snapshot atómico, freshness inmediata de una consulta indexada o cancelación del trabajo ya recibido por el daemon.
 - Administrar la instalación o actualizar la versión del ejecutable de `tgrep`.
 - Introducir telemetría de uso o cambios automáticos de defaults.
@@ -196,8 +257,9 @@ La gestión del servidor se verifica por sus efectos externos: disponibilidad, r
 
 - Seguimiento de la especificación: [issue #67](https://github.com/fraguio/profile-site/issues/67).
 - Esta especificación del repositorio es la fuente normativa del contrato. La issue padre publica el alcance acordado y los antecedentes; sus sub-issues gestionan el trabajo pendiente.
+- Las entregas #68–#73 completaron la ampliación inicial. `files` es una ampliación posterior aprobada por su cobertura de archivos y ahorro de contexto, manteniendo #67 como issue padre. El ticket de implementación se publicará mediante `/to-tickets` después de integrar la revisión documental.
 - El entorno observado dispone de Node `24.11.1`, `tgrep 1.0.10` y `@opencode-ai/plugin 1.18.32`. Son referencias de verificación del estado inicial, no una petición de actualizar versiones.
 - Las [MCP search tools oficiales](https://github.com/microsoft/tgrep/blob/7b706715ad3b620c350c73209523ba5034cd66a8/scripts/agent/README.md) también invocan el CLI. El [runtime consultado](https://github.com/microsoft/tgrep/blob/7b706715ad3b620c350c73209523ba5034cd66a8/scripts/agent/runtime.py) contiene dependencias POSIX; la custom tool aprovecha el CLI que ya funciona en este entorno Windows.
-- La ejecución y los valores predeterminados no dependen de que el modelo complete todos los parámetros opcionales. Sus descripciones deben explicar cuándo conviene buscar literal, incluir ocultos o solicitar contenido actual.
-- Las entregas propuestas son: resultados y errores; ámbito y filtros; freshness y contexto; límites y truncamiento; timeout y cancelación; disponibilidad y recuperación del servicio. Los bloqueos se concretan en los tickets mediante relaciones nativas de GitHub.
+- La ejecución y los valores predeterminados no dependen de que el modelo complete todos los parámetros opcionales. Sus descripciones deben explicar cuándo conviene buscar literal, incluir ocultos, solicitar contenido actual o elegir rutas de archivos en lugar de líneas de contenido.
+- La nueva entrega aprovecha la infraestructura existente; el esfuerzo adicional es moderado y se concentra en el modo, las rutas delimitadas por NUL y sus verificaciones. La equivalencia funcional útil guía el alcance; copiar defaults, presupuestos, transporte e instalador del MCP oficial no es el objetivo.
 - Reiniciar OpenCode después de cambios de configuración, schema, tool o plugin para cargar la nueva implementación antes de su verificación funcional.
