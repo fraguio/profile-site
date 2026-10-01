@@ -21,7 +21,7 @@ test("current observa una edición posterior al indexado real y devuelve context
   const indexed = await queryTgrep({ pattern: "IndexedNeedle70" }, { worktree });
   assert.match(indexed.output, /\[coincidencia\] src with spaces\/sample\.txt:2:IndexedNeedle70/);
   assert.match(indexed.output, /Modo de búsqueda: indexed_or_scan/);
-  assert.deepEqual(indexed.metadata, { search_mode: "indexed_or_scan", truncated: false, record_count: 1 });
+  assert.deepEqual(indexed.metadata, { output_mode: "content", search_mode: "indexed_or_scan", truncated: false, record_count: 1 });
 
   writeFileSync(file, "  antes: café\r\n  CurrentNeedle70 niño 😀 CurrentNeedle70\r\n\tdespués\r\n");
   const current = await queryTgrep({ pattern: "CurrentNeedle70", freshness: "current", context_lines: 1 }, { worktree });
@@ -30,10 +30,10 @@ test("current observa una edición posterior al indexado real y devuelve context
   assert.match(current.output, /\[coincidencia\] src with spaces\/sample\.txt:2:  CurrentNeedle70 niño 😀 CurrentNeedle70\r?\n/);
   assert.match(current.output, /\[contexto\] src with spaces\/sample\.txt:3:\tdespués\r?\n/);
   assert.doesNotMatch(current.output, /IndexedNeedle70|�/);
-  assert.deepEqual(current.metadata, { search_mode: "current_scan", truncated: false, record_count: 3 });
+  assert.deepEqual(current.metadata, { output_mode: "content", search_mode: "current_scan", truncated: false, record_count: 3 });
   const empty = await queryTgrep({ pattern: "MissingNeedle70", freshness: "current", context_lines: 10 }, { worktree });
   assert.match(empty.output, /No se encontraron coincidencias/);
-  assert.deepEqual(empty.metadata, { search_mode: "current_scan", truncated: false, record_count: 0 });
+  assert.deepEqual(empty.metadata, { output_mode: "content", search_mode: "current_scan", truncated: false, record_count: 0 });
   const status = spawnSync("tgrep", ["status", worktree], { encoding: "utf8", timeout: 5_000 });
   assert.equal(status.status, 0, status.stderr);
   assert.match(status.stdout, /Server status/, "La consulta indexed asegura el daemon; current conserva su disponibilidad.");

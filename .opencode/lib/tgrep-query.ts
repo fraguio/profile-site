@@ -6,6 +6,7 @@ import { collectTgrepProcess } from "./tgrep-process.ts"
 
 interface TgrepArgs {
   pattern: string
+  output_mode?: "content" | "files"
   path?: string
   literal?: boolean
   ignore_case?: boolean
@@ -28,6 +29,7 @@ type QueryCommand = TgrepCommand
 interface QueryResult {
   output: string
   metadata: {
+    output_mode: "content" | "files"
     search_mode: "indexed_or_scan" | "current_scan"
     truncated: boolean
     record_count: number
@@ -51,6 +53,8 @@ type QueryInterruption =
 const RECORD_BYTES = 38_000
 const STDERR_BYTES = 8_192
 const EVENT_BYTES = 256_000
+// En files, pending comparte 256 000 bytes con el límite de eventos. El Set retiene
+// como máximo 1000 rutas y 38 000 bytes de representación, sin guardar duplicados.
 // Acotar tanto los bytes de rutas como el overhead del Set del protocolo.
 const ACTIVE_FILES = 1000
 
@@ -63,12 +67,24 @@ function renderRecord(record: SearchRecord): string {
   return `[${record.kind === "match" ? "coincidencia" : "contexto"}] ${record.path}:${record.line}:${record.text}${record.text.endsWith("\n") ? "" : "\n"}`
 }
 
+function renderFile(path: string): string {
+  return JSON.stringify(path).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029") + "\n"
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function escapesWorktree(path: string): boolean {
   return path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path)
+}
+
+function normalizeResultPath(root: string, path: string): string {
+  const destination = relative(root, resolvePath(root, path))
+  if (!path || path.includes("\0") || !destination || escapesWorktree(destination)) {
+    throw new Error("Ruta vacía o fuera del worktree.")
+  }
+  return destination.split(sep).join("/")
 }
 
 function launchFailure(error: unknown, executable: string): Error {
@@ -83,6 +99,9 @@ function validateString(name: string, value: unknown): void {
 
 function validateArgs(args: TgrepArgs): void {
   validateString("pattern", args.pattern)
+  if (args.output_mode !== undefined && args.output_mode !== "content" && args.output_mode !== "files") {
+    throw new Error('output_mode: valor inválido; se requiere "content" o "files".')
+  }
   if (args.max_results !== undefined && (!Number.isInteger(args.max_results) || args.max_results < 1 || args.max_results > 1000)) {
     throw new Error("max_results: tipo o rango inválido; se requiere un integer de 1–1000.")
   }
@@ -136,8 +155,10 @@ export async function queryTgrep(
   const service = args.freshness === "current" ? undefined : await ensureTgrepService(root, command, context.abort, context.log)
   if (context.abort?.aborted) throw new Error("Consulta tgrep cancelada antes del lanzamiento.")
   const currentScan = args.freshness === "current" || service?.available === false
-  const options = ["--json", "-n", "-H"]
-  options.push("--context", String(args.context_lines ?? 0))
+  const outputMode = args.output_mode ?? "content"
+  const options = outputMode === "files"
+    ? ["--files-with-matches", "--null", "--color=never", "--no-heading"]
+    : ["--json", "-n", "-H", "--context", String(args.context_lines ?? 0)]
   if (currentScan) options.push("--no-index")
   if (args.literal) options.push("--fixed-strings")
   if (args.ignore_case) options.push("--ignore-case")
@@ -163,13 +184,14 @@ export async function queryTgrep(
     child.stdin.end()
     let pending = ""
     const records: SearchRecord[] = []
+    const files = new Set<string>()
     let recordBytes = 0
     let protocolError: unknown
     let summarySeen = false
     let matchCount = 0
     const activeFiles = new Set<string>()
     let activePathBytes = 0
-    const decoder = new TextDecoder("utf-8", { fatal: true })
+    const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: outputMode === "files" })
     let stderrBuffer = Buffer.alloc(0)
     let interruption: QueryInterruption | undefined
     const interrupt = (cause: QueryInterruption) => {
@@ -180,9 +202,29 @@ export async function queryTgrep(
     const truncate = (reason: string) => {
       interrupt({ kind: "truncated", reason })
     }
+    const admitRecord = (count: number, row: string): boolean => {
+      if (count === (args.max_results ?? 100)) {
+        truncate("max_results")
+        return false
+      }
+      const bytes = Buffer.byteLength(row)
+      if (recordBytes + bytes > RECORD_BYTES) {
+        truncate("output_bytes")
+        return false
+      }
+      recordBytes += bytes
+      return true
+    }
     const consume = (line: string) => {
       if (protocolError || interruption) return
       try {
+        if (outputMode === "files") {
+          const path = normalizeResultPath(root, line)
+          if (files.has(path)) return
+          if (!admitRecord(files.size, renderFile(path))) return
+          files.add(path)
+          return
+        }
         const event: unknown = JSON.parse(line)
         if (!isObject(event) || !isObject(event.data)) throw new Error("Evento JSON inválido.")
         if (summarySeen) throw new Error("Se recibieron eventos después de summary.")
@@ -198,11 +240,7 @@ export async function queryTgrep(
         if (!isObject(data.path) || typeof data.path.text !== "string" || !data.path.text || data.path.text.includes("\0")) {
           throw new Error("Ruta inválida en el evento.")
         }
-        const destination = relative(root, resolvePath(root, data.path.text))
-        if (!destination || escapesWorktree(destination)) {
-          throw new Error("Ruta del evento fuera del worktree.")
-        }
-        const path = destination.split(sep).join("/")
+        const path = normalizeResultPath(root, data.path.text)
         if (event.type === "begin") {
           if (activeFiles.has(path)) throw new Error("Evento begin duplicado.")
           const bytes = Buffer.byteLength(path)
@@ -227,17 +265,8 @@ export async function queryTgrep(
           }
           const lines = data.lines.text.match(/[^\n]*\n|[^\n]+$/g) ?? []
           for (const [offset, text] of lines.entries()) {
-            if (records.length === (args.max_results ?? 100)) {
-              truncate("max_results")
-              return
-            }
             const record: SearchRecord = { path, line: data.line_number + offset, text, kind: event.type }
-            const bytes = Buffer.byteLength(renderRecord(record))
-            if (recordBytes + bytes > RECORD_BYTES) {
-              truncate("output_bytes")
-              return
-            }
-            recordBytes += bytes
+            if (!admitRecord(records.length, renderRecord(record))) return
             records.push(record)
           }
           if (event.type === "match") matchCount++
@@ -249,12 +278,12 @@ export async function queryTgrep(
     const read = (text: string) => {
       let offset = 0
       while (offset < text.length && !interruption && !protocolError) {
-        const boundary = text.indexOf("\n", offset)
+        const boundary = text.indexOf(outputMode === "files" ? "\0" : "\n", offset)
         const end = boundary === -1 ? text.length : boundary
         const fragment = text.slice(offset, end)
         if (Buffer.byteLength(pending) + Buffer.byteLength(fragment) > EVENT_BYTES) {
           pending = ""
-          truncate("event_bytes")
+          truncate(outputMode === "files" ? "path_bytes" : "event_bytes")
           return
         }
         pending += fragment
@@ -298,10 +327,13 @@ export async function queryTgrep(
       if (!protocolError && !interruption) {
         try {
           read(decoder.decode())
-          if (pending) consume(pending)
+          if (pending) {
+            if (outputMode === "files") throw new Error("Ruta residual sin NUL.")
+            consume(pending)
+          }
           if (!interruption) {
-            if (!summarySeen) throw new Error("Stream incompleto: falta summary.")
-            if ((code === 0 && matchCount === 0) || (code === 1 && records.length > 0)) {
+            if (outputMode === "content" && !summarySeen) throw new Error("Stream incompleto: falta summary.")
+            if ((code === 0 && (outputMode === "files" ? files.size : matchCount) === 0) || (code === 1 && (outputMode === "files" ? files.size : records.length) > 0)) {
               throw new Error("El código de salida contradice los registros recibidos.")
             }
           }
@@ -314,10 +346,11 @@ export async function queryTgrep(
         return
       }
       const truncationReason = interruption?.kind === "truncated" ? interruption.reason : undefined
-      const metadata: QueryResult["metadata"] = { search_mode: currentScan ? "current_scan" : "indexed_or_scan", truncated: !!truncationReason, record_count: records.length }
+      const recordCount = outputMode === "files" ? files.size : records.length
+      const metadata: QueryResult["metadata"] = { output_mode: outputMode, search_mode: currentScan ? "current_scan" : "indexed_or_scan", truncated: !!truncationReason, record_count: recordCount }
       if (truncationReason) metadata.truncation_reason = truncationReason
-      const lines = records.map(renderRecord).join("")
-      resolve({ output: `Modo de búsqueda: ${metadata.search_mode}\nTruncado: ${truncationReason ? `sí (${truncationReason}); estrecha la consulta. El cliente se interrumpe sin detener el daemon compartido; este puede seguir procesando la consulta` : "no"}. Registros devueltos: ${records.length}.\n${code === 1 && !truncationReason ? "No se encontraron coincidencias." : lines}${warning}`, metadata })
+      const lines = outputMode === "files" ? [...files].map(renderFile).join("") : records.map(renderRecord).join("")
+      resolve({ output: `Modo de resultados: ${outputMode}\nModo de búsqueda: ${metadata.search_mode}\nTruncado: ${truncationReason ? `sí (${truncationReason}); estrecha la consulta. El cliente se interrumpe sin detener el daemon compartido; este puede seguir procesando la consulta` : "no"}. Registros devueltos: ${recordCount}.\n${code === 1 && !truncationReason ? "No se encontraron coincidencias." : lines}${warning}`, metadata })
     }
     // Los 30 s cuentan desde spawn; el cierre tiene un presupuesto separado de 5 s.
     const execution = collectTgrepProcess(child, {

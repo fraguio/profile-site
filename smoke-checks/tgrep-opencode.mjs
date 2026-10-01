@@ -39,7 +39,7 @@ async function stop(child) {
   }
 }
 
-test("OpenCode recién iniciado descubre tgrep, comparte el daemon entre sesiones y recupera una caída", { timeout: 240_000 }, async (t) => {
+test("OpenCode recién iniciado descubre tgrep, comparte el daemon entre sesiones y recupera una caída", { timeout: 360_000 }, async (t) => {
   const worktree = mkdtempSync(join(tmpdir(), "profile-site-opencode-smoke-"));
   let server;
   const cancelPid = join(worktree, "cancel-client.txt");
@@ -140,7 +140,12 @@ class TgrepFixture {
   const tools = await get(`/experimental/tool?${directory}&provider=${encodeURIComponent(provider)}&model=${encodeURIComponent(modelParts.join("/"))}`);
   const tool = tools.find((item) => item.id === "tgrep");
   assert.ok(tool);
-  assert.deepEqual(Object.keys(tool.parameters.properties), ["max_results", "pattern", "path", "literal", "ignore_case", "glob", "file_types", "hidden", "freshness", "context_lines"]);
+  assert.deepEqual(Object.keys(tool.parameters.properties), ["output_mode", "max_results", "pattern", "path", "literal", "ignore_case", "glob", "file_types", "hidden", "freshness", "context_lines"]);
+  assert.deepEqual(tool.parameters.properties.output_mode.enum, ["content", "files"]);
+  assert.equal(tool.parameters.properties.output_mode.default, "content");
+  assert.ok(tool.parameters.properties.output_mode.description.includes("unique files"));
+  assert.ok(tool.parameters.properties.context_lines.description.includes("file list in files"));
+  assert.ok(tool.parameters.properties.max_results.description.includes("unique normalized file paths"));
   assert.deepEqual(tool.parameters.required, ["pattern"]);
   assert.equal(tool.parameters.properties.pattern.type, "string");
   assert.equal(tool.parameters.properties.path.type, "string");
@@ -214,7 +219,7 @@ class TgrepFixture {
   assert.match(current.output, /\[contexto\] current\.txt:1:  antes: café/);
   assert.match(current.output, /\[coincidencia\] current\.txt:2:  CurrentNeedle70 niño 😀 CurrentNeedle70/);
   assert.match(current.output, /\[contexto\] current\.txt:3:\tdespués/);
-  assert.deepEqual(current.metadata, { search_mode: "current_scan", truncated: false, record_count: 3 });
+  assert.deepEqual(current.metadata, { output_mode: "content", search_mode: "current_scan", truncated: false, record_count: 3 });
   const limited = calls.find((call) => call.input.pattern === "LimitNeedle71");
   assert.ok(limited, run.stdout);
   assert.equal(limited.status, "completed");
@@ -224,6 +229,30 @@ class TgrepFixture {
   assert.equal(limited.metadata.truncation_reason, "max_results");
   assert.match(limited.output, /Truncado: sí[\s\S]*estrecha/);
   assert.ok(Buffer.byteLength(limited.output) <= 48_000);
+
+  writeFileSync(join(worktree, "files café 😀.txt"), "LimitNeedle71\n");
+  const filesRun = spawnSync("opencode", ["run", "--attach", url, "--dir", worktree, "--model", model, "--format", "json",
+    'Ejecuta exactamente tres consultas con tgrep: {"pattern":"LimitNeedle71","output_mode":"files","freshness":"current","context_lines":10}, {"pattern":"LimitNeedle71","output_mode":"files","freshness":"current","max_results":1} y {"pattern":"AlphaNeedle","output_mode":"content","freshness":"current"}. No uses otras tools ni modifiques archivos. Resume los resultados.',
+  ], { cwd: worktree, encoding: "utf8", timeout: 90_000, maxBuffer: 8 * 1024 * 1024 });
+  assert.equal(filesRun.status, 0, `${filesRun.stdout}\n${filesRun.stderr}`);
+  const filesCalls = tgrepCalls(filesRun.stdout);
+  const files = filesCalls.find((call) => call.input.output_mode === "files" && call.input.context_lines === 10);
+  assert.equal(files?.status, "completed", filesRun.stdout);
+  assert.deepEqual(files.metadata, { output_mode: "files", search_mode: "current_scan", truncated: false, record_count: 2 });
+  assert.match(files.output, /Modo de resultados: files/);
+  assert.deepEqual(files.output.split("\n").filter((row) => row.startsWith('"')).map((row) => JSON.parse(row)).sort(), ["files café 😀.txt", "limits.txt"]);
+  assert.doesNotMatch(files.output, /LimitNeedle71|\[coincidencia\]|:1:/);
+  const filesLimit = filesCalls.find((call) => call.input.output_mode === "files" && call.input.max_results === 1);
+  assert.equal(filesLimit?.status, "completed", filesRun.stdout);
+  assert.equal(filesLimit.metadata.record_count, 1);
+  assert.equal(filesLimit.metadata.truncation_reason, "max_results");
+  assert.equal(filesLimit.metadata.truncated, true);
+  const content = filesCalls.find((call) => call.input.output_mode === "content");
+  assert.equal(content?.status, "completed", filesRun.stdout);
+  assert.equal(content.metadata.output_mode, "content");
+  assert.equal(matches.metadata.output_mode, "content");
+  assert.match(content.output, /sample.txt:1:AlphaNeedle/);
+  assert.equal(fixtureDaemonPid(worktree), initialDaemonPid);
 
   const post = async (path, body) => {
     const response = await fetch(`${url}${path}?${directory}`, {
@@ -236,7 +265,7 @@ class TgrepFixture {
   const session = await post("/session", {});
   await post(`/session/${session.id}/prompt_async`, {
     model: { providerID: provider, modelID: modelParts.join("/") },
-    parts: [{ type: "text", text: 'Ejecuta una única consulta con tgrep usando {"pattern":"CancelNeedle72"}. No uses otras tools ni modifiques archivos.' }],
+    parts: [{ type: "text", text: 'Ejecuta una única consulta con tgrep usando {"pattern":"CancelNeedle72","output_mode":"files"}. No uses otras tools ni modifiques archivos.' }],
   });
   const cancelDeadline = Date.now() + 60_000;
   while (!existsSync(cancelPid) && Date.now() < cancelDeadline) await delay(100, undefined, { signal: t.signal });
