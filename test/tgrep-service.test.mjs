@@ -33,7 +33,8 @@ function fixture(t, mode = "available") {
     else {
       appendFileSync('query.txt',JSON.stringify(process.argv));
       if(process.argv.includes('invalid')) { console.error('regex inválida'); process.exitCode=2; }
-      else if(${JSON.stringify(mode)}==='diagnostic') {
+       else if(process.argv.includes('--files-with-matches')) process.stdout.write('sample.txt\\0');
+       else if(${JSON.stringify(mode)}==='diagnostic') {
         const path={text:'sample.txt'};
         console.error('x'.repeat(8000));
         console.log(JSON.stringify({type:'begin',data:{path}}));
@@ -210,5 +211,32 @@ test("el prewarming comunica un fallo de cleanup del estado sin ocultarlo con un
     t.mock.timers.reset();
     abort.abort();
     await warming;
+  }
+});
+
+test("files comparte disponibilidad, scan directo, fallback y recuperación del servicio", async (t) => {
+  for (const mode of ["available", "start", "failed", "status-blocked"]) {
+    const { run, calls, worktree } = fixture(t, mode);
+    const args = { output_mode: "files", ...(mode === "status-blocked" ? { freshness: "current" } : {}) };
+    const result = await run(args);
+    assert.equal(result.metadata.output_mode, "files");
+    assert.equal(result.metadata.record_count, 1);
+    assert.match(result.output, /\n"sample.txt"\n/);
+    assert.equal(result.metadata.search_mode, ["failed", "status-blocked"].includes(mode) ? "current_scan" : "indexed_or_scan");
+    if (mode === "status-blocked") assert.deepEqual(calls(), ["--files-with-matches"]);
+    if (mode === "failed") assert.match(result.output, /Diagnóstico del servicio/);
+    if (mode === "start") {
+      const pid = Number(readFileSync(join(worktree, "daemon-pid"), "utf8"));
+      await run(args);
+      assert.equal(Number(readFileSync(join(worktree, "daemon-pid"), "utf8")), pid);
+      process.kill(pid);
+      await delay(100);
+      rmSync(join(worktree, "ready"));
+      rmSync(join(worktree, "lock"));
+      await run(args);
+      const recoveredPid = Number(readFileSync(join(worktree, "daemon-pid"), "utf8"));
+      assert.notEqual(recoveredPid, pid);
+      process.kill(recoveredPid, 0);
+    }
   }
 });

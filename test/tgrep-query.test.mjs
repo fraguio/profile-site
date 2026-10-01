@@ -203,7 +203,7 @@ test("una consulta JSON devuelve líneas localizables y comunica la garantía co
   assert.match(result.output, /\[coincidencia\] src\/example\.ts:2:  needle\n/);
   assert.match(result.output, /Modo de búsqueda: indexed_or_scan/);
   assert.match(result.output, /Truncado: no/);
-  assert.deepEqual(result.metadata, { search_mode: "indexed_or_scan", truncated: false, record_count: 1 });
+  assert.deepEqual(result.metadata, { output_mode: "content", search_mode: "indexed_or_scan", truncated: false, record_count: 1 });
 });
 
 test("una consulta sin coincidencias es válida y comunica la ausencia de resultados", async (t) => {
@@ -368,7 +368,7 @@ test("current ejecuta solo el scan del contenido actual y comunica su modo", asy
 
   assert.match(result.output, /Modo de búsqueda: current_scan/);
   assert.match(result.output, /contenido actual/);
-  assert.deepEqual(result.metadata, { search_mode: "current_scan", truncated: false, record_count: 1 });
+  assert.deepEqual(result.metadata, { output_mode: "content", search_mode: "current_scan", truncated: false, record_count: 1 });
 });
 
 test("los eventos fragmentados conservan Unicode, CRLF e indentación y distinguen contexto de coincidencias", async (t) => {
