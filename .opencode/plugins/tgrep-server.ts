@@ -1,6 +1,7 @@
 import type { Hooks, Plugin } from "@opencode-ai/plugin"
+import { ensureTgrepService } from "../lib/tgrep-service.ts"
 
-export const TgrepServerPlugin: Plugin = async ({ $, worktree, client }) => {
+export const TgrepServerPlugin: Plugin = async ({ worktree, client }) => {
   const hooks: Hooks = {
     "tool.execute.after": async (input, output) => {
       // OpenCode sustituye truncated por su propio recorte; conservar también los límites de la consulta.
@@ -9,33 +10,10 @@ export const TgrepServerPlugin: Plugin = async ({ $, worktree, client }) => {
       }
     },
   }
-  try {
-    const status = await $`tgrep status ${worktree}`.quiet().nothrow()
-
-    if (status.exitCode === 0 && status.text().includes("Server status")) {
-      return hooks
-    }
-
-    await $`powershell.exe -NoProfile -Command ${`
-      Start-Process -FilePath 'tgrep.exe' -ArgumentList @('serve', '.') -WorkingDirectory '${worktree.replace(/'/g, "''")}' -WindowStyle Hidden
-    `}`
-
-    await client.app.log({
-      body: {
-        service: "tgrep",
-        level: "info",
-        message: "Started tgrep server",
-      },
-    })
-  } catch (error) {
-    await client.app.log({
-      body: {
-        service: "tgrep",
-        level: "warn",
-        message: `Could not start tgrep server: ${String(error)}`,
-      },
-    })
-  }
+  await ensureTgrepService(worktree, undefined, undefined, (level, message) => {
+    // El logging no debe ampliar los plazos de disponibilidad del servicio.
+    void client.app.log({ body: { service: "tgrep", level, message } }).catch(() => {})
+  })
 
   return hooks
 }

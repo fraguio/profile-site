@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { queryTgrep } from "../.opencode/lib/tgrep-query.ts";
+import { cleanServiceFixture } from "../test-support/tgrep-service-fixture.mjs";
 
 test("tgrep real conserva regex, mayúsculas, números de línea y argumentos en Windows", async (t) => {
   const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-smoke with spaces-"));
-  t.after(() => rmSync(worktree, { recursive: true, force: true }));
+  t.after(() => cleanServiceFixture(worktree));
   writeFileSync(join(worktree, "sample.txt"), "AlphaNeedle\nalphaNeedle\ntwo words\n\"double\" and 'single'\n-n\n--help\nserve\nsearch\nstatus\nindex\nhelp\n");
   const query = (pattern) => queryTgrep({ pattern }, { worktree }).then((result) => result.output);
 
