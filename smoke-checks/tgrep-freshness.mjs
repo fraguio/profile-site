@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { queryTgrep } from "../.opencode/lib/tgrep-query.ts";
+import { cleanServiceFixture } from "../test-support/tgrep-service-fixture.mjs";
 
 test("current observa una edición posterior al indexado real y devuelve contexto normalizado", async (t) => {
   const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-freshness with spaces-"));
-  t.after(() => rmSync(worktree, { recursive: true, force: true }));
+  t.after(() => cleanServiceFixture(worktree));
   const git = spawnSync("git", ["init", worktree], { encoding: "utf8", timeout: 5_000 });
   assert.equal(git.status, 0, git.stderr);
   writeFileSync(join(worktree, ".gitignore"), ".tgrep/\n");
@@ -35,5 +36,5 @@ test("current observa una edición posterior al indexado real y devuelve context
   assert.deepEqual(empty.metadata, { search_mode: "current_scan", truncated: false, record_count: 0 });
   const status = spawnSync("tgrep", ["status", worktree], { encoding: "utf8", timeout: 5_000 });
   assert.equal(status.status, 0, status.stderr);
-  assert.doesNotMatch(status.stdout, /Server status/, "Las consultas no arrancan un daemon para el fixture.");
+  assert.match(status.stdout, /Server status/, "La consulta indexed asegura el daemon; current conserva su disponibilidad.");
 });

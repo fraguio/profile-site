@@ -5,10 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { queryTgrep } from "../.opencode/lib/tgrep-query.ts";
+import { cleanServiceFixture } from "../test-support/tgrep-service-fixture.mjs";
 
 function fixture(t) {
   const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-filters with spaces-"));
-  t.after(() => rmSync(worktree, { recursive: true, force: true }));
+  t.after(() => cleanServiceFixture(worktree));
   const git = spawnSync("git", ["init", worktree], { encoding: "utf8", timeout: 5_000 });
   assert.equal(git.status, 0, git.stderr);
   mkdirSync(join(worktree, "src with spaces"));

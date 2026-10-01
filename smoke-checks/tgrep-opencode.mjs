@@ -1,20 +1,30 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { cleanServiceFixture, fixtureDaemonPid, stopFixtureDaemon } from "../test-support/tgrep-service-fixture.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const model = process.env.OPENCODE_SMOKE_MODEL ?? "openai/gpt-6.1-sol";
+const chocolateyBinary = join(process.env.ChocolateyInstall ?? "C:/ProgramData/chocolatey", "lib", "opencode", "tools", "opencode.exe");
+// Evitar el launcher de Chocolatey para poder cerrar OpenCode sin matar el daemon descendiente.
+const opencodeBinary = existsSync(chocolateyBinary) ? chocolateyBinary : "opencode";
+
+function tgrepCalls(stdout) {
+  return stdout.split(/\r?\n/).filter((line) => line.startsWith("{")).map((line) => JSON.parse(line))
+    .filter((event) => event.type === "tool_use" && event.part?.tool === "tgrep").map((event) => event.part.state);
+}
 
 async function stop(child) {
+  await delay(50);
   if (!child || child.exitCode !== null || child.signalCode !== null) return;
   const closed = new Promise((resolve) => child.once("close", resolve));
   if (process.platform === "win32") {
-    const result = spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { encoding: "utf8", timeout: 10_000 });
+    const result = spawnSync("taskkill", ["/PID", String(child.pid), "/F"], { encoding: "utf8", timeout: 10_000 });
     assert.equal(result.status, 0, result.stderr);
   } else {
     assert.ok(child.kill());
@@ -29,9 +39,8 @@ async function stop(child) {
   }
 }
 
-test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta consultas reales", { timeout: 180_000 }, async (t) => {
+test("OpenCode recién iniciado descubre tgrep, comparte el daemon entre sesiones y recupera una caída", { timeout: 240_000 }, async (t) => {
   const worktree = mkdtempSync(join(tmpdir(), "profile-site-opencode-smoke-"));
-  let daemon;
   let server;
   const cancelPid = join(worktree, "cancel-client.txt");
   t.after(async () => {
@@ -42,9 +51,9 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
         try { process.kill(Number(readFileSync(cancelPid, "utf8"))); } catch (error) { if (error.code !== "ESRCH") throw error; }
       }
       try {
-        await stop(daemon);
+        await cleanServiceFixture(worktree);
       } finally {
-        rmSync(worktree, { recursive: true, force: true });
+        // cleanServiceFixture recoge únicamente el daemon y los archivos de este worktree temporal.
       }
     }
   });
@@ -53,7 +62,7 @@ test("OpenCode recién iniciado descubre únicamente la tool tgrep y ejecuta con
   for (const directory of ["lib", "tools", "plugins"]) {
     mkdirSync(join(worktree, ".opencode", directory), { recursive: true });
   }
-  for (const path of ["lib/tgrep-query.ts", "tools/tgrep.ts", "plugins/tgrep-server.ts"]) {
+  for (const path of ["lib/tgrep-query.ts", "lib/tgrep-process.ts", "lib/tgrep-service.ts", "tools/tgrep.ts", "plugins/tgrep-server.ts"]) {
     copyFileSync(join(projectRoot, ".opencode", path), join(worktree, ".opencode", path));
   }
   // Un CLI controlado en PATH bloquea solo el patrón de cancelación. El adaptador
@@ -91,29 +100,15 @@ class TgrepFixture {
   writeFileSync(join(worktree, ".config", "settings.json"), '{"value":"ConfigNeedle69"}\n');
   writeFileSync(join(worktree, ".config", "ignored.json"), '{"value":"ConfigNeedle69"}\n');
 
-  // El fixture es propietario del daemon; el plugin lo reutiliza y el cleanup lo recoge.
-  daemon = spawn("tgrep", ["serve", worktree], { cwd: worktree, stdio: "ignore", windowsHide: true });
-  let daemonError;
-  daemon.on("error", (error) => { daemonError = error });
-  let available = false;
-  const daemonDeadline = Date.now() + 15_000;
-  while (Date.now() < daemonDeadline) {
-    t.signal.throwIfAborted();
-    if (daemonError) throw daemonError;
-    const status = spawnSync("tgrep", ["status", worktree], { encoding: "utf8", timeout: Math.max(1, Math.min(5_000, daemonDeadline - Date.now())) });
-    if (status.status === 0 && status.stdout.includes("Server status")) {
-      available = true;
-      break;
-    }
-    await delay(100, undefined, { signal: t.signal });
-  }
-  assert.ok(available, "El daemon del fixture debe estar disponible antes de iniciar OpenCode.");
+  // Preparar el índice local; OpenCode debe asegurar el daemon mediante el plugin.
+  const index = spawnSync("tgrep", ["index", worktree], { encoding: "utf8", timeout: 15_000 });
+  assert.equal(index.status, 0, `${index.stdout}\n${index.stderr}`);
   writeFileSync(join(worktree, "current.txt"), "  antes: café\r\n  CurrentNeedle70 niño 😀 CurrentNeedle70\r\n\tdespués\r\n");
   t.signal.throwIfAborted();
 
   let serverOutput = "";
   let serverError;
-  server = spawn("opencode", ["serve", "--port", "0", "--hostname", "127.0.0.1"], {
+  server = spawn(opencodeBinary, ["serve", "--port", "0", "--hostname", "127.0.0.1"], {
     cwd: worktree, stdio: ["ignore", "pipe", "pipe"], windowsHide: true,
     env: { ...process.env, PATH: `${bin};${process.env.PATH}` },
   });
@@ -138,6 +133,9 @@ class TgrepFixture {
   const ids = await get(`/experimental/tool/ids?${directory}`);
   assert.deepEqual(ids.filter((id) => id.startsWith("tgrep")), ["tgrep"]);
   assert.ok(!ids.includes("queryTgrep"));
+  const initialDaemonPid = fixtureDaemonPid(worktree);
+  assert.ok(initialDaemonPid, "El plugin debe asegurar el daemon al descubrir las tools.");
+  process.kill(initialDaemonPid, 0);
   const [provider, ...modelParts] = model.split("/");
   const tools = await get(`/experimental/tool?${directory}&provider=${encodeURIComponent(provider)}&model=${encodeURIComponent(modelParts.join("/"))}`);
   const tool = tools.find((item) => item.id === "tgrep");
@@ -173,8 +171,7 @@ class TgrepFixture {
     'Verificación de la tool: ejecuta exactamente siete consultas con tgrep. Las tres primeras solo aportan pattern: "AlphaN(eedle)", "MissingNeedle68" y "[". La cuarta usa {"pattern":"Alpha.Needle","path":"src with spaces","literal":true,"ignore_case":true,"glob":["*.ts"],"file_types":["ts"]}. La quinta usa {"pattern":"ConfigNeedle69","hidden":true,"glob":["*.json","!ignored.json"],"file_types":["json"]}. La sexta usa {"pattern":"CurrentNeedle70","freshness":"current","context_lines":1}. La séptima usa {"pattern":"LimitNeedle71","max_results":3}. No uses ninguna otra tool. No modifiques archivos. Resume las respuestas y distingue la ausencia de coincidencias del error de regex, las coincidencias del contexto y el truncamiento.',
   ], { cwd: worktree, encoding: "utf8", timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
   assert.equal(run.status, 0, `${run.stdout}\n${run.stderr}`);
-  const events = run.stdout.split(/\r?\n/).filter((line) => line.startsWith("{")).map((line) => JSON.parse(line));
-  const calls = events.filter((event) => event.type === "tool_use" && event.part?.tool === "tgrep").map((event) => event.part.state);
+  const calls = tgrepCalls(run.stdout);
   const matches = calls.find((call) => call.input.pattern === "AlphaN(eedle)");
   const empty = calls.find((call) => call.input.pattern === "MissingNeedle68");
   const invalid = calls.find((call) => call.input.pattern === "[");
@@ -259,8 +256,32 @@ class TgrepFixture {
   assert.ok(cancelled, JSON.stringify(messages));
   assert.equal(cancelled.state.status, "error", JSON.stringify(cancelled));
   assert.match(cancelled.state.error, /cancel|abort/i);
-  assert.equal(daemon.exitCode, null, "El servicio compartido sigue disponible tras las consultas.");
+  assert.equal(fixtureDaemonPid(worktree), initialDaemonPid, "Dos sesiones reutilizan el mismo daemon incluso después de cancelar un cliente.");
+  process.kill(initialDaemonPid, 0);
   const status = spawnSync("tgrep", ["status", worktree], { encoding: "utf8", timeout: 5_000 });
   assert.equal(status.status, 0, status.stderr);
   assert.match(status.stdout, /Server status/);
+  await stopFixtureDaemon(worktree);
+  const recovery = spawnSync("opencode", ["run", "--attach", url, "--dir", worktree, "--model", model, "--format", "json",
+    'Ejecuta exactamente una consulta con tgrep usando {"pattern":"AlphaNeedle","freshness":"indexed"}. No uses otras tools ni modifiques archivos. Resume el resultado.',
+  ], { cwd: worktree, encoding: "utf8", timeout: 60_000, maxBuffer: 8 * 1024 * 1024 });
+  assert.equal(recovery.status, 0, `${recovery.stdout}\n${recovery.stderr}`);
+  const recovered = tgrepCalls(recovery.stdout)[0];
+  assert.equal(recovered?.status, "completed", recovery.stdout);
+  assert.equal(recovered.metadata.search_mode, "indexed_or_scan");
+  assert.match(recovered.output, /sample\.txt:1:AlphaNeedle/);
+  // spawnSync retiene el event loop del fixture; recoger ahora los logs del servidor.
+  for (let attempt = 0; attempt < 100 && !serverOutput.includes("[tgrep] Servicio tgrep disponible después del intento de lanzamiento"); attempt++) {
+    await delay(10, undefined, { signal: t.signal });
+  }
+  assert.match(serverOutput, /\[tgrep\] Intento de lanzamiento del servicio tgrep/);
+  assert.match(serverOutput, /\[tgrep\] Servicio tgrep disponible después del intento de lanzamiento/);
+  const recoveredPid = fixtureDaemonPid(worktree);
+  assert.notEqual(recoveredPid, initialDaemonPid);
+  process.kill(recoveredPid, 0);
+  await stop(server);
+  process.kill(recoveredPid, 0);
+  const afterSession = spawnSync("tgrep", ["status", worktree], { encoding: "utf8", timeout: 5_000 });
+  assert.equal(afterSession.status, 0, afterSession.stderr);
+  assert.match(afterSession.stdout, /Server status/, "El daemon sobrevive al cierre de OpenCode.");
 });

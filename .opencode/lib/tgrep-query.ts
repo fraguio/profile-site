@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process"
 import { realpath, stat } from "node:fs/promises"
 import { isAbsolute, relative, resolve as resolvePath, sep } from "node:path"
+import { ensureTgrepService, type TgrepCommand, type TgrepServiceLogger } from "./tgrep-service.ts"
+import { collectTgrepProcess } from "./tgrep-process.ts"
 
 interface TgrepArgs {
   pattern: string
@@ -18,15 +20,10 @@ interface TgrepArgs {
 interface QueryContext {
   worktree: string
   abort?: AbortSignal
+  log?: TgrepServiceLogger
 }
 
-interface QueryCommand {
-  executable: string
-  args?: readonly string[]
-  // Plazos internos reducidos para subprocesses controlados; no forman parte del schema.
-  timeoutMs?: number
-  cleanupTimeoutMs?: number
-}
+type QueryCommand = TgrepCommand
 
 interface QueryResult {
   output: string
@@ -136,26 +133,34 @@ export async function queryTgrep(
   validateArgs(args)
   const { root, scope } = await resolveScope(context.worktree, args.path ?? ".")
   if (context.abort?.aborted) throw new Error("Consulta tgrep cancelada antes del lanzamiento.")
+  const service = args.freshness === "current" ? undefined : await ensureTgrepService(root, command, context.abort, context.log)
+  if (context.abort?.aborted) throw new Error("Consulta tgrep cancelada antes del lanzamiento.")
+  const currentScan = args.freshness === "current" || service?.available === false
   const options = ["--json", "-n", "-H"]
   options.push("--context", String(args.context_lines ?? 0))
-  if (args.freshness === "current") options.push("--no-index")
+  if (currentScan) options.push("--no-index")
   if (args.literal) options.push("--fixed-strings")
   if (args.ignore_case) options.push("--ignore-case")
   for (const glob of args.glob ?? []) options.push(`--glob=${glob}`)
   for (const type of args.file_types ?? []) options.push(`--type=${type}`)
   if (args.hidden) options.push("--hidden")
+  const serviceWarning = service?.diagnostic ? `\nDiagnóstico del servicio tgrep: ${service.diagnostic}` : ""
   return new Promise((resolve, reject) => {
+    const rejectProcess = (error: unknown) => {
+      reject(serviceWarning ? new Error(`${error instanceof Error ? error.message : String(error)}${serviceWarning}`, { cause: error }) : error)
+    }
     let child
     try {
       child = spawn(
         command.executable,
         [...(command.args ?? []), ...options, "--", args.pattern, scope],
-        { cwd: context.worktree, shell: false, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] },
+        { cwd: context.worktree, shell: false, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] },
       )
     } catch (error) {
-      reject(launchFailure(error, command.executable))
+      rejectProcess(launchFailure(error, command.executable))
       return
     }
+    child.stdin.end()
     let pending = ""
     const records: SearchRecord[] = []
     let recordBytes = 0
@@ -167,64 +172,10 @@ export async function queryTgrep(
     const decoder = new TextDecoder("utf-8", { fatal: true })
     let stderrBuffer = Buffer.alloc(0)
     let interruption: QueryInterruption | undefined
-    let cleanupTimer: ReturnType<typeof setTimeout> | undefined
-    let cleanupError: Error | undefined
-    let terminationRejected = false
-    let terminationRequested = false
-    let settled = false
-    let streamError: Error | undefined
-    // Los 30 s cuentan desde spawn; el cierre tiene un presupuesto separado de 5 s.
-    const queryTimer = setTimeout(() => {
-      if (settled || child.exitCode !== null || child.signalCode !== null) return
-      interrupt({ kind: "timeout" })
-    }, command.timeoutMs ?? 30_000)
-    const release = () => {
-      clearTimeout(queryTimer)
-      clearTimeout(cleanupTimer)
-      context.abort?.removeEventListener("abort", onAbort)
-      child.stdout.removeListener("data", onStdout)
-      child.stderr.removeListener("data", onStderr)
-      child.stdout.removeListener("error", onStreamError)
-      child.stderr.removeListener("error", onStreamError)
-      child.removeListener("exit", onExit)
-      child.removeListener("close", onClose)
-      child.removeListener("error", onError)
-    }
-    const awaitClose = () => {
-      if (cleanupTimer || settled) return
-      cleanupTimer = setTimeout(() => {
-        if (settled) return
-        settled = true
-        release()
-        child.stdout.destroy()
-        child.stderr.destroy()
-        child.unref()
-        reject(new Error("El cliente tgrep no cerró durante el cleanup."))
-      }, command.cleanupTimeoutMs ?? 5_000)
-    }
-    const stop = () => {
-      clearTimeout(queryTimer)
-      if (!terminationRequested && child.exitCode === null && child.signalCode === null) {
-        terminationRequested = true
-        if (!child.kill()) {
-          terminationRejected = true
-        }
-      }
-      awaitClose()
-    }
     const interrupt = (cause: QueryInterruption) => {
       if (interruption) return
       interruption = cause
-      stop()
-    }
-    const onExit = () => {
-      clearTimeout(queryTimer)
-      context.abort?.removeEventListener("abort", onAbort)
-      awaitClose()
-    }
-    const onAbort = () => {
-      if (settled || child.exitCode !== null || child.signalCode !== null) return
-      interrupt({ kind: "cancelled" })
+      execution.stop()
     }
     const truncate = (reason: string) => {
       interrupt({ kind: "truncated", reason })
@@ -328,34 +279,20 @@ export async function queryTgrep(
         truncate("stderr_bytes")
       }
     }
-    let launchError: NodeJS.ErrnoException | undefined
-    const onError = (error: NodeJS.ErrnoException) => {
-      if (child.pid === undefined) launchError = error
-      else cleanupError = new Error(`Falló la terminación del cliente tgrep: ${error.message}`, { cause: error })
-      awaitClose()
-    }
-    const onStreamError = (error: Error) => { streamError = error; stop() }
-    const onClose = (code: number | null, signal: NodeJS.Signals | null) => {
-      if (settled) return
-      settled = true
-      release()
-      // kill puede perder la carrera con una salida natural antes de recibir exit.
-      if (cleanupError) { reject(cleanupError); return }
-      if (terminationRejected && code === null) { reject(new Error("No se pudo terminar el cliente tgrep durante el cleanup.")); return }
+    const onClose = ({ code, signal, launchError }: Awaited<typeof execution.completed>) => {
       if (launchError) {
-        reject(launchFailure(launchError, command.executable))
+        rejectProcess(launchFailure(launchError, command.executable))
         return
       }
-      if (streamError) { reject(new Error(`Error de lectura del cliente tgrep: ${streamError.message}`)); return }
       // No finalizar el decoder evita introducir un carácter de reemplazo si el presupuesto corta UTF-8.
       const stderr = stderrText(stderrBuffer)
-      const warning = stderr.trim() ? `\nAdvertencias de tgrep:\n${stderr.trim()}` : ""
+      const warning = serviceWarning + (stderr.trim() ? `\nAdvertencias de tgrep:\n${stderr.trim()}` : "")
       if (interruption && interruption.kind !== "truncated") {
         reject(new Error(protocolError ? `Error de protocolo de tgrep: ${String(protocolError)}${warning}` : `${interruption.kind === "timeout" ? "Timeout de consulta tgrep" : "Consulta tgrep cancelada"}; cliente recogido sin detener el daemon compartido, que puede seguir procesando la consulta.${warning}`))
         return
       }
       if (code !== 0 && code !== 1 && !(interruption?.kind === "truncated" && signal === "SIGTERM")) {
-        reject(new Error(`tgrep terminó con código ${code}.${stderr.trim() ? `\n${stderr.trim()}` : ""}`))
+        reject(new Error(`tgrep terminó con código ${code}.${warning}`))
         return
       }
       if (!protocolError && !interruption) {
@@ -377,15 +314,16 @@ export async function queryTgrep(
         return
       }
       const truncationReason = interruption?.kind === "truncated" ? interruption.reason : undefined
-      const metadata: QueryResult["metadata"] = { search_mode: args.freshness === "current" ? "current_scan" : "indexed_or_scan", truncated: !!truncationReason, record_count: records.length }
+      const metadata: QueryResult["metadata"] = { search_mode: currentScan ? "current_scan" : "indexed_or_scan", truncated: !!truncationReason, record_count: records.length }
       if (truncationReason) metadata.truncation_reason = truncationReason
       const lines = records.map(renderRecord).join("")
       resolve({ output: `Modo de búsqueda: ${metadata.search_mode}\nTruncado: ${truncationReason ? `sí (${truncationReason}); estrecha la consulta. El cliente se interrumpe sin detener el daemon compartido; este puede seguir procesando la consulta` : "no"}. Registros devueltos: ${records.length}.\n${code === 1 && !truncationReason ? "No se encontraron coincidencias." : lines}${warning}`, metadata })
     }
-    child.stdout.on("data", onStdout).on("error", onStreamError)
-    child.stderr.on("data", onStderr).on("error", onStreamError)
-    child.on("error", onError).once("exit", onExit).once("close", onClose)
-    context.abort?.addEventListener("abort", onAbort, { once: true })
-    if (context.abort?.aborted) onAbort()
+    // Los 30 s cuentan desde spawn; el cierre tiene un presupuesto separado de 5 s.
+    const execution = collectTgrepProcess(child, {
+      abort: context.abort, timeoutMs: command.timeoutMs ?? 30_000, cleanupTimeoutMs: command.cleanupTimeoutMs,
+      onStdout, onStderr, onInterrupt: (kind) => { interruption ??= { kind } },
+    })
+    execution.completed.then(onClose, rejectProcess)
   })
 }

@@ -27,7 +27,7 @@ function createClientFixture(t, name) {
     abort,
     pidFile,
     run(script = "setInterval(()=>{},1000);", commandOptions = {}) {
-      return queryTgrep({ pattern: "needle" }, { worktree, abort: abort.signal }, {
+      return queryTgrep({ pattern: "needle", freshness: "current" }, { worktree, abort: abort.signal }, {
         executable: process.execPath,
         args: ["--input-type=module", "-e", `import {writeFileSync} from "node:fs"; const events=${events.toString()}; const emit=(...args)=>process.stdout.write(events(...args)); writeFileSync(${JSON.stringify(pidFile)},String(process.pid)); ${script}`, "--"],
         ...commandOptions,
@@ -150,7 +150,7 @@ test("el cierre con pipes heredados tiene cleanup acotado y comunica su fallo", 
     if (existsSync(pidFile)) { try { process.kill(Number(readFileSync(pidFile, "utf8"))); } catch {} }
     rmSync(worktree, { recursive: true, force: true });
   });
-  await assert.rejects(queryTgrep({ pattern: "needle" }, { worktree }, {
+  await assert.rejects(queryTgrep({ pattern: "needle", freshness: "current" }, { worktree }, {
     executable: process.execPath,
     args: ["--input-type=module", "-e", `import {spawn} from "node:child_process"; import {writeFileSync} from "node:fs"; process.stdout.write(${JSON.stringify(events())}); const child=spawn(process.execPath,["-e","setInterval(()=>{},1000)"],{stdio:["ignore","inherit","inherit"]}); writeFileSync(${JSON.stringify(pidFile)},String(child.pid)); child.unref();`, "--"],
     timeoutMs: 1000,
@@ -172,7 +172,7 @@ function query(t, script, pattern = "needle", args = {}, context = {}) {
   t.after(() => rmSync(worktree, { recursive: true, force: true }));
   return queryTgrep({ pattern, ...args }, { worktree, ...context }, {
     executable: process.execPath,
-    args: ["--input-type=module", "-e", `const events = ${events.toString()}; const emit = (...args) => process.stdout.write(events(...args)); ${script}`, "--"],
+    args: ["--input-type=module", "-e", `if(process.argv[1]==='status'){console.log('Server status for fixture'); process.exit(0);} const events = ${events.toString()}; const emit = (...args) => process.stdout.write(events(...args)); ${script}`, "--"],
   });
 }
 
@@ -286,7 +286,7 @@ test("los streams excesivos se interrumpen durante la lectura y el cliente ya es
     const worktree = mkdtempSync(join(tmpdir(), "profile-site-tgrep-limit-"));
     t.after(() => rmSync(worktree, { recursive: true, force: true }));
     const pidFile = join(worktree, "pid.txt");
-    const result = await queryTgrep({ pattern: "needle", max_results: 1 }, { worktree }, {
+    const result = await queryTgrep({ pattern: "needle", max_results: 1, freshness: "current" }, { worktree }, {
       executable: process.execPath,
       args: ["--input-type=module", "-e", `import {writeFileSync} from "node:fs"; writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); const events=${events.toString()}; const emit=(...args)=>process.stdout.write(events(...args)); ${script} setInterval(()=>{},1000);`, "--"],
     });
@@ -304,7 +304,7 @@ test("un ejecutable ausente produce un diagnóstico de lanzamiento, no ausencia 
   t.after(() => rmSync(worktree, { recursive: true, force: true }));
 
   await assert.rejects(
-    queryTgrep({ pattern: "needle" }, { worktree }, { executable: join(worktree, "missing-tgrep.exe") }),
+    queryTgrep({ pattern: "needle", freshness: "current" }, { worktree }, { executable: join(worktree, "missing-tgrep.exe") }),
     /No se pudo lanzar tgrep[\s\S]*ENOENT[\s\S]*missing-tgrep\.exe/,
   );
 });
@@ -316,7 +316,7 @@ test("un ejecutable no lanzable conserva un diagnóstico distinto de un fallo de
   writeFileSync(executable, "Este archivo no es un ejecutable.");
 
   await assert.rejects(
-    queryTgrep({ pattern: "needle" }, { worktree }, { executable }),
+    queryTgrep({ pattern: "needle", freshness: "current" }, { worktree }, { executable }),
     /No se pudo lanzar tgrep[\s\S]*(?:EACCES|EPERM|EINVAL|ENOEXEC|UNKNOWN)/,
   );
 });
@@ -349,7 +349,7 @@ test("el ámbito relativo y absoluto selecciona un archivo del worktree desde ot
   assert.notEqual(process.cwd(), worktree);
 
   for (const path of ["src with spaces/sample.txt", file, "internal-link/sample.txt"]) {
-    const result = await queryTgrep({ pattern: "contenido", path }, { worktree }, {
+    const result = await queryTgrep({ pattern: "contenido", path, freshness: "current" }, { worktree }, {
       executable: process.execPath,
       args: ["--input-type=module", "-e", `import { readFileSync } from "node:fs"; const events = ${events.toString()}; process.stdout.write(events(readFileSync(process.argv.at(-1), "utf8"), process.argv.at(-1), 1))`, "--"],
     });
