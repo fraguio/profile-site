@@ -15,15 +15,15 @@
     "validate:publishable-profile-data-revision": "node scripts/validate-publishable-profile-data-revision.mjs",
     "check": "astro check",
     "test": "node --test --test-concurrency=1 && pnpm test:browser",
-    "test:browser": "playwright test && playwright test --config=playwright-empty-category.config.mjs && playwright test --config=playwright-long-detail.config.mjs && playwright test --config=playwright-mobile-detail.config.mjs",
+    "test:browser": "playwright test && playwright test --config=playwright-empty-category.config.mjs && playwright test --config=playwright-long-detail.config.mjs && playwright test --config=playwright-mobile-detail.config.mjs && playwright test --config=playwright-empty-timeline.config.mjs",
     "test:pdf": "node --test pdf-checks/generate-cv-pdf.mjs",
     "test:unit": "node --test --test-concurrency=1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
     "@axe-core/playwright": "4.11.0",
-    "@fontsource-variable/manrope": "5.2.8",
-    "@fontsource-variable/source-serif-4": "5.2.8",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/newsreader": "^5.3.0",
     "@playwright/test": "1.63.0",
     "@types/node": "^24.10.1",
     "ajv": "8.20.0",
