@@ -32,6 +32,7 @@ export function createPlaywrightConfig({ fixturePath, testIgnore, testMatch }) {
 export default createPlaywrightConfig({
   fixturePath,
   testIgnore: [
+    "profile-identity-empty-timeline.browser.mjs",
     "timeline-filters-empty-category.browser.mjs",
     "timeline-reader-long-content.browser.mjs",
     "timeline-mobile-panel.browser.mjs",

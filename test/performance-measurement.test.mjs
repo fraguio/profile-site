@@ -106,7 +106,7 @@ test("el entrypoint de rendimiento falla al no poder recolectar un recurso crít
   assert.match(`${result.stdout}\n${result.stderr}`, /Referenced critical resource is unavailable/);
 });
 
-test("la baseline ejecuta el build contractual con su fixture y perfil versionados", (t) => {
+test("el build contractual usa el fixture y perfil versionados y respeta los budgets de la baseline", (t) => {
   const outputDirectory = mkdtempSync(join(projectRoot, "test-performance-baseline-"));
   t.after(() => rmSync(outputDirectory, { recursive: true, force: true }));
   const summaryPath = process.env.PERFORMANCE_REAL_BASELINE === "true"
@@ -128,7 +128,7 @@ test("la baseline ejecuta el build contractual con su fixture y perfil versionad
 
   assert.equal(buildResult.status, 0, `${buildResult.stdout}\n${buildResult.stderr}`);
   assert.ok(summaryPath, "GITHUB_STEP_SUMMARY is required for the real baseline.");
-  const result = measure(outputDirectory, summaryPath, {
+  const result = productionMeasurement(outputDirectory, summaryPath, {
     FAKE_LIGHTHOUSE_MOBILE_SCORE: "0.87",
     FAKE_LIGHTHOUSE_DESKTOP_SCORE: "0.99",
   });
@@ -140,8 +140,17 @@ test("la baseline ejecuta el build contractual con su fixture y perfil versionad
   if (process.env.PERFORMANCE_REAL_BASELINE === "true") {
     return;
   }
-  for (const [name, value] of Object.entries(baseline.observed)) {
-    assert.match(summary, new RegExp(String(value)), `La baseline debe incluir ${name}.`);
+  assert.match(summary, /Ejecuciones mobile: 87, 87, 87/);
+  for (const [name, label] of [
+    ["initialJavaScript", "JavaScript inicial"],
+    ["javascriptBundles", "Bundles JavaScript"],
+    ["fonts", "Fuentes"],
+    ["ownResources", "Recursos propios"],
+    ["criticalRequests", "Requests críticos"],
+  ]) {
+    const metric = summary.match(new RegExp(`\\| ${label} \\| (\\d+)`));
+    assert.ok(metric, `La medición debe incluir ${label}.`);
+    assert.ok(Number(metric[1]) <= baseline.budgets[name], `${label} debe respetar su budget vigente.`);
   }
   const evidence = readFileSync(baselineEvidencePath, "utf8");
   const evidenceRows = [

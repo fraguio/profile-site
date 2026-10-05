@@ -100,7 +100,7 @@ test("the contractual build produces the PDF and HTML outputs from the selected 
   assert.match(interactiveExperience, /href="\/profile-site\/read\/"/);
   assert.match(
     interactiveExperience,
-    /href="\/profile-site\/cv\/eduardo-nogueira-fraguio-cv\.pdf"[^>]*>Descargar CV PDF/,
+    /href="\/profile-site\/cv\/eduardo-nogueira-fraguio-cv\.pdf"[^>]*>(?:<svg\b[^]*?<\/svg>)?Descargar CV PDF<\/a>/,
   );
   assert.match(webCv, /Alicia Ejemplo/);
   assert.match(webCv, /href="\/profile-site\/"/);
@@ -420,7 +420,7 @@ test("the interactive experience presents the supported trajectory without JavaS
   ]) {
     assert.match(
       interactiveExperience,
-      new RegExp(`href="${url.replaceAll("/", "\\/")}"[^>]*>${label}`),
+      new RegExp(`href="${url.replaceAll("/", "\\/")}"[^>]*>(?:<svg\\b[^]*?<\\/svg>)?${label}<\\/a>`),
     );
   }
 
@@ -437,7 +437,7 @@ test("the interactive experience presents the supported trajectory without JavaS
   }
 
   assert.ok(
-    body.indexOf("Leer CV web") <
+    body.indexOf("Leer CV web") >
       body.indexOf(
         "Construye sistemas comprensibles a partir de hechos verificables.",
       ),

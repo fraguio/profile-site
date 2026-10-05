@@ -7,6 +7,7 @@ import {
 } from "../lib/resume";
 import type { TimelineCategory } from "../lib/resume";
 import PageMetadata from "../components/PageMetadata.astro";
+import ProfileIcon from "../components/ProfileIcon.astro";
 import "../styles/interactive-experience.css";
 
 const readPath = `${import.meta.env.BASE_URL}read/`;
@@ -61,17 +62,25 @@ const structuredData = JSON.stringify({
     <PageMetadata {canonicalUrl} {description} {structuredData} {title} />
   </head>
   <body>
+    <header class="profile-navigation">
+      <span class="profile-navigation__name">{resume.basics.name}</span>
+      <nav aria-label="Navegación del perfil">
+        {timeline.length > 0 && <a href="#timeline-heading">Trayectoria</a>}
+        <a href={readPath}>CV web</a>
+        <a href={pdfPath} download>CV PDF</a>
+        <a href={`mailto:${resume.basics.email}`}>Contacto</a>
+      </nav>
+    </header>
     <main class="interactive-experience">
       <header class="profile-hero">
-        <p class="profile-hero__eyebrow">Perfil profesional</p>
         <h1>{resume.basics.name}</h1>
         <p class="profile-hero__role">{resume.basics.label}</p>
-        <nav class="profile-hero__actions" aria-label="Acciones principales">
-          <a href={readPath}>Leer CV web</a>
-          <a href={pdfPath}>Descargar CV PDF</a>
-          <a href={`mailto:${resume.basics.email}`}>Contactar</a>
-        </nav>
         <p class="profile-hero__summary">{resume.basics.summary}</p>
+        <nav class="profile-hero__actions" aria-label="Acciones principales">
+          <a href={readPath}><ProfileIcon name="read" />Leer CV web</a>
+          <a href={pdfPath} download><ProfileIcon name="download" />Descargar CV PDF</a>
+          <a href={`mailto:${resume.basics.email}`}><ProfileIcon name="mail" />Contactar</a>
+        </nav>
         {location && <p class="profile-hero__location">{location}</p>}
         {timeline.length > 0 && (
           <a class="profile-hero__explore" href="#timeline-heading">
@@ -81,10 +90,10 @@ const structuredData = JSON.stringify({
         {(resume.basics.url || profiles.length > 0) && (
           <nav class="profile-hero__profiles" aria-label="Enlaces profesionales">
             {resume.basics.url && (
-              <a href={resume.basics.url}>Sitio web</a>
+               <a href={resume.basics.url}><ProfileIcon name="web" />Sitio web</a>
             )}
             {profiles.map((profile) => (
-              <a href={profile.url}>{profile.network}</a>
+               <a href={profile.url}><ProfileIcon name={profile.network.toLowerCase()} />{profile.network}</a>
             ))}
           </nav>
         )}
@@ -382,7 +391,7 @@ const structuredData = JSON.stringify({
           synchronizeMotion();
         });
 
-        if (window.matchMedia("(min-width: 52.001rem)").matches) {
+        if (window.matchMedia("(min-width: 1024px)").matches) {
           const reader = document.createElement("aside");
           const readerArticle = document.createElement("article");
           const readerHeader = document.createElement("header");

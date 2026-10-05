@@ -15,13 +15,13 @@ test("la experiencia interactiva compone identidad y trayectoria en columnas en 
   await expect(page.getByRole("heading", { name: "Alicia Ejemplo" })).toBeInViewport();
   await expect(page.getByRole("heading", { name: "Alicia Ejemplo" })).toHaveCSS(
     "font-family",
-    /Source Serif 4 Variable/,
+    /Newsreader/,
   );
   await expect(
     page.getByText("Especialista en sistemas ficticios", { exact: true }),
   ).toBeInViewport();
   await expect(readLink).toBeInViewport();
-  await expect(readLink).toHaveCSS("font-family", /Manrope Variable/);
+  await expect(readLink).toHaveCSS("font-family", /Inter/);
   await expect(page.getByRole("link", { name: "Contactar" })).toBeInViewport();
 
   const [heroBox, timelineBox] = await Promise.all([
@@ -33,9 +33,9 @@ test("la experiencia interactiva compone identidad y trayectoria en columnas en 
   expect(timelineBox).not.toBeNull();
   expect(timelineBox.x).toBeGreaterThan(heroBox.x + heroBox.width);
 
-  await page.keyboard.press("Tab");
+  for (let index = 0; index < 5; index++) await page.keyboard.press("Tab");
   await expect(readLink).toBeFocused();
-  await expect(readLink).toHaveCSS("outline-style", "solid");
+  await expect(readLink).toHaveCSS("box-shadow", "rgb(201, 190, 166) 0px 0px 0px 1px inset");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/profile-site\/read\/$/);
 });
