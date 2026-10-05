@@ -1,0 +1,53 @@
+{
+  "basics": {
+    "name": "Alicia Ejemplo",
+    "label": "Especialista en sistemas ficticios",
+    "email": "alicia.ejemplo@example.test",
+    "summary": "Construye sistemas comprensibles a partir de hechos verificables."
+  },
+  "projects": [
+    {
+      "name": "Proyecto con metadatos",
+      "entity": "Laboratorio Ficticio",
+      "startDate": "2025-02-03",
+      "description": "Primera frase del proyecto. Segunda frase que debe conservarse íntegra hasta el final.",
+      "roles": ["Autora", "Desarrolladora"],
+      "highlights": ["Entregó un ejemplo reproducible."],
+      "keywords": ["Capacidad asociada con una etiqueta deliberadamente larga para comprobar wrapping"],
+      "url": "https://projects.example.test/independent?source=resume#details"
+    },
+    {
+      "name": "Proyecto sin bloques",
+      "startDate": "2024",
+      "endDate": "2024-12"
+    }
+  ],
+  "work": [
+    {
+      "position": "Participación sin prosa",
+      "startDate": "2023-04",
+      "endDate": "2023-12-31",
+      "highlights": ["Contribución independiente de la descripción."],
+      "skills": ["TypeScript"],
+      "clientName": "Cliente aplazado",
+      "projectName": "Título aplazado"
+    }
+  ],
+  "education": [
+    {
+      "area": "Formación sin prosa",
+      "startDate": "2022",
+      "endDate": "2022",
+      "courses": ["Contenido independiente de la descripción."],
+      "skills": ["Diseño de sistemas"],
+      "title": "Formación aplazada",
+      "details": "Descripción de formación aplazada"
+    },
+    {
+      "area": "Formación solo con habilidades",
+      "startDate": "2021",
+      "endDate": "2021",
+      "skills": ["Lectura técnica"]
+    }
+  ]
+}

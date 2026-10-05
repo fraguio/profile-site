@@ -157,11 +157,17 @@ const structuredData = JSON.stringify({
                     </div>
                     <div class="milestone__detail" data-contract="milestone-detail">
                       {milestone.location && <p class="milestone__location">{milestone.location}</p>}
-                      {milestone.description && <p class="milestone__description">{milestone.description}</p>}
-                      {milestone.summary && <p class="milestone__summary">{milestone.summary}</p>}
+                      {milestone.url && <a class="milestone__project-link" href={milestone.url}>Ver proyecto</a>}
+                      {(milestone.description || milestone.summary) && (
+                        <>
+                          <h4>Descripción</h4>
+                          {milestone.description && <p class="milestone__description">{milestone.description}</p>}
+                          {milestone.summary && <p class="milestone__summary">{milestone.summary}</p>}
+                        </>
+                      )}
                       {milestone.roles.length > 0 && (
                         <>
-                          <h4>Roles</h4>
+                          <h4>{milestone.roles.length === 1 ? "Rol" : "Roles"}</h4>
                           <ul class="milestone__roles">
                             {milestone.roles.map((role) => (
                               <li>{role}</li>
@@ -171,7 +177,7 @@ const structuredData = JSON.stringify({
                       )}
                       {milestone.highlights.length > 0 && (
                         <>
-                          <h4>Hitos destacados</h4>
+                          <h4>{milestone.category === "education" ? "Contenidos" : "Contribuciones"}</h4>
                           <ul class="milestone__highlights">
                             {milestone.highlights.map((highlight) => (
                               <li>{highlight}</li>

@@ -365,7 +365,22 @@ body {
   line-height: 1.7;
 }
 
-.milestone h4 {
+.milestone__project-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  color: #818cf8;
+  font-size: 0.875rem;
+  text-underline-offset: 0.25em;
+  overflow-wrap: anywhere;
+}
+
+.milestone h4,
+.timeline__reader h4,
+.timeline__mobile-panel h4 {
   margin: 1.5rem 0 0.65rem;
   color: #f2f0e9;
   font-size: 0.8rem;

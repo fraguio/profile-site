@@ -77,6 +77,7 @@
   "projects": [
     {
       "name": "Proyecto Vigente",
+      "url": "https://projects.example.test/distributed?view=public#overview",
       "entity": "Laboratorio Vigente",
       "description": "Explora una herramienta para equipos distribuidos.",
       "startDate": "2024",
