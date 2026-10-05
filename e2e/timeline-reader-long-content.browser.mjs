@@ -27,4 +27,22 @@ test("el lector mantiene fija su cabecera mientras desplaza el contenido largo",
   await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 
   expect(await header.boundingBox()).toEqual(initialHeaderBox);
+
+  const detail = await body.locator('[data-contract="milestone-detail"]').elementHandle();
+  const scrollTop = await body.evaluate((element) => element.scrollTop);
+  const workFilter = page.getByRole("radio", { name: "Experiencia profesional" });
+  await workFilter.click();
+  await expect(workFilter).toBeFocused();
+  expect(await detail.evaluate((element) => element.isConnected)).toBe(true);
+  expect(await body.evaluate((element) => element.scrollTop)).toBe(scrollTop);
+  await page.getByRole("radio", { name: "Toda la trayectoria" }).click();
+  expect(await body.evaluate((element) => element.scrollTop)).toBe(scrollTop);
+  const other = page.locator('[data-contract="milestone-trigger"]').last();
+  await other.click();
+  await expect(other).toBeFocused();
+  await expect(reader).toContainText("Otra lectura extensa");
+  expect(await body.evaluate((element) => element.scrollHeight)).toBeGreaterThan(
+    await body.evaluate((element) => element.clientHeight),
+  );
+  await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBe(0);
 });

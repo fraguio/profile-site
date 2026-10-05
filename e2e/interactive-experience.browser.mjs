@@ -169,7 +169,7 @@ test("los filtros muestran cada categoria y anuncian el resultado sin persistirl
     await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(
       count,
     );
-    await expect(timeline.getByRole("article")).toHaveCount(count);
+    await expect(timeline.locator('[data-contract="timeline-rail"]').getByRole("article")).toHaveCount(count);
     if (filterValue !== "all") {
       await expect(
         timeline.locator(`[data-timeline-category="${filterValue}"]:not([hidden])`),
@@ -192,9 +192,10 @@ test("los filtros muestran cada categoria y anuncian el resultado sin persistirl
     page.getByRole("radio", { name: "Toda la trayectoria" }),
   ).toBeChecked();
   await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(6);
+  await expect(page.locator('[data-contract="milestone-trigger"]').first()).toHaveAttribute("aria-pressed", "true");
 });
 
-test("el teclado cambia el filtro y reinicia el carril en el hito mas reciente", async ({
+test("el teclado cambia el filtro y conserva el foco sin desplazar el documento", async ({
   page,
 }) => {
   await page.goto("./");
@@ -219,15 +220,13 @@ test("el teclado cambia el filtro y reinicia el carril en el hito mas reciente",
   await expect(page.getByRole("status")).toHaveText(
     "Se muestran 2 hitos de experiencia profesional.",
   );
-  await expect(timeline.getByRole("article")).toHaveCount(2);
+  await expect(rail.getByRole("article")).toHaveCount(2);
   await expect(timeline.locator("[data-timeline-category]").first()).toHaveAttribute(
     "data-timeline-category",
     "work",
   );
   expect(await page.evaluate(() => window.scrollY)).toBe(initialScrollTop);
-  await expect
-    .poll(() => rail.evaluate((element) => element.scrollTop))
-    .toBe(0);
+  await expect(rail.locator('[data-contract="milestone-trigger"][aria-pressed="true"]')).toHaveCount(1);
 });
 
 test.describe("con entrada touch", () => {
@@ -245,7 +244,7 @@ test.describe("con entrada touch", () => {
 test.describe("lector lateral desktop", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("abre un solo hito, comunica la seleccion y permite cerrarlo con teclado", async ({
+  test("selecciona inicialmente el primer hito y mantiene un detalle por clic, Enter, Espacio y Escape", async ({
     page,
   }) => {
     await page.goto("./");
@@ -259,6 +258,11 @@ test.describe("lector lateral desktop", () => {
     const reader = page.locator('[data-contract="timeline-reader"]');
     const rail = page.locator('[data-contract="timeline-rail"]');
     const initialRailBox = await rail.boundingBox();
+
+    await expect(firstMilestone).toHaveAttribute("aria-pressed", "true");
+    await expect(reader).toBeVisible();
+    await expect(firstMilestone).toHaveAccessibleName(/Experiencia profesional.*Arquitecta de software.*Laboratorio Vigente.*enero de 2025.*Actualidad/);
+    await expect(firstMilestone).not.toHaveAttribute("aria-expanded");
 
     await firstMilestone.click({ force: true });
 
@@ -282,11 +286,18 @@ test.describe("lector lateral desktop", () => {
     ).toHaveCount(1);
     await expect(reader).toContainText("Proyecto Vigente");
 
+    await firstMilestone.focus();
+    await page.keyboard.press("Enter");
+    await expect(firstMilestone).toHaveAttribute("aria-pressed", "true");
+    await expect(firstMilestone).toBeFocused();
     await secondMilestone.focus();
     await page.keyboard.press("Space");
 
-    await expect(reader).toBeHidden();
-    await expect(secondMilestone).toHaveAttribute("aria-pressed", "false");
+    await expect(reader).toBeVisible();
+    await expect(secondMilestone).toHaveAttribute("aria-pressed", "true");
+    await expect(secondMilestone).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(secondMilestone).toHaveAttribute("aria-pressed", "true");
     expect(await rail.boundingBox()).toEqual(initialRailBox);
 
     await secondMilestone.focus();
@@ -294,11 +305,13 @@ test.describe("lector lateral desktop", () => {
     await expect(reader).toBeVisible();
     await page.keyboard.press("Escape");
 
-    await expect(reader).toBeHidden();
+    await expect(reader).toBeVisible();
+    await expect(secondMilestone).toHaveAttribute("aria-pressed", "true");
     await expect(secondMilestone).toBeFocused();
+    await expect(page.getByRole("button", { name: /Cerrar|Pausar|Reanudar/ })).toHaveCount(0);
   });
 
-  test("el cierre y el cambio de filtro limpian el lector antes de anunciar el conjunto", async ({
+  test("un filtro compatible conserva el detalle y uno excluyente selecciona el primer resultado", async ({
     page,
   }) => {
     await page.goto("./");
@@ -308,23 +321,72 @@ test.describe("lector lateral desktop", () => {
       .filter({ hasText: "Arquitecta de software" });
     const reader = page.locator('[data-contract="timeline-reader"]');
 
-    await milestone.click({ force: true });
-    await page.getByRole("button", { name: "Cerrar detalle", exact: true }).click();
-
-    await expect(reader).toBeHidden();
-    await expect(milestone).toBeFocused();
-
-    await milestone.click({ force: true });
-    await page.getByRole("radio", { name: "Proyectos" }).click();
-
-    await expect(reader).toBeHidden();
+    const readerNode = await reader.elementHandle();
+    const detailNode = await reader.locator('[data-contract="milestone-detail"]').elementHandle();
+    const workFilter = page.getByRole("radio", { name: "Experiencia profesional" });
+    await workFilter.click();
+    await expect(workFilter).toBeFocused();
+    await expect(milestone).toHaveAttribute("aria-pressed", "true");
+    expect(await detailNode.evaluate((node) => node.isConnected)).toBe(true);
+    const projectsFilter = page.getByRole("radio", { name: "Proyectos", exact: true });
+    await projectsFilter.click();
+    await expect(projectsFilter).toBeFocused();
+    await expect(reader).toBeVisible();
+    expect(await readerNode.evaluate((node) => node.isConnected)).toBe(true);
+    expect(await detailNode.evaluate((node) => node.isConnected)).toBe(false);
     await expect(
       page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]'),
-    ).toHaveCount(0);
+    ).toHaveCount(1);
+    const firstProject = page.getByRole("button", { name: /Proyecto Vigente/ });
+    await expect(firstProject).toHaveAttribute("aria-pressed", "true");
+    await expect(reader).toContainText("Proyecto Vigente");
+    await expect(reader).not.toContainText("Madrid");
+    await expect(reader).not.toContainText("Redujo el tiempo de entrega.");
     await expect(page.getByRole("status")).toHaveText(
       "Se muestran 3 hitos de proyectos.",
     );
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("list", { name: "Hitos de la trayectoria", exact: true })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(firstProject).toBeFocused();
+    const educationFilter = page.getByRole("radio", { name: "Formación" });
+    await educationFilter.focus();
+    for (const key of ["Space", "ArrowLeft", "ArrowLeft", "ArrowRight", "ArrowRight"]) {
+      await page.keyboard.press(key);
+      const checkedValue = await page.getByRole("radio", { checked: true }).inputValue();
+      const selected = page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]');
+      await expect(selected).toHaveCount(1);
+      await expect(selected).toBeVisible();
+      expect(await selected.evaluate((node) => node.closest("[data-timeline-category]").dataset.timelineCategory)).toBe(checkedValue);
+    }
   });
+});
+
+test("el breakpoint recoloca la misma instancia conservando filtro, selección y contenido", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("./");
+  await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
+  const trigger = page.getByRole("button", { name: /Proyecto de Empate/ });
+  await trigger.click();
+  const reader = page.locator('[data-contract="timeline-reader"]');
+  const readerNode = await reader.elementHandle();
+  const detailNode = await reader.locator('[data-contract="milestone-detail"]').elementHandle();
+  for (const viewport of [{ width: 360, height: 800 }, { width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await expect(reader).toHaveAttribute("role", viewport.width >= 1024 ? "complementary" : "region");
+    await expect(page.getByRole("radio", { name: "Proyectos", exact: true })).toBeChecked();
+    await expect(trigger).toHaveAttribute("aria-pressed", "true");
+    await expect(trigger).toBeFocused();
+    await expect(reader).toContainText("Proyecto de Empate");
+    await expect(reader).toHaveCount(1);
+    expect(await readerNode.evaluate((node) => node.isConnected)).toBe(true);
+    expect(await detailNode.evaluate((node) => node.isConnected)).toBe(true);
+    if (viewport.width < 1024) {
+      expect(await trigger.evaluate((node) => node.nextElementSibling?.getAttribute("data-contract"))).toBe("timeline-reader");
+    } else {
+      expect(await reader.evaluate((node) => node.parentElement.contains(document.querySelector('[data-contract="timeline-rail"]')))).toBe(true);
+    }
+  }
 });
 
 test("la experiencia interactiva no contiene vulneraciones Axe de nivel AA", async ({

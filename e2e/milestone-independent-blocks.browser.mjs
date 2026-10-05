@@ -8,8 +8,8 @@ for (const width of [1440, 360, 390]) {
 
     test("el detalle limpia los datos ausentes y permite leer bloques sin prosa", async ({ page }) => {
       await page.goto("./");
-      const detail = page.getByRole(width >= 1024 ? "complementary" : "region", { name: "Detalle del hito" });
-      const open = (title) => openMilestone(page, detail, title, "Space");
+      const detail = page.getByRole(width >= 1024 ? "complementary" : "region", { name: /^Detalle del hito:/ });
+      const open = (title) => openMilestone(page, title, "Space");
       await open("Proyecto con metadatos");
       await expect(detail.getByRole("heading", { name: "Roles", exact: true })).toBeVisible();
       await expect(detail.getByText("Primera frase del proyecto. Segunda frase que debe conservarse íntegra hasta el final.", { exact: true })).toBeVisible();
@@ -20,7 +20,7 @@ for (const width of [1440, 360, 390]) {
       await skill.scrollIntoViewIfNeeded();
       await expect(skill).toBeInViewport({ ratio: 0.99 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      expect((await new AxeBuilder({ page }).include('[aria-label="Detalle del hito"]').withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations).toEqual([]);
+      expect((await new AxeBuilder({ page }).include('[data-contract="timeline-reader"]').withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations).toEqual([]);
       await open("Proyecto sin bloques");
       await expect(detail).toContainText("2024 - diciembre de 2024");
       await expect(detail.locator("a, [href], ul, h4")).toHaveCount(0);
@@ -42,9 +42,8 @@ for (const width of [1440, 360, 390]) {
       await expect(detail.getByText("Lectura técnica", { exact: true })).toBeVisible();
       await expect(page.locator("body")).not.toContainText("aplazad");
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      await detail.getByRole("button", { name: "Cerrar detalle", exact: true }).click();
-      await expect(detail).toBeHidden();
-      await expect(detail.locator("[href], ul, p, h3, h4, time")).toHaveCount(0);
+      await expect(detail).toBeVisible();
+      await expect(page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]')).toHaveCount(1);
     });
   });
 }
