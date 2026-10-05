@@ -103,6 +103,7 @@ test("the contractual build produces the PDF and HTML outputs from the selected 
     /href="\/profile-site\/cv\/eduardo-nogueira-fraguio-cv\.pdf"[^>]*>(?:<svg\b[^]*?<\/svg>)?Descargar CV PDF<\/a>/,
   );
   assert.match(webCv, /Alicia Ejemplo/);
+  assert.doesNotMatch(webCv, /projects\.example\.test|Ver proyecto/);
   assert.match(webCv, /href="\/profile-site\/"/);
   assert.match(
     webCv,
@@ -417,10 +418,11 @@ test("the interactive experience presents the supported trajectory without JavaS
     ["https://www.linkedin.com/in/alicia-ejemplo", "LinkedIn"],
     ["https://github.com/alicia-ejemplo", "GitHub"],
     ["https://mastodon.social/@alicia-ejemplo", "Mastodon"],
+    ["https://projects.example.test/distributed?view=public#overview", "Ver proyecto"],
   ]) {
     assert.match(
       interactiveExperience,
-      new RegExp(`href="${url.replaceAll("/", "\\/")}"[^>]*>(?:<svg\\b[^]*?<\\/svg>)?${label}<\\/a>`),
+      new RegExp(`href="${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>(?:<svg\\b[^]*?<\\/svg>)?${label}<\\/a>`),
     );
   }
 
@@ -477,6 +479,10 @@ test("the interactive experience presents the supported trajectory without JavaS
     /<fieldset[^>]*data-contract="timeline-filters"[^>]*hidden/,
   );
   assert.doesNotMatch(body, /data-contract="timeline-reader"/);
+  assert.equal((body.match(/>Ver proyecto<\/a>/g) ?? []).length, 1);
+  assert.match(body, /<h4>Descripción<\/h4>/);
+  assert.match(body, /<h4>Contribuciones<\/h4>/);
+  assert.match(body, /<h4>Contenidos<\/h4>/);
 });
 
 test("the interactive experience keeps timeline filters unavailable without JavaScript", (t) => {
@@ -536,6 +542,11 @@ test("the contractual build accepts local work and education skills without top-
 });
 
 for (const [description, fixture, diagnostic] of [
+  [
+    "una URL de proyecto inválida",
+    "invalid-project-url.json",
+    'resume.projects[0].url: "not a URL" violates JSON Resume 1.3.1 schema: must match format "uri".',
+  ],
   [
     "a schema-invalid source",
     "invalid-schema.json",

@@ -15,7 +15,7 @@
     "validate:publishable-profile-data-revision": "node scripts/validate-publishable-profile-data-revision.mjs",
     "check": "astro check",
     "test": "node --test --test-concurrency=1 && pnpm test:browser",
-    "test:browser": "playwright test && playwright test --config=playwright-empty-category.config.mjs && playwright test --config=playwright-long-detail.config.mjs && playwright test --config=playwright-mobile-detail.config.mjs && playwright test --config=playwright-empty-timeline.config.mjs",
+    "test:browser": "playwright test && playwright test --config=playwright-empty-category.config.mjs && playwright test --config=playwright-long-detail.config.mjs && playwright test --config=playwright-mobile-detail.config.mjs && playwright test --config=playwright-empty-timeline.config.mjs && playwright test --config=playwright-independent-blocks.config.mjs",
     "test:pdf": "node --test pdf-checks/generate-cv-pdf.mjs",
     "test:unit": "node --test --test-concurrency=1"
   },

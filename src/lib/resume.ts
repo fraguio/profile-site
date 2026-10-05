@@ -40,6 +40,7 @@ type Resume = {
     name?: string;
     roles?: string[];
     startDate: string;
+    url?: string;
   }>;
   work?: Array<{
     description?: string;
@@ -72,6 +73,7 @@ type TimelineMilestone = {
   startDateLabel: string;
   summary?: string;
   title?: string;
+  url?: string;
 };
 
 type ResumeRecord = Record<string, unknown>;
@@ -267,6 +269,7 @@ function createTimeline(resume: Resume) {
       startDateLabel: formatDate(project.startDate),
       summary: undefined,
       title: text(project.name),
+      url: text(project.url),
     });
   }
 
