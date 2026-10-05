@@ -12,6 +12,17 @@ El triage utiliza las cinco etiquetas canónicas predeterminadas. Consulta `docs
 
 Este repositorio utiliza una estructura de contexto único. Consulta `docs/agents/domain.md`.
 
+## Proporcionalidad del trabajo
+
+Mantén «The main flow» y el comportamiento de sus skills. Dimensiona el alcance de los tickets, las pruebas nuevas y la documentación según el comportamiento cambiado y el riesgo real.
+
+- Para ajustes locales de UI, modifica directamente la implementación y reutiliza las pruebas y fixtures existentes. Añade cobertura solo para comportamiento nuevo o regresiones que la cobertura actual no detecte; una modificación de texto, markup o CSS no exige por sí sola pruebas nuevas.
+- Cada archivo auxiliar nuevo debe cubrir una necesidad de mantenimiento concreta que no resuelvan los archivos existentes. Prioriza ampliar lo existente frente a crear configuraciones, helpers o variantes por ticket.
+- Documenta contratos, decisiones duraderas y uso necesario para mantener el producto en sus documentos actuales. El resumen de entrega y los resultados de los checks bastan para registrar el trabajo ordinario; informes por issue y capturas versionadas requieren una necesidad concreta o petición explícita.
+- Aplica las matrices de aceptación global al cierre de la integración correspondiente. Para cada incremento, comprueba los comportamientos afectados; amplía viewports y escenarios cuando cambie el responsive o exista un fallo concreto.
+- Ejecuta las comprobaciones del flujo sin convertir cada ejecución en documentación adicional. Usa los gates existentes para validar el producto; una medición local adicional de rendimiento se justifica por cambios en recursos, carga, animación o un indicio de regresión.
+- Al redactar specs y tickets, expresa resultados observables y referencia la cobertura existente. Conserva los contratos del producto sin convertirlos en una lista de entregables auxiliares para cada cambio.
+
 ## Idioma
 
 Redacta en español la prosa de toda la documentación del repositorio, incluidos issues, PRs, especificaciones, ADRs, comentarios de código y docstrings.
@@ -32,3 +43,9 @@ Una instrucción explícita para usar otro idioma prevalece sobre estas reglas.
 ## Commits
 
 Utiliza Conventional Commits con el formato `type(scope): description` y redacta los mensajes en inglés.
+
+Todos los commits deben llevar firma GPG. Comprueba que la firma GPG está disponible antes de ejecutar el commit y utiliza `git commit -S`. Si no es posible firmarlo con GPG o la firma falla, detén la operación: nunca crees un commit sin firma ni reintentes desactivándola.
+
+## Ramas
+
+Todas las ramas nuevas deben seguir [Conventional Branch](https://conventional-branch.github.io/): `type/description`, con un prefijo admitido por la convención y una descripción breve en inglés, en minúsculas y con palabras separadas por guiones. Incluye el número de issue cuando corresponda. Usa `chore/` para cambios de documentación; por ejemplo, `chore/proportionate-ui-delivery`. Las ramas troncales `main`, `master` y `develop` conservan sus nombres sin prefijo.
