@@ -12,8 +12,8 @@ for (const viewport of [
 
     test("los bloques curriculares conservan prosa independiente, contribuciones, contenidos y habilidades", async ({ page }) => {
       await page.goto("./");
-      const detail = page.getByRole(viewport.width >= 1024 ? "complementary" : "region", { name: "Detalle del hito" });
-      const open = (title) => openMilestone(page, detail, title, "Enter");
+      const detail = page.getByRole(viewport.width >= 1024 ? "complementary" : "region", { name: /^Detalle del hito:/ });
+      const open = (title) => openMilestone(page, title, "Enter");
       await open("Arquitecta de software");
       await expect(detail.getByRole("heading", { name: "Descripción", exact: true })).toBeVisible();
       await expect(detail.locator("p").filter({ hasText: "Empresa dedicada a sistemas de aprendizaje." })).toHaveText("Empresa dedicada a sistemas de aprendizaje.");
@@ -38,9 +38,8 @@ for (const viewport of [
       await expect(detail.getByText("Responsable técnica", { exact: true })).toHaveCount(0);
       await expect(detail.getByText("Madrid", { exact: true })).toHaveCount(0);
       await expect(detail.getByText("Explora una herramienta para equipos distribuidos.", { exact: true })).toHaveCount(0);
-      await detail.getByRole("button", { name: "Cerrar detalle", exact: true }).click();
-      await expect(detail).toBeHidden();
-      await expect(detail.locator("a, [href], li, p, h3, h4")).toHaveCount(0);
+      await expect(detail).toBeVisible();
+      await expect(page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]')).toHaveCount(1);
     });
 
     test("Ver proyecto conserva el destino curricular y se abre mediante teclado", async ({ page }) => {
@@ -48,7 +47,7 @@ for (const viewport of [
       const trigger = page.getByRole("button").filter({ hasText: "Proyecto Vigente" });
       await trigger.focus();
       await page.keyboard.press("Enter");
-      const detail = page.getByRole(viewport.width >= 1024 ? "complementary" : "region", { name: "Detalle del hito" });
+      const detail = page.getByRole(viewport.width >= 1024 ? "complementary" : "region", { name: /^Detalle del hito:/ });
       const link = detail.getByRole("link", { name: "Ver proyecto", exact: true });
       await expect(link).toHaveAttribute("href", "https://projects.example.test/distributed?view=public#overview");
       for (let index = 0; index < 12 && !await link.evaluate((element) => element === document.activeElement); index++) {
