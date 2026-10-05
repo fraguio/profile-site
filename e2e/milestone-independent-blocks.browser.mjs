@@ -1,13 +1,12 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { join } from "node:path";
 import { openMilestone } from "./support/milestone.mjs";
 
 for (const width of [1440, 360, 390]) {
   test.describe(`${width} px`, () => {
     test.use({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
 
-    test("el detalle limpia los datos ausentes y permite leer bloques sin prosa", async ({ page }, testInfo) => {
+    test("el detalle limpia los datos ausentes y permite leer bloques sin prosa", async ({ page }) => {
       await page.goto("./");
       const detail = page.getByRole(width >= 1024 ? "complementary" : "region", { name: "Detalle del hito" });
       const open = (title) => openMilestone(page, detail, title, "Space");
@@ -21,12 +20,6 @@ for (const width of [1440, 360, 390]) {
       await skill.scrollIntoViewIfNeeded();
       await expect(skill).toBeInViewport({ ratio: 0.99 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      await page.evaluate(() => document.fonts.ready);
-      const screenshot = process.env.MILESTONE_CONTENT_EVIDENCE_DIRECTORY
-        ? join(process.env.MILESTONE_CONTENT_EVIDENCE_DIRECTORY, `issue-86-wrapping-${width}.png`)
-        : testInfo.outputPath("wrapping.png");
-      await page.screenshot({ path: screenshot });
-      await testInfo.attach("Fuente: valid-resume-with-independent-blocks.json; Todo; Proyecto con metadatos; habilidades visibles", { path: screenshot, contentType: "image/png" });
       expect((await new AxeBuilder({ page }).include('[aria-label="Detalle del hito"]').withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze()).violations).toEqual([]);
       await open("Proyecto sin bloques");
       await expect(detail).toContainText("2024 - diciembre de 2024");

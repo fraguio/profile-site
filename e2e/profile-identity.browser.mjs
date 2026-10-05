@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 const source = JSON.parse(readFileSync(new URL("../test/fixtures/fictitious-resume.json", import.meta.url), "utf8"));
 
@@ -15,7 +14,7 @@ test("la navegación neutra conserva las acciones operativas bajo el base path",
 });
 
 for (const [width, height] of [[1366, 768], [1440, 900], [360, 800], [390, 844]]) {
-  test(`identidad íntegra y acciones de la Fuente curricular en ${width} × ${height}`, async ({ page }, testInfo) => {
+  test(`identidad íntegra y acciones de la Fuente curricular en ${width} × ${height}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: "reduce" });
     const failedResources = [];
@@ -37,11 +36,6 @@ for (const [width, height] of [[1366, 768], [1440, 900], [360, 800], [390, 844]]
     for (const profile of source.basics.profiles) {
       await expect(profiles.getByRole("link", { name: profile.network })).toHaveAttribute("href", profile.url);
     }
-    const screenshot = process.env.PROFILE_IDENTITY_EVIDENCE_DIRECTORY
-      ? join(process.env.PROFILE_IDENTITY_EVIDENCE_DIRECTORY, `identity-${width}x${height}.png`)
-      : testInfo.outputPath(`identity-${width}x${height}.png`);
-    await page.screenshot({ path: screenshot });
-    await testInfo.attach(`Fuente: fictitious-resume.json; Todo, sin selección; ${width}x${height}`, { path: screenshot, contentType: "image/png" });
     expect(failedResources).toEqual([]);
     if (width < 1024) {
       await page.getByRole("link", { name: "Explorar trayectoria" }).click();

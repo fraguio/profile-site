@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { join } from "node:path";
 import { openMilestone } from "./support/milestone.mjs";
 
 for (const viewport of [
@@ -44,7 +43,7 @@ for (const viewport of [
       await expect(detail.locator("a, [href], li, p, h3, h4")).toHaveCount(0);
     });
 
-    test("Ver proyecto conserva el destino curricular y se abre mediante teclado", async ({ page }, testInfo) => {
+    test("Ver proyecto conserva el destino curricular y se abre mediante teclado", async ({ page }) => {
       await page.goto("./");
       const trigger = page.getByRole("button").filter({ hasText: "Proyecto Vigente" });
       await trigger.focus();
@@ -57,12 +56,6 @@ for (const viewport of [
       }
       await expect(link).toBeFocused();
       await expect(link).toHaveCSS("box-shadow", "rgb(201, 190, 166) 0px 0px 0px 1px inset");
-      await page.evaluate(() => document.fonts.ready);
-      const screenshot = process.env.MILESTONE_CONTENT_EVIDENCE_DIRECTORY
-        ? join(process.env.MILESTONE_CONTENT_EVIDENCE_DIRECTORY, `issue-86-project-${viewport.width}x${viewport.height}.png`)
-        : testInfo.outputPath("project.png");
-      await page.screenshot({ path: screenshot });
-      await testInfo.attach("Fuente: fictitious-resume.json; Todo; Proyecto Vigente; enlace focalizado", { path: screenshot, contentType: "image/png" });
       await page.route("https://projects.example.test/**", (route) => route.fulfill({ contentType: "text/html", body: "<h1>Proyecto ficticio</h1>" }));
       await page.keyboard.press("Enter");
       await expect(page).toHaveURL("https://projects.example.test/distributed?view=public#overview");
