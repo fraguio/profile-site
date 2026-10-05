@@ -1,6 +1,171 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+for (const viewport of [
+  { width: 1366, height: 768 }, { width: 1440, height: 900 },
+  { width: 360, height: 800 }, { width: 390, height: 844 },
+]) {
+  test(`la geometría del hito permanece estable al seleccionar en ${viewport.width} × ${viewport.height}`, async ({ page }) => {
+    test.info().annotations.push({ type: "fuente", description: "fictitious-resume.json; Todo; Inter local cargada" });
+    await page.setViewportSize(viewport);
+    await page.goto("./");
+    await page.evaluate(() => document.fonts.ready);
+    const trigger = page.getByRole("button", { name: /Proyecto de Empate/ });
+    const measure = () => trigger.evaluate((button) => {
+      const rect = (element) => {
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x, y, width, height };
+      };
+      return {
+        button: rect(button), title: rect(button.querySelector("h3")),
+        node: rect(button.querySelector(".milestone__node")),
+        period: rect(button.querySelector(".milestone__period--compact")),
+        surface: rect(button.querySelector(".milestone__surface")),
+        border: getComputedStyle(button.querySelector(".milestone__surface")).borderTopWidth,
+      };
+    });
+    await trigger.scrollIntoViewIfNeeded();
+    const before = await measure();
+    await trigger.click();
+    const after = await measure();
+    for (const part of ["button", "title", "surface", "node"]) {
+      expect(after[part].width).toBe(before[part].width);
+      expect(after[part].height).toBe(before[part].height);
+    }
+    expect(before.border).toBe("1px");
+    expect(after.border).toBe("1px");
+    expect(after.node.width).toBe(20);
+    expect(after.title.width).toBeGreaterThan(viewport.width >= 1024 ? 170 : 190);
+    expect(after.node.x + after.node.width).toBeLessThan(after.title.x);
+    if (viewport.width >= 1024) {
+      expect(after.period.x + after.period.width).toBeLessThanOrEqual(after.node.x);
+      const openPeriod = await page.getByRole("button", { name: /Arquitecta de software/ }).locator(".milestone__period--compact").boundingBox();
+      expect(openPeriod.height).toBeLessThanOrEqual(20);
+    } else {
+      expect(after.period.y + after.period.height).toBeLessThanOrEqual(after.surface.y);
+    }
+    await expect(trigger.locator(".milestone__period--compact")).toHaveText("2021 – 2022");
+    await expect(page.locator('[data-contract="timeline-reader"]')).toContainText("1 de enero de 2021 - 31 de diciembre de 2022");
+    await page.getByRole("button", { name: /Arquitecta de software/ }).click();
+    const deselected = await measure();
+    expect(deselected.title.width).toBe(before.title.width);
+    expect(deselected.button.height).toBe(before.button.height);
+    await page.screenshot({ path: test.info().outputPath("timeline.png"), fullPage: true });
+  });
+
+  test(`la línea conecta los nodos visibles sin slots residuales en ${viewport.width} × ${viewport.height}`, async ({ page }) => {
+    test.info().annotations.push({ type: "fuente", description: "fictitious-resume.json; Todo → Formación → Proyectos → Todo; Inter local" });
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    let releaseFonts;
+    const fontsAvailable = new Promise((resolve) => { releaseFonts = resolve; });
+    await page.route(/\.(woff2?)$/, async (route) => {
+      await fontsAvailable;
+      await route.continue();
+    });
+    await page.goto("./", { waitUntil: "domcontentloaded" });
+    const rail = page.locator('[data-contract="timeline-rail"]');
+    const endpoints = () => rail.evaluate((list) => {
+      const style = getComputedStyle(list, "::before");
+      const origin = list.getBoundingClientRect();
+      const nodes = [...list.querySelectorAll('[data-timeline-category]:not([hidden]) .milestone__trigger .milestone__node')].map((node) => {
+        const box = node.getBoundingClientRect();
+        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      });
+      const x = origin.x + list.clientLeft + parseFloat(style.left) - list.scrollLeft + parseFloat(style.width) / 2;
+      const y = origin.y + list.clientTop + parseFloat(style.top) - list.scrollTop;
+      return { display: style.display, start: { x, y }, end: { x, y: y + parseFloat(style.height) }, nodes };
+    });
+    const expectConnected = async () => {
+      await expect.poll(async () => {
+        const line = await endpoints();
+        return Math.max(Math.abs(line.start.x - line.nodes[0].x), Math.abs(line.start.y - line.nodes[0].y),
+          Math.abs(line.end.x - line.nodes.at(-1).x), Math.abs(line.end.y - line.nodes.at(-1).y));
+      }).toBeLessThan(1);
+    };
+    await expect(page.locator('[data-contract="milestone-trigger"]').first()).toBeVisible();
+    await expectConnected();
+    releaseFonts();
+    await page.evaluate(() => document.fonts.ready);
+    await expectConnected();
+    await page.locator('[data-contract="milestone-trigger"]').last().click();
+    await expectConnected();
+    await page.getByRole("button", { name: /Proyecto Vigente/ }).click();
+    await expectConnected();
+    await page.getByRole("radio", { name: "Formación", exact: true }).click();
+    await expect.poll(async () => (await endpoints()).display).toBe("none");
+    await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
+    await expectConnected();
+    const measureGaps = () => rail.evaluate((list) => {
+      const items = [...list.querySelectorAll('[data-timeline-category]:not([hidden])')];
+      return items.slice(1).map((item, index) => {
+        const previousContent = items[index].querySelector('[data-contract="timeline-reader"]')
+          ?? items[index].querySelector("button");
+        return item.querySelector("button").getBoundingClientRect().top - previousContent.getBoundingClientRect().bottom;
+      });
+    });
+    for (const gap of await measureGaps()) expect(gap).toBeCloseTo(20, 0);
+    const last = page.getByRole("button", { name: /Proyecto de Empate/ });
+    await last.click();
+    await expectConnected();
+    for (const gap of await measureGaps()) expect(gap).toBeCloseTo(20, 0);
+    await page.getByRole("radio", { name: "Todo", exact: true }).click();
+    await expectConnected();
+    // Cambio de contenido visible: el wrapping desplaza el centro del nodo sin cambiar el viewport.
+    await last.locator("h3").evaluate((heading) => { heading.textContent += " con un título más largo que ocupa varias líneas y conserva todo su contenido"; });
+    await expectConnected();
+    await page.setViewportSize({ width: viewport.width >= 1024 ? 390 : 1366, height: 844 });
+    await expectConnected();
+  });
+}
+
+for (const viewport of [
+  { width: 1366, height: 768 }, { width: 1440, height: 900 },
+  { width: 360, height: 800 }, { width: 390, height: 844 },
+]) {
+  test(`los filtros compactos no se recortan y separan foco y selección en ${viewport.width} × ${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto("./");
+    await page.evaluate(() => document.fonts.ready);
+    const filters = page.getByRole("group", { name: "Filtrar trayectoria" });
+    const options = filters.locator("label");
+    const boxes = await options.evaluateAll((labels) => labels.map((label) => {
+      const { x, y, width, height } = label.getBoundingClientRect();
+      return { x, y, width, height };
+    }));
+    for (const box of boxes) {
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+      expect(box.height).toBeLessThanOrEqual(32);
+    }
+    for (let index = 1; index < boxes.length; index++) {
+      const previous = boxes[index - 1];
+      const current = boxes[index];
+      if (current.y === previous.y) expect(current.x - previous.x - previous.width).toBeCloseTo(8, 0);
+      else expect(current.y - previous.y - previous.height).toBeCloseTo(8, 0);
+    }
+    const all = page.getByRole("radio", { name: "Todo", exact: true });
+    await expect(all.locator("..")).toHaveCSS("background-color", "rgb(203, 213, 225)");
+    await all.focus();
+    await page.keyboard.press("ArrowRight");
+    const work = page.getByRole("radio", { name: "Experiencia profesional" });
+    await expect(work).toBeFocused();
+    await expect(work.locator("..")).toHaveCSS("background-color", "rgb(224, 179, 84)");
+    await expect(work.locator("..")).toHaveCSS("box-shadow", "rgb(7, 19, 26) 0px 0px 0px 1px inset");
+    const first = page.getByRole("button", { name: /Arquitecta de software/ });
+    await first.focus();
+    await expect(first).toHaveCSS("outline-style", "none");
+    await expect(first).toHaveCSS("outline-offset", "0px");
+    await expect(first).toHaveCSS("box-shadow", "rgb(201, 190, 166) 0px 0px 0px 1px inset");
+    await expect(first).toHaveAttribute("aria-pressed", "true");
+    await expect(work.locator("..")).toHaveCSS("box-shadow", "none");
+    await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
+    await expect(page.getByRole("radio", { name: "Proyectos", exact: true }).locator("..")).toHaveCSS("background-color", "rgb(129, 140, 248)");
+    await page.getByRole("radio", { name: "Formación", exact: true }).click();
+    await expect(page.getByRole("radio", { name: "Formación", exact: true }).locator("..")).toHaveCSS("background-color", "rgb(45, 212, 191)");
+  });
+}
+
 test("la experiencia interactiva compone identidad y trayectoria en columnas en desktop", async ({
   page,
 }) => {
@@ -132,7 +297,7 @@ test("el filtro inicial muestra la trayectoria combinada", async ({ page }) => {
 
   await expect(filters).toBeVisible();
   await expect(
-    page.getByRole("radio", { name: "Toda la trayectoria" }),
+    page.getByRole("radio", { name: "Todo", exact: true }),
   ).toBeChecked();
   await expect(page.getByRole("radio")).toHaveCount(4);
   await expect(page.locator("[data-timeline-category]")).toHaveCount(6);
@@ -162,7 +327,7 @@ test("los filtros muestran cada categoria y anuncian el resultado sin persistirl
     ],
     ["projects", "Proyectos", 3, "Se muestran 3 hitos de proyectos."],
     ["education", "Formación", 1, "Se muestra 1 hito de formación."],
-    ["all", "Toda la trayectoria", 6, "Se muestran 6 hitos de toda la trayectoria."],
+    ["all", "Todo", 6, "Se muestran 6 hitos de toda la trayectoria."],
   ]) {
     await page.getByRole("radio", { name: label }).click();
 
@@ -189,7 +354,7 @@ test("los filtros muestran cada categoria y anuncian el resultado sin persistirl
   await page.reload();
 
   await expect(
-    page.getByRole("radio", { name: "Toda la trayectoria" }),
+    page.getByRole("radio", { name: "Todo", exact: true }),
   ).toBeChecked();
   await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(6);
   await expect(page.locator('[data-contract="milestone-trigger"]').first()).toHaveAttribute("aria-pressed", "true");
@@ -200,7 +365,7 @@ test("el teclado cambia el filtro y conserva el foco sin desplazar el documento"
 }) => {
   await page.goto("./");
 
-  const allFilter = page.getByRole("radio", { name: "Toda la trayectoria" });
+  const allFilter = page.getByRole("radio", { name: "Todo", exact: true });
   const workFilter = page.getByRole("radio", {
     name: "Experiencia profesional",
   });
@@ -357,7 +522,9 @@ test.describe("lector lateral desktop", () => {
       const selected = page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]');
       await expect(selected).toHaveCount(1);
       await expect(selected).toBeVisible();
-      expect(await selected.evaluate((node) => node.closest("[data-timeline-category]").dataset.timelineCategory)).toBe(checkedValue);
+      if (checkedValue !== "all") {
+        expect(await selected.evaluate((node) => node.closest("[data-timeline-category]").dataset.timelineCategory)).toBe(checkedValue);
+      }
     }
   });
 });

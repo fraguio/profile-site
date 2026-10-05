@@ -19,10 +19,10 @@ const description = `Trayectoria profesional de ${resume.basics.name}, ${resume.
 const canonicalUrl = Astro.url.href;
 const personId = `${canonicalUrl}#person`;
 const timelineFilterOptions = [
-  { value: "all", label: "Toda la trayectoria" },
+  { value: "all", label: "Todo" },
   { value: "work", label: "Experiencia profesional" },
-  { value: "projects", label: "Proyectos" },
   { value: "education", label: "Formación" },
+  { value: "projects", label: "Proyectos" },
 ] satisfies Array<{ label: string; value: "all" | TimelineCategory }>;
 const availableTimelineFilters = timelineFilterOptions.filter(
   (filter) =>
@@ -107,14 +107,15 @@ const structuredData = JSON.stringify({
               {availableTimelineFilters.map((filter) => (
                 <label class="timeline__filter-option">
                   <input
+                    aria-label={filter.label}
                     aria-controls="timeline-rail"
                     checked={filter.value === "all"}
-                    data-timeline-filter-label={filter.label}
+                    data-timeline-filter-label={filter.value === "all" ? "Toda la trayectoria" : filter.label}
                     name="timeline-filter"
                     type="radio"
                     value={filter.value}
                   />
-                  {filter.label}
+                  {filter.value === "work" ? "Experiencia" : filter.label}
                 </label>
               ))}
             </div>
@@ -136,9 +137,21 @@ const structuredData = JSON.stringify({
                 <li class="timeline__item" data-timeline-category={milestone.category}>
                   <article class="milestone">
                     <div class="milestone__summary" data-contract="milestone-summary">
-                      <p class="milestone__category">{milestone.categoryLabel}</p>
-                      {milestone.title && <h3>{milestone.title}</h3>}
-                      {milestone.entity && <p class="milestone__entity">{milestone.entity}</p>}
+                      <span class="milestone__node" aria-hidden="true"></span>
+                      <span class="milestone__period--compact" aria-hidden="true">
+                        {milestone.startDate.slice(0, 4)}{milestone.endDate
+                          ? milestone.startDate.slice(0, 4) === milestone.endDate.slice(0, 4)
+                            ? "" : ` – ${milestone.endDate.slice(0, 4)}`
+                          : " – Actualidad"}
+                      </span>
+                      <div class="milestone__surface">
+                        <div class="milestone__text">
+                          <p class="milestone__category">{milestone.categoryLabel}</p>
+                          {milestone.title && <h3>{milestone.title}</h3>}
+                          {milestone.entity && <p class="milestone__entity">{milestone.entity}</p>}
+                        </div>
+                        <span class="milestone__chevron" aria-hidden="true">›</span>
+                      </div>
                       <p class="milestone__period">
                         <time datetime={milestone.startDate}>
                           {milestone.startDateLabel}

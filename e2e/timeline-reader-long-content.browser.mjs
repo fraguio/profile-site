@@ -35,7 +35,7 @@ test("el lector mantiene fija su cabecera mientras desplaza el contenido largo",
   await expect(workFilter).toBeFocused();
   expect(await detail.evaluate((element) => element.isConnected)).toBe(true);
   expect(await body.evaluate((element) => element.scrollTop)).toBe(scrollTop);
-  await page.getByRole("radio", { name: "Toda la trayectoria" }).click();
+  await page.getByRole("radio", { name: "Todo", exact: true }).click();
   expect(await body.evaluate((element) => element.scrollTop)).toBe(scrollTop);
   const other = page.locator('[data-contract="milestone-trigger"]').last();
   await other.click();
