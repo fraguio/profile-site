@@ -2,13 +2,14 @@
 
 ## Estado y autoridad
 
-- Estado actual: no existe aún una aplicación de producto en este repositorio.
-- Estado objetivo: aprobado para construcción desde cero.
-- Autoridad: este documento es la única fuente normativa para el producto. `CONTEXT.md` define vocabulario y los ADRs registran decisiones concretas sin duplicar esta especificación.
+- Estado actual: existe una aplicación Astro con Experiencia interactiva, CV web, generación de CV PDF, consumidor curricular y gates de validación. La integración de la nueva UI está especificada y pendiente de implementación; consolidar su contrato no acredita que el código ya lo cumpla.
+- Estado objetivo: integrar la UI aceptada del ciclo de Stitch mediante incrementos verificables sobre la aplicación existente.
+- Autoridad: este documento gobierna los contratos generales del producto. La [especificación de integración de la UI](integracion-ui-experiencia-interactiva.md) es normativa para el alcance inmediato de la Experiencia interactiva y desarrolla sus requisitos específicos de presentación, comportamiento y aceptación. `CONTEXT.md` define vocabulario y los ADRs registran decisiones concretas sin duplicar las especificaciones.
 - Identidad canónica: `fraguio/profile-site`.
 - Idioma público inicial: español.
+- Seguimiento de la integración: [issue #84](https://github.com/fraguio/profile-site/issues/84), con el contrato completo y `ready-for-agent`. La consolidación normativa está realizada en los archivos locales; su envío a GitHub sigue pendiente de petición explícita de commit y push.
 
-Los documentos de investigación que precedieron a esta especificación son contexto histórico y no fuentes normativas. Cualquier decisión incompatible queda supersedida por este documento.
+Los documentos de investigación y las exportaciones de prototipos son antecedentes, no fuentes normativas de producción. Esta revisión y la especificación de integración sustituyen los acuerdos históricos incompatibles de loop obligatorio, detalle cerrable y sustitución del timeline mobile; los contratos curriculares, documentales y de publicación se conservan.
 
 El prototipo publicado en [`5c53cc1cf27aa93c745237179290649d741eb891`](https://github.com/fraguio/profile-site/tree/5c53cc1cf27aa93c745237179290649d741eb891/prototype/premium-timeline) aporta evidencia de investigación para la interacción del timeline. Su [README](https://github.com/fraguio/profile-site/blob/5c53cc1cf27aa93c745237179290649d741eb891/prototype/premium-timeline/README.md) contiene el veredicto, la evidencia y las limitaciones; el prototipo no es código de producción ni fuente normativa.
 
@@ -30,7 +31,7 @@ Principios no negociables:
 
 | Superficie | Ruta interna | Artefacto en `dist` | URL pública de la v1 | Propósito | JavaScript |
 | --- | --- | --- | --- | --- | --- |
-| Experiencia interactiva | `/` | `dist/index.html` | `https://fraguio.github.io/profile-site/` | Presentar y explorar la trayectoria | Progresivo; GSAP core solo aquí |
+| Experiencia interactiva | `/` | `dist/index.html` | `https://fraguio.github.io/profile-site/` | Presentar y explorar la trayectoria | Progresivo; selección y filtros sin dependencia obligatoria de animación |
 | CV web | `/read/` | `dist/read/index.html` | `https://fraguio.github.io/profile-site/read/` | Lectura lineal, ATS-oriented e impresión | Solo `window.print()` |
 | CV PDF | `/cv/eduardo-nogueira-fraguio-cv.pdf` | `dist/cv/eduardo-nogueira-fraguio-cv.pdf` | `https://fraguio.github.io/profile-site/cv/eduardo-nogueira-fraguio-cv.pdf` | Documento estable para descarga y distribución | No aplica |
 
@@ -53,6 +54,10 @@ Las claves del JSON permanecen en inglés. La capa de presentación localiza eti
 Se renderizan solo `basics`, `work`, `education` y `projects`. Las demás secciones del estándar se aceptan en la fuente pero no se muestran. `meta` no es contenido visual. Se omiten silenciosamente secciones, campos y listas vacías.
 
 La sección superior `skills` puede existir en la fuente, pero no se muestra ni actúa como catálogo en esta versión.
+
+La integración de la UI conserva los títulos, entidades, orden y contenido del consumidor actual. Presenta descripción y resumen completos, Contribuciones para los puntos de experiencia/proyectos, Contenidos para los cursos de formación y Habilidades asociadas para sus listas. Los bloques y metadatos son opcionales e independientes, sin valores inventados ni restos de otro hito.
+
+`projects.url` es un campo estándar opcional que la integración consumirá como acción Ver proyecto en la Experiencia interactiva. Una URL inválida falla en la validación del schema; si está ausente se omite la acción. Este alcance no amplía el contenido factual ni rediseña el CV web/PDF. La adaptación de `work.clientName`, `work.projectName`, `education.title` y `education.details`, sus reglas de precedencia y la curación de la fuente siguen pendientes; no se habilitan silenciosamente al trasladar la UI.
 
 ### Habilidades asociadas
 
@@ -79,11 +84,11 @@ El CTA de contacto abre `mailto:` hacia el email profesional. LinkedIn y GitHub,
 
 ### Dirección visual y composición v1
 
-La [referencia visual de la v1](../design/profile-site-v1-reference.png) guía tanto la estética como la distribución general, pero no constituye un contrato literal ni autoriza a anticipar funciones de fases posteriores. La experiencia adopta un marco oscuro, editorial y sobrio-profesional, con alto contraste, acento dorado contenido, navegación superior y jerarquía tipográfica serif/sans. No incorpora controles inertes para representar filtros, selección, lector, PDF, tema o movimiento antes de que sus fases los hagan operativos.
+La [referencia visual de la v1](../design/profile-site-v1-reference.png) queda como antecedente. La base visual aceptada para esta integración es P11/intento-03 del ciclo de Stitch, identificada en la especificación de integración. Los candidatos P12 orientan sus correcciones sin considerarse aceptados. La experiencia conserva fondo oscuro, identidad serif, UI sans, navegación neutra y categorías dorada, turquesa y violeta, con las excepciones decorativas acordadas. No incorpora controles inertes; sus acciones usan los destinos funcionales derivados de la Fuente curricular y del base path público.
 
-En desktop, la composición dispone la identidad, el resumen, los CTAs Base y los enlaces profesionales en una columna izquierda, y la trayectoria en una zona derecha más amplia. Esa zona puede dividirse después en carril y lector lateral sin reemplazar el árbol de contenido ni rehacer la composición principal. En la entrega estática, la trayectoria usa todo el espacio disponible y no muestra un lector vacío.
+Desde 1024 px, la composición mejorada dispone identidad, timeline y detalle permanente en tres regiones ajustadas al viewport. Timeline y cuerpo del detalle tienen scroll independiente cuando lo necesitan. El encaje conserva texto íntegro, jerarquía y dimensiones estables; no se obtiene truncando contenido o reduciendo incidentalmente la tipografía. Sin la mejora JavaScript se conserva la trayectoria completa con sus detalles, sin un lector vacío.
 
-En mobile, el hero y el timeline son regiones consecutivas del mismo documento. El desplazamiento principal es vertical, libre y sin `scroll-snap`; no se presentan como pantallas laterales ni se fuerzan alturas rígidas. El hero puede crecer para conservar el resumen completo y ofrece un enlace textual visible `Explorar trayectoria` hacia el encabezado del timeline. La continuidad gráfica y, cuando el viewport lo permita, el inicio de la siguiente región refuerzan que existe contenido debajo sin depender de animación ni de un icono aislado.
+Por debajo de 1024 px, el hero y el timeline son regiones consecutivas del mismo documento. El desplazamiento principal es vertical, libre y sin `scroll-snap`; no se presentan como pantallas laterales ni se fuerzan alturas rígidas. El hero puede crecer para conservar el resumen completo y ofrece un enlace textual visible `Explorar trayectoria` hacia el encabezado del timeline. La continuidad gráfica y, cuando el viewport lo permita, el inicio de la siguiente región refuerzan que existe contenido debajo sin depender de animación ni de un icono aislado. El detalle se intercala conforme a las reglas responsive siguientes.
 
 La referencia de CV web no amplía el alcance de la composición visual de la experiencia interactiva. Cualquier rediseño de `/read/` conserva su contrato documental y se aborda de forma independiente.
 
@@ -93,33 +98,37 @@ El timeline combina `work`, `education` y `projects` en una secuencia cronológi
 
 El filtro inicial definitivo es `all`: muestra la trayectoria combinada. El valor `work` fue una propuesta provisional histórica y no forma parte del contrato. Los filtros disponibles corresponden a categorías con elementos; una categoría vacía no muestra control.
 
-El cambio de filtro cierra cualquier detalle, limpia la selección, reinicia suavemente el carril en el hito más reciente del nuevo conjunto y anuncia el resultado mediante una región viva. No conserva una posición aproximada entre conjuntos distintos. La pausa activada mediante el control visible se conserva; las pausas transitorias por hover, foco, touch o selección se recalculan según la interacción vigente.
+Si el filtro incluye al hito seleccionado, conserva selección y contenido sin reconstrucción ni reinicio forzado de la lectura desktop. Si lo excluye, retira ese hito y su detalle y selecciona el primer resultado según el orden del consumidor. Los excluidos salen inmediatamente de la interacción y de Tab, también durante cambios rápidos. El foco permanece en el filtro activado y una región viva anuncia el resultado, sin traslado de foco ni desplazamiento programático desde el filtro hasta el detalle.
 
-El estado inicial no selecciona ningún hito. El estado de filtro, selección, pausa y posición vive solo en memoria del cliente y no se persiste ni se refleja en URL.
+Con hitos disponibles, el estado inicial selecciona el primero del timeline producido por el consumidor. Es una regla técnica provisional del incremento; la selección editorial definitiva sigue pendiente y no se impone `profile-site` sobre cualquier fuente. Si no hay hitos se omiten timeline, filtros y detalle. El estado de filtro, selección y posición vive solo en memoria del cliente y no se persiste ni se refleja en URL o historial.
+
+La selección comunica un estado único permanente y conserva las dimensiones del botón, su borde y el espacio reservado del chevron. El periodo aparece lateralmente en desktop y encima del hito en mobile. La línea conecta los centros reales de los nodos visibles, se recalcula con el layout definitivo y se oculta con un solo hito; el detalle no añade nodo.
 
 ### Detalle y responsive
 
-El patrón es `single-open`: solo puede existir un detalle abierto.
+Con la mejora JavaScript y hitos disponibles, el patrón es selección única permanente y una única instancia de detalle activo. No es un acordeón plegable ni permite quedar sin selección al activar el hito seleccionado.
 
-En desktop, el timeline es un carril vertical continuo y el detalle aparece en un lector lateral estable. El lector tiene cabecera fija con categoría, título, entidad, periodo y cierre; su cuerpo desplazable contiene prosa y habilidades asociadas.
+En desktop, el timeline permanece estático y el detalle ocupa una región lateral estable. Su cabecera identifica categoría, título, entidad y metadatos disponibles, fuera del marco de lectura; su cuerpo desplazable contiene el contenido íntegro. Al cambiar de hito, el nuevo cuerpo empieza al principio. El marco único tiene padding de 12 px y refleja el foco del scroller con un indicador interior champán de 1 px. Barras y degradados dependen del overflow real y excluyen marco y gutter, conforme a la especificación de integración.
 
-En mobile, al seleccionar un hito el carril se congela y es sustituido temporalmente por un panel de detalle. El cuerpo del panel es desplazable; no es un modal ni una expansión inline. Al cerrarlo, se restaura el carril en la posición congelada y se reanuda su movimiento según el estado anterior. El retorno programático de foco al hito activador no crea por sí mismo una nueva pausa que invalide esa restauración.
+En mobile, el detalle es un bloque independiente inmediatamente posterior al botón del hito seleccionado y anterior al siguiente visible, también si el seleccionado es el último. La cabecera visual es compacta, mantiene metadatos y un nombre accesible específico sin repetir toda la identificación del hito precedente. Su altura es natural, utiliza la anchura de lectura de la región y conserva scroll normal del documento, sin scroll interno impuesto ni overflow horizontal. Sus enlaces son nativos y no se anidan en el botón. La inserción desplaza deliberadamente los hitos siguientes y es la excepción acordada a la estabilidad global.
 
-Se abre o alterna un hito por clic, `Enter` o `Space`. Abrir otro cierra el anterior. Un botón de cierre y `Esc` cierran el detalle. En mobile, al abrir el foco pasa al encabezado del detalle y, al cerrar, vuelve al hito activador.
+Se selecciona un hito por clic, `Enter` o `Space`, conservando el foco en el control activado. Elegir otro sustituye el detalle y limpia los bloques y atributos ausentes. Repetir selección no cierra ni deselecciona; no hay control de cierre ni cierre por `Esc`. Cruzar el breakpoint conserva filtro, selección, instancia y foco coherente sin destruir el detalle.
+
+La compensación fina del scroll mobile, alineación superior y conservación precisa de lectura al repetir selección siguen pendientes de P13. No forman parte de la aceptación inmediata de P12 ni se implementan durante esta integración. La preferencia del titular por fecha e hito cerca del borde superior requiere acordar offsets, excepciones y límites en otro ciclo.
 
 ### Movimiento
 
-El movimiento vertical continuo es obligatorio en la experiencia objetivo, aunque una entrega incremental pueda validar antes el mismo marcado en estado estático. No se construyen dos timelines distintos: el HTML accesible base debe ser el que el cliente mejora.
+El timeline no se mueve automáticamente. Se retiran el loop obligatorio y los controles de pausa, reanudación y cierre asociados a ese modelo. El HTML accesible base sigue siendo el que mejora el cliente; no se construye una trayectoria paralela.
 
-El loop se pausa al hover, foco, touch o selección. Existe un control secundario visible `Pausar/Reanudar` operable con teclado y touch. Cuando hay detalle abierto, ese control dice `Cerrar detalle y reanudar` y ejecuta ambas acciones. Con `prefers-reduced-motion`, el timeline comienza estático y solo se mueve tras una acción explícita compatible con la preferencia.
+La selección, el filtrado y la recolocación no dependen de cargar una librería de animación. Con `prefers-reduced-motion`, cambios y recolocaciones son inmediatos. Esta integración no añade animaciones de altura.
 
-En mobile el loop es moderado y se detiene inmediatamente al tocar o seleccionar. Si las pruebas de implementación demuestran que interfiere con el scroll, puede desactivarse en mobile sin invalidar el objetivo global de movimiento.
+La apertura descendente tipo persiana es una preferencia futura, pendiente de efecto y coordinación con scroll, foco y reducción de movimiento. No se implementa ni se acredita durante esta etapa.
 
 Drag & Drop queda fuera de alcance: la trayectoria no admite reordenación como operación de dominio.
 
 ### Degradación sin JavaScript
 
-Sin JavaScript, `/` muestra la trayectoria completa, sus detalles y CTAs operativos. Filtros, selección, loop y transiciones son mejoras progresivas. Nunca redirige automáticamente a `/read/`.
+Sin JavaScript, o si no se inicializa la mejora, `/` muestra la trayectoria completa, sus detalles y CTAs operativos. Filtros y selección solo se ofrecen cuando son funcionales. Nunca redirige automáticamente a `/read/`.
 
 ## CV web, impresión y PDF
 
@@ -178,13 +187,13 @@ Open Graph inicial exige `og:title`, `og:description`, `og:url`, `og:type` y `og
 - Astro en la raíz, con salida estática y configuración compatible con el project site de GitHub Pages.
 - Node 24 LTS en CI y rango de engine que acepta la línea 24.
 - pnpm `11.5.2` exacto, declarado en `packageManager`, con lockfile obligatorio.
-- Páginas previstas: `src/pages/index.astro` y `src/pages/read/index.astro`.
+- Páginas existentes: `src/pages/index.astro` y `src/pages/read/index.astro`.
 - Capa compartida de carga, normalización y presentación de datos fuera de las páginas.
-- `/` usa TypeScript de navegador y GSAP core, sin React, Vue, Svelte ni hidratación de framework.
-- GSAP se limita a `/`, falla de forma segura hacia HTML estático y no usa plugins salvo necesidad demostrada, medida y documentada.
+- `/` usa HTML progresivo y TypeScript de navegador, sin React, Vue, Svelte ni hidratación de framework.
+- La mejora funcional no depende de GSAP. Si una librería de animación se utiliza en trabajo posterior, se limita a `/`, falla de forma segura y no incorpora plugins salvo necesidad demostrada, medida y documentada.
 - `/read/` no contiene JavaScript de aplicación ni librerías; su única excepción es el disparo de impresión.
 
-Las familias tipográficas definitivas se eligen durante diseño. Deben ser autoalojables, admitir español y cumplir el presupuesto de rendimiento. La dirección de referencia es oscura, editorial y sobria-profesional, con alto contraste y acento contenido; no es una identidad visual cerrada.
+La referencia tipográfica de integración es Newsreader para el nombre e Inter para la UI, servidas localmente, con español y familias/pesos limitados a los usados. Deben cumplir el presupuesto de rendimiento existente; una sustitución visual relevante requiere acuerdo y evidencia. La identidad y sus excepciones decorativas se concretan en la especificación de integración.
 
 ## Integración curricular
 
@@ -235,9 +244,9 @@ Hay tres protecciones:
 | Límite absoluto de seguridad | Bloquea | Bloquea | Bloquea | Bloquea deploy |
 | Lighthouse desktop | Informa | Informa | Informa | Informa |
 
-Antes de fijar umbrales, la medición técnica debe terminar correctamente y publicar resultados, pero las comparaciones todavía son informativas. Una vez disponibles datos, metadatos, filtros, detalle y movimiento, un PR posterior y dedicado captura la baseline de la experiencia completa. Se mide el `dist` contractual con el fixture y el perfil versionado que usarán los gates: mediana de tres ejecuciones para Lighthouse y una ejecución para métricas deterministas.
+La baseline y sus umbrales ya están registrados en `performance-baseline.json`; el perfil móvil también está versionado. La integración mantiene esos budgets y su evaluador. Las mediciones usan el `dist` contractual con fixture ficticio y el perfil de los gates: mediana de tres ejecuciones para Lighthouse y una ejecución para métricas deterministas.
 
-Ese PR registra los valores observados y propone cada budget, objetivo, límite absoluto y margen con una justificación explícita; no se aceptan cifras anteriores a la medición. También demuestra mediante canarios controlados contra el mismo evaluador que cada protección puede fallar: fallo técnico de medición, recurso o métrica determinista sobre presupuesto, objetivo Lighthouse incumplido y límite absoluto incumplido. Los canarios pueden usar fixtures de medición cuando corresponda y no degradan deliberadamente los artefactos de producción ni conservan umbrales imposibles.
+Una revisión futura de los umbrales requiere una PR dedicada y justificada, con valores observados, márgenes explícitos y canarios contra el mismo evaluador que demuestren cada protección. Los canarios pueden usar fixtures de medición cuando corresponda y no degradan deliberadamente los artefactos de producción ni conservan umbrales imposibles. No se recalibran los límites para ocultar una regresión de UI.
 
 Desde que aterrizan la baseline y sus umbrales, se aplica la matriz de bloqueo anterior en todos los eventos. Todos los resultados, warnings, fallos y evidencia de calibración se publican en `GITHUB_STEP_SUMMARY`. Cambiar budgets o perfil de medición exige PR justificada y actualización de checks; no se usan etiquetas de fase para gobernar esos cambios.
 
@@ -247,12 +256,12 @@ Desde que aterrizan la baseline y sus umbrales, se aplica la matriz de bloqueo a
 | --- | --- | --- |
 | Base | Astro, datos, los dos HTML, validación, SEO, a11y base y CI | Build contractual verde con fixture y `dist/index.html` y `dist/read/index.html` generados |
 | PDF | Tercer artefacto estable derivado del CV web | PDF publicado y checks de archivo, firma y páginas verdes |
-| Interactividad | Timeline, filtros, lector, movimiento y degradación progresiva | Pruebas de estado, teclado, foco, motion y rendimiento verdes |
+| Interactividad | Timeline estático, filtros, selección permanente, detalle responsive y degradación progresiva | Pruebas de estado, teclado, foco, responsive, reducción de movimiento y rendimiento verdes |
 | Mejora | Ajustes posteriores basados en evidencia | Decisión y evidencia específicas |
 
-Una entrega puede avanzar con el timeline estático si conserva el marcado final mejorable, pero la fase de interactividad no queda completada sin movimiento continuo conforme a este contrato.
+La nueva integración se verifica por incrementos conforme a su especificación. Se acepta la base integrada y los criterios P12 por separado; no se exige movimiento continuo. Al completar P12 se cierra la sesión de integración sin iniciar P13 ni anticipar el trabajo histórico P14.
 
-El build contractual se amplía por fases. En Base produce exactamente los dos HTML y no falla por la ausencia del PDF ni presenta CTAs que apunten a él. Desde la fase PDF exige los tres artefactos y activa los CTAs, la descarga y el smoke test correspondientes.
+Base y PDF describen el recorrido histórico de construcción. El build actual exige los dos HTML y el PDF, con sus CTAs, descarga y checks correspondientes; la integración conserva esas salidas y no vuelve a una fase sin PDF.
 
 ## Trazabilidad mínima
 
@@ -265,7 +274,7 @@ El build contractual se amplía por fases. En Base produce exactamente los dos H
 | DATA-002 | Consumir revisión curricular exacta | Logs con `resolved_profile_data_sha` |
 | DATA-003 | Limitar publicaciones a revisiones integradas | Comprobación de alcanzabilidad desde `profile-data/main` |
 | INT-001 | Timeline con filtro inicial `all` | Prueba de render y estado cliente |
-| INT-002 | Detalle responsive accesible | Pruebas Playwright de foco, teclado y cierre |
+| INT-002 | Selección permanente y detalle responsive accesible | Pruebas Playwright de foco, teclado, instancia única, lectura y breakpoint |
 | A11Y-001 | WCAG 2.2 AA como objetivo | Axe, pruebas de interacción y checklist manual |
 | SEO-001 | Metadatos por ruta | Check sobre ambos HTML generados |
 | PERF-001 | Rendimiento con dos niveles | Baseline, canarios negativos, Lighthouse y budgets de build en summary |
@@ -276,9 +285,9 @@ El build contractual se amplía por fases. En Base produce exactamente los dos H
 
 - Posible migración futura desde el project site a un dominio propio.
 - Imagen estable de Open Graph posterior a la v1.
-- Familias tipográficas concretas.
-- Valores numéricos de budgets de rendimiento y límite absoluto.
-- Si el loop automático en mobile interfiere con scroll real; puede desactivarse en mobile tras evidencia.
+- Selección editorial inicial definitiva, trayectoria completa y extensiones curriculares pendientes.
+- P13: compensación de scroll mobile, alineación superior y conservación precisa de lectura al repetir selección, tras cerrar P12.
+- Apertura tipo persiana y su coordinación con scroll, foco y reducción de movimiento.
 
 ## Fuera de alcance inicial
 
