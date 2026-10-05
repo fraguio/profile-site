@@ -257,9 +257,9 @@ Desde que aterrizan la baseline y sus umbrales, se aplica la matriz de bloqueo a
 | Base | Astro, datos, los dos HTML, validación, SEO, a11y base y CI | Build contractual verde con fixture y `dist/index.html` y `dist/read/index.html` generados |
 | PDF | Tercer artefacto estable derivado del CV web | PDF publicado y checks de archivo, firma y páginas verdes |
 | Interactividad | Timeline estático, filtros, selección permanente, detalle responsive y degradación progresiva | Pruebas de estado, teclado, foco, responsive, reducción de movimiento y rendimiento verdes |
-| Mejora | Ajustes posteriores basados en evidencia | Decisión y evidencia específicas |
+| Mejora | Ajustes posteriores basados en evidencia | Comprobación del comportamiento afectado y resumen de entrega; decisión duradera solo cuando cambie un contrato |
 
-La nueva integración se verifica por incrementos conforme a su especificación. Se acepta la base integrada y los criterios P12 por separado; no se exige movimiento continuo. Al completar P12 se cierra la sesión de integración sin iniciar P13 ni anticipar el trabajo histórico P14.
+La nueva integración se verifica por incrementos conforme a su especificación y a la proporcionalidad definida en `AGENTS.md`. Los criterios de cierre de una fase no se convierten en entregables documentales de cada ajuste local; se aprovechan las pruebas y gates existentes. Se acepta la base integrada y los criterios P12 por separado; no se exige movimiento continuo. Al completar P12 se cierra la sesión de integración sin iniciar P13 ni anticipar el trabajo histórico P14.
 
 Base y PDF describen el recorrido histórico de construcción. El build actual exige los dos HTML y el PDF, con sus CTAs, descarga y checks correspondientes; la integración conserva esas salidas y no vuelve a una fase sin PDF.
 

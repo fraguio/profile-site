@@ -23,7 +23,7 @@ Adaptar la UI de referencia a la Experiencia interactiva existente: identidad y 
 
 Usar el consumidor y la cadena de build del proyecto. Conservar la Fuente curricular elegida, su procedencia y el orden cronológico actual. Adaptar la presentación del contenido soportado y consumir explícitamente el enlace estándar de proyecto; mantener la adaptación curricular completa como trabajo independiente.
 
-Verificar cada incremento en la aplicación renderizada, con los checks contractuales existentes y comparación visual identificable. Registrar por separado la aceptación de la integración y la de los criterios P12. La compensación fina del scroll, la alineación superior y la apertura tipo persiana permanecen fuera de esta etapa.
+Verificar los comportamientos afectados por cada incremento aprovechando la aplicación renderizada y los checks existentes, con la proporcionalidad definida en `AGENTS.md`. La comparación visual global y los criterios P12 se aceptan al cierre de la integración, no como entregables de cada ticket. La compensación fina del scroll, la alineación superior y la apertura tipo persiana permanecen fuera de esta etapa.
 
 ## Historias de usuario
 
@@ -158,11 +158,13 @@ Una buena prueba expresa un comportamiento observable: selección comunicada, co
 - Usar el fixture ficticio contractual y sus variantes existentes. Añadir únicamente variantes ficticias necesarias para ejercitar URL de proyecto, metadatos ausentes o wrapping prolongado; no copiar el fixture personal de Stitch.
 - Los datos de prueba y el estado inicial se identifican en cada evidencia. No se comparan posiciones absolutas o wrapping entre fuentes distintas como si fueran una regresión de geometría.
 
-### Matriz delimitada de aceptación
+### Matriz de aceptación de la integración
+
+Esta matriz describe el cierre de la integración completa. Cada incremento comprueba solo las áreas afectadas y reutiliza la cobertura existente; el comportamiento de las skills del flujo se mantiene. Un ajuste local de etiquetas, enlaces o estilos no exige recorrer toda la matriz ni crear una colección de evidencias por ticket. Las pruebas nuevas cubren comportamientos que aún no estén protegidos; los viewports adicionales se justifican por diferencias de layout o breakpoint.
 
 | Área | Comprobación observable | Cobertura |
 | --- | --- | --- |
-| Identidad y acciones | Composición, nombre, resumen íntegro, tipografía, destinos funcionales y base path | Capturas iniciales en 1366 × 768, 1440 × 900, 360 × 800 y 390 × 844 |
+| Identidad y acciones | Composición, nombre, resumen íntegro, tipografía, destinos funcionales y base path | Revisión visual en 1366 × 768, 1440 × 900, 360 × 800 y 390 × 844 al aceptar la composición integrada |
 | Selección permanente | Un seleccionado, un detalle, cambio por clic/Enter/Espacio y repetición sin cierre | Desktop y mobile representativos; estados ausentes y largos donde cambien el layout |
 | Filtros | Compatible, excluyente, retorno a Todo, categoría vacía, cambios rápidos, foco y anuncio; excluidos fuera de Tab | Una matriz funcional focalizada y regresión responsive cuando haya cambio de wrapping |
 | Detalle y contenido | Orden hito → detalle → siguiente, último hito, texto íntegro, bloques independientes, roles, habilidades y URL de fuente | Mobile 360/390 para lectura y wrapping; desktop con detalle largo y sin overflow |
@@ -172,11 +174,11 @@ Una buena prueba expresa un comportamiento observable: selección comunicada, co
 | Degradación y movimiento | HTML completo sin JavaScript o sin mejora; timeline estático; reducción de movimiento sin animaciones | Desktop/mobile representativos y fuente sin hitos |
 | Contratos conservados | Build, datos, CV web/PDF, SEO, rutas y presupuestos de rendimiento | Checks existentes afectados y regresiones justificadas; comprobación final del conjunto |
 
-Las capturas se acompañan de revisión visual frente a P11 y de una explicación de diferencias debidas a fuente o layout mobile. Una captura no acredita teclado, scroll ni filtrado. No se exige igualdad pixel a pixel entre fuentes distintas ni se usa P12/intento-03 como baseline aceptada.
+La revisión visual utiliza P11 e identifica las diferencias debidas a fuente o layout mobile. Las capturas pueden utilizarse como artefactos temporales de revisión; se versionan solo cuando aporten una referencia duradera necesaria o el usuario lo solicite. Una captura no acredita teclado, scroll ni filtrado. No se exige igualdad pixel a pixel entre fuentes distintas ni se usa P12/intento-03 como baseline aceptada.
 
-Ejecutar primero las pruebas afectadas, después las regresiones justificadas y una comprobación final del conjunto. Repetir una matriz completa solo si hay cambios, fallos o dudas pendientes que lo justifiquen. Un éxito de Axe no certifica accesibilidad universal; lector de pantalla, otros motores y táctil real mantienen sus pendientes mientras no se prueben.
+Ejecutar primero las pruebas afectadas y después las regresiones justificadas, conservando la comprobación final que pide el flujo. La matriz completa corresponde al cierre de la integración; repetirla requiere cambios o fallos que lo justifiquen. Los gates existentes conservan la validación de build, PDF y rendimiento; ejecutar los checks no exige informes nuevos por ticket. El resumen de entrega recoge cambios, comprobaciones y pendientes concretos. Un éxito de Axe no certifica accesibilidad universal; lector de pantalla, otros motores y táctil real mantienen sus pendientes mientras no se prueben.
 
-### Condiciones de cierre
+### Condiciones de cierre de la integración completa
 
 1. La Experiencia interactiva utiliza la fuente y el orden actuales, conserva acciones y contratos y presenta la base visual acordada.
 2. Los cinco criterios estructurales y de presentación de P12 tienen evidencia nueva en la aplicación: instancia/posición, separación/estabilidad, lectura/cabecera, filtros/línea y desktop/breakpoint.
