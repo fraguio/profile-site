@@ -21,6 +21,8 @@ for (const width of [360, 390]) {
       expect(await reader.evaluate((element) => element.closest("button"))).toBeNull();
       await expect(rail).toHaveCSS("overflow-y", "visible");
       await expect(body).toHaveCSS("overflow-y", "visible");
+      await expect(page.locator('.timeline__scroll-gradient:visible')).toHaveCount(0);
+      await expect(body).toHaveAttribute("tabindex", "-1");
       expect(await body.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
       expect(await reader.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(844);
       const lastContent = body.locator("li").last();
