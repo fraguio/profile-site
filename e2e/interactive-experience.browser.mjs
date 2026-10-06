@@ -1,6 +1,61 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }]) {
+  test(`timeline y detalle corto retiran señales cuando no hay overflow en ${viewport.width} × ${viewport.height}`, async ({ page }) => {
+    test.info().annotations.push({ type: "fuente", description: "fictitious-resume.json; Todo → Formación → Todo; detalle corto y un resultado; B02" });
+    await page.setViewportSize(viewport);
+    await page.goto("./");
+    await page.evaluate(() => document.fonts.ready);
+    const rail = page.getByRole("list", { name: "Hitos de la trayectoria", exact: true });
+    const gradient = rail.locator("..").locator(':scope > [aria-hidden="true"]');
+    const body = page.locator('[data-contract="timeline-reader-body"]');
+    const bodyGradient = body.locator("..").locator('[aria-hidden="true"]');
+    const transparent = "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)";
+    await expect(bodyGradient).toBeHidden();
+    await body.hover();
+    await expect(body).toHaveCSS("scrollbar-color", transparent);
+    await expect.poll(() => body.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: test.info().outputPath("desktop-short-detail.png"), fullPage: true });
+    // Un título más largo representa contenido variable de la fuente y hace necesario recorrer el timeline.
+    await rail.locator("h3").first().evaluate((element) => { element.textContent += " con especialización en plataformas distribuidas y proyectos de integración ".repeat(8); });
+    await expect.poll(() => rail.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(1);
+    await page.mouse.move(0, 0);
+    await expect(gradient).toBeVisible();
+    await expect(rail).toHaveCSS("scrollbar-color", transparent);
+    const surface = await rail.evaluate((element) => ({ x: element.getBoundingClientRect().x, width: element.clientWidth }));
+    const overlay = await gradient.boundingBox();
+    expect(overlay.x).toBe(surface.x);
+    expect(overlay.width).toBe(surface.width);
+    await rail.hover();
+    await expect(rail).not.toHaveCSS("scrollbar-color", transparent);
+    await rail.click({ position: { x: 2, y: 2 } });
+    await page.mouse.move(0, 0);
+    await expect(rail).toHaveCSS("scrollbar-color", transparent);
+    await page.getByRole("radio", { name: "Todo", exact: true }).focus();
+    await page.keyboard.press("Tab");
+    await expect(rail).toBeFocused();
+    await expect(rail).not.toHaveCSS("scrollbar-color", transparent);
+    await page.keyboard.press("Control+End");
+    await expect(gradient).toBeHidden();
+    await expect(rail.locator('[data-contract="milestone-trigger"]').last()).toBeInViewport();
+    await page.keyboard.press("Control+Home");
+    await expect(gradient).toBeVisible();
+    await page.getByRole("radio", { name: "Formación", exact: true }).click();
+    await expect(rail.locator('[data-timeline-category]:not([hidden])')).toHaveCount(1);
+    await expect.poll(() => rail.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+    await expect(gradient).toBeHidden();
+    await expect(bodyGradient).toBeHidden();
+    await expect(body).toHaveAccessibleName(/Lectura del hito:.*Grado en Ingeniería/);
+    await rail.hover();
+    await expect(rail).toHaveCSS("scrollbar-color", transparent);
+    await body.hover();
+    await expect(body).toHaveCSS("scrollbar-color", transparent);
+    await page.getByRole("radio", { name: "Todo", exact: true }).click();
+    await expect(gradient).toBeVisible();
+  });
+}
+
 for (const viewport of [
   { width: 1366, height: 768 }, { width: 1440, height: 900 },
   { width: 360, height: 800 }, { width: 390, height: 844 },

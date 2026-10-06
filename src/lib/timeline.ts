@@ -25,12 +25,33 @@ if (filters && status && rail) {
     const reader = document.createElement("aside");
     const readerArticle = document.createElement("article");
     const readerHeader = document.createElement("header");
+    const readerFrame = document.createElement("div");
     const readerBody = document.createElement("div");
+    const railFrame = document.createElement("div");
+    railFrame.className = "timeline__rail-frame";
+    rail.before(railFrame);
+    railFrame.append(rail);
+    const scrollers = [
+      { surface: rail, frame: railFrame, gradient: document.createElement("span") },
+      { surface: readerBody, frame: readerFrame, gradient: document.createElement("span") },
+    ];
+    for (const { frame, gradient } of scrollers) {
+      gradient.className = "timeline__scroll-gradient";
+      gradient.setAttribute("aria-hidden", "true");
+      gradient.hidden = true;
+      frame.append(gradient);
+    }
     let selected = entries[0];
     let geometryFrame = 0;
 
-    function updateLine() {
+    function updateGeometry() {
       geometryFrame = 0;
+      for (const { surface, gradient } of scrollers) {
+        const overflow = desktop.matches && surface.scrollHeight > surface.clientHeight + 1;
+        surface.dataset.scrollable = String(overflow);
+        gradient.hidden = !overflow || surface.scrollHeight - surface.clientHeight - surface.scrollTop <= 1;
+        gradient.style.width = `${surface.clientWidth}px`;
+      }
       const nodes = entries.filter(({ item }) => !item.hidden)
         .map(({ trigger }) => trigger.querySelector<HTMLElement>(".milestone__node")!);
       rail!.style.setProperty("--timeline-line-display", nodes.length > 1 ? "block" : "none");
@@ -46,15 +67,18 @@ if (filters && status && rail) {
     }
 
     function scheduleGeometry() {
-      if (!geometryFrame) geometryFrame = requestAnimationFrame(updateLine);
+      if (!geometryFrame) geometryFrame = requestAnimationFrame(updateGeometry);
     }
 
     reader.className = "timeline__reader";
     reader.dataset.contract = "timeline-reader";
     readerArticle.className = "timeline__reader-content";
     readerHeader.dataset.contract = "timeline-reader-header";
+    readerFrame.className = "timeline__reader-frame";
     readerBody.dataset.contract = "timeline-reader-body";
-    readerArticle.append(readerHeader, readerBody);
+    readerBody.setAttribute("role", "region");
+    readerFrame.prepend(readerBody);
+    readerArticle.append(readerHeader, readerFrame);
     reader.append(readerArticle);
 
     function placeDetail() {
@@ -74,6 +98,7 @@ if (filters && status && rail) {
       selected = entry;
       selected.trigger.setAttribute("aria-pressed", "true");
       reader.setAttribute("aria-label", `Detalle del hito: ${selected.trigger.getAttribute("aria-label")}`);
+      readerBody.setAttribute("aria-label", `Lectura del hito: ${selected.trigger.getAttribute("aria-label")}`);
       readerHeader.replaceChildren(...[...selected.trigger.children].map((child) => child.cloneNode(true)));
       readerBody.replaceChildren(selected.detail!);
       placeDetail();
@@ -116,11 +141,13 @@ if (filters && status && rail) {
     filters.hidden = false;
     rail.tabIndex = 0;
     const resizeObserver = new ResizeObserver(scheduleGeometry);
-    for (const element of [rail, reader, ...entries.map(({ item }) => item)]) {
+    for (const element of [rail, reader, readerBody, ...entries.flatMap(({ item, detail }) => [item, detail!])]) {
       resizeObserver.observe(element);
     }
     const contentObserver = new MutationObserver(scheduleGeometry);
     contentObserver.observe(rail, { childList: true, characterData: true, subtree: true });
+    contentObserver.observe(readerBody, { childList: true, characterData: true, subtree: true });
+    for (const { surface } of scrollers) surface.addEventListener("scroll", scheduleGeometry, { passive: true });
     window.addEventListener("resize", scheduleGeometry);
     document.fonts.ready.then(scheduleGeometry);
     document.fonts.addEventListener("loadingdone", scheduleGeometry);
