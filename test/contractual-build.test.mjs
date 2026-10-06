@@ -422,7 +422,7 @@ test("the interactive experience presents the supported trajectory without JavaS
   ]) {
     assert.match(
       interactiveExperience,
-      new RegExp(`href="${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>(?:<svg\\b[^]*?<\\/svg>)?${label}<\\/a>`),
+      new RegExp(`href="${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>(?:<svg\\b[^]*?<\\/svg>)?${label}(?:<svg\\b[^]*?<\\/svg>)?<\\/a>`),
     );
   }
 
@@ -479,13 +479,13 @@ test("the interactive experience presents the supported trajectory without JavaS
     /<fieldset[^>]*data-contract="timeline-filters"[^>]*hidden/,
   );
   assert.doesNotMatch(body, /data-contract="timeline-reader"/);
-  assert.equal((body.match(/>Ver proyecto<\/a>/g) ?? []).length, 1);
+  assert.equal((body.match(/>Ver proyecto<svg\b/g) ?? []).length, 1);
   assert.match(body, /<h4>Descripción<\/h4>/);
   assert.match(body, /<h4>Contribuciones<\/h4>/);
   assert.match(body, /<h4>Contenidos<\/h4>/);
 });
 
-test("the interactive experience keeps timeline filters unavailable without JavaScript", (t) => {
+test("la Experiencia interactiva mantiene los filtros ocultos sin JavaScript", (t) => {
   const outputDirectory = temporaryOutputDirectory(t);
 
   const result = build(outputDirectory, {
@@ -504,10 +504,10 @@ test("the interactive experience keeps timeline filters unavailable without Java
     interactiveExperience,
     /<fieldset[^>]*data-contract="timeline-filters"[^>]*hidden/,
   );
-  assert.match(interactiveExperience, /<input[^>]*value="all"/);
-  assert.match(interactiveExperience, /<input[^>]*value="work"/);
-  assert.match(interactiveExperience, /<input[^>]*value="projects"/);
-  assert.match(interactiveExperience, /<input[^>]*value="education"/);
+  assert.match(interactiveExperience, /<button[^>]*value="all"/);
+  assert.match(interactiveExperience, /<button[^>]*value="work"/);
+  assert.match(interactiveExperience, /<button[^>]*value="projects"/);
+  assert.match(interactiveExperience, /<button[^>]*value="education"/);
 });
 
 test("the interactive experience omits an empty timeline", (t) => {

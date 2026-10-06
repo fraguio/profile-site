@@ -28,7 +28,7 @@ test("el CV web conserva el contenido completo sin JavaScript", async ({ browser
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
 
-  await page.goto("http://127.0.0.1:4321/profile-site/read/");
+  await page.goto(new URL("read/", test.info().project.use.baseURL).href);
 
   await expect(page.getByRole("button", { name: "Imprimir CV web" })).toBeHidden();
   await expect(page.getByRole("heading", { name: "Resumen profesional" })).toBeVisible();

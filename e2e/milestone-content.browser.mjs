@@ -23,8 +23,7 @@ for (const viewport of [
       await expect(detail.getByText("Astro", { exact: true })).toHaveCount(1);
       await expect(detail.getByText("Madrid", { exact: true })).toBeVisible();
       await open("Proyecto Vigente");
-      await expect(detail.getByRole("heading", { name: "Rol", exact: true })).toBeVisible();
-      await expect(detail.getByText("Responsable técnica", { exact: true })).toBeVisible();
+      await expect(detail.getByText("Rol: Responsable técnica", { exact: true })).toBeVisible();
       await expect(detail.getByText("Explora una herramienta para equipos distribuidos.", { exact: true })).toBeVisible();
       await expect(detail.getByRole("heading", { name: "Contribuciones", exact: true })).toBeVisible();
       await expect(detail.getByText("Node.js", { exact: true })).toHaveCount(1);
@@ -35,7 +34,7 @@ for (const viewport of [
       await expect(detail.getByText("Diseño de sistemas", { exact: true })).toBeVisible();
       await expect(detail.getByRole("heading", { name: "Descripción", exact: true })).toHaveCount(0);
       await expect(detail.locator("a, [href]")).toHaveCount(0);
-      await expect(detail.getByText("Responsable técnica", { exact: true })).toHaveCount(0);
+      await expect(detail.locator(".milestone__role")).toHaveCount(0);
       await expect(detail.getByText("Madrid", { exact: true })).toHaveCount(0);
       await expect(detail.getByText("Explora una herramienta para equipos distribuidos.", { exact: true })).toHaveCount(0);
       await expect(detail).toBeVisible();
@@ -68,7 +67,7 @@ for (const width of [1440, 390]) {
     const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width, height: 900 } });
     try {
       const page = await context.newPage();
-      await page.goto("http://127.0.0.1:4321/profile-site/");
+      await page.goto(test.info().project.use.baseURL);
       const project = page.getByRole("article").filter({ hasText: "Proyecto Vigente" });
       const link = project.getByRole("link", { name: "Ver proyecto" });
       await expect(link).toHaveAttribute("href", "https://projects.example.test/distributed?view=public#overview");

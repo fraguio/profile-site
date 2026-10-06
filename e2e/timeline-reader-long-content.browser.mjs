@@ -114,12 +114,12 @@ test("el lector mantiene fija su cabecera mientras desplaza el contenido largo",
 
   const detail = await body.locator('[data-contract="milestone-detail"]').elementHandle();
   const scrollTop = await body.evaluate((element) => element.scrollTop);
-  const workFilter = page.getByRole("radio", { name: "Experiencia profesional" });
+  const workFilter = page.getByRole("button", { name: "Experiencia profesional", exact: true });
   await workFilter.click();
   await expect(workFilter).toBeFocused();
   expect(await detail.evaluate((element) => element.isConnected)).toBe(true);
   expect(await body.evaluate((element) => element.scrollTop)).toBe(scrollTop);
-  await page.getByRole("radio", { name: "Todo", exact: true }).click();
+  await page.getByRole("button", { name: "Todo", exact: true }).click();
   expect(await body.evaluate((element) => element.scrollTop)).toBe(scrollTop);
   const other = page.locator('[data-contract="milestone-trigger"]').last();
   await other.click();
