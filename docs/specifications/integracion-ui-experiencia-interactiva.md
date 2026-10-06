@@ -2,18 +2,18 @@
 
 ## Estado y autoridad
 
-- **Estado:** especificación aprobada para ejecución al autorizar el usuario el punto 3 el 2026-10-05; consolidada con la especificación maestra. Integración pendiente de tickets e implementación.
-- **Procedimiento:** cierre documental y enfoque de pruebas confirmados; especificación elaborada con `/to-spec`. El punto 3 consolida y publica el contrato; tickets e implementación son pasos posteriores.
-- **Autoridad:** especificación normativa del alcance inmediato de la Experiencia interactiva, en coordinación con la [especificación maestra](https://github.com/fraguio/profile-site/blob/main/docs/specifications/profile-site.md), que gobierna los contratos generales. Este documento desarrolla los requisitos específicos de presentación, comportamiento y aceptación de la integración.
+- **Estado:** integración implementada y aceptada por el titular el 2026-10-06, que da por terminada la integración de la UI diseñada en Stitch en la aplicación.
+- **Procedimiento:** especificación elaborada con `/to-spec`, aprobada para ejecución el 2026-10-05 y consolidada con la especificación maestra. El ciclo de integración queda cerrado con la aceptación del titular; las siguientes mejoras requieren su propia definición de alcance.
+- **Autoridad:** especificación normativa del alcance de la integración realizada de la Experiencia interactiva, en coordinación con la [especificación maestra](https://github.com/fraguio/profile-site/blob/main/docs/specifications/profile-site.md), que gobierna los contratos generales. Este documento desarrolla los requisitos específicos de presentación, comportamiento y aceptación de la integración.
 - **Referencia aceptada:** P11/intento-03 del ciclo de Stitch. P12/intento-02 es un candidato evaluado y no aceptado; P12/intento-03 está exportado, con inspección estática parcial y sin evaluación funcional completa ni aceptación.
-- **Objeto:** integrar una base visual y funcional controlada de la Experiencia interactiva en la aplicación existente y resolver el alcance estructural y de presentación de P12 mediante trabajo directo sobre el repositorio.
-- **Seguimiento:** [issue #84](https://github.com/fraguio/profile-site/issues/84), publicada con `ready-for-agent` y el contrato completo. Los archivos normativos locales siguen pendientes de commit y push, que requieren petición explícita; los enlaces a `main` reflejarán la consolidación cuando esos cambios se envíen.
+- **Objeto:** documentar el contrato de la base visual y funcional integrada de la Experiencia interactiva, incluido el alcance estructural y de presentación de P12 resuelto mediante trabajo directo sobre el repositorio.
+- **Seguimiento:** [issue #84](https://github.com/fraguio/profile-site/issues/84), cerrada como completada tras la confirmación del titular el 2026-10-06.
 
 ## Planteamiento del problema
 
-La UI acordada con Stitch todavía no está integrada en la aplicación. Continuar corrigiendo el prototipo mediante prompts resulta lento y costoso para los ajustes precisos pendientes. El titular necesita que las siguientes mejoras se realicen sobre componentes, estilos e interacción reales, conservando la identidad aceptada y con resultados pequeños y verificables.
+Al definir esta integración, la UI acordada con Stitch todavía no estaba integrada en la aplicación. Continuar corrigiendo el prototipo mediante prompts resultaba lento y costoso para los ajustes precisos pendientes. El titular necesitaba que las siguientes mejoras se realizaran sobre componentes, estilos e interacción reales, conservando la identidad aceptada y con resultados pequeños y verificables.
 
-El proyecto ya dispone de una aplicación Astro, un consumidor curricular compartido, metadatos, CV web, CV PDF y pruebas. Su interacción responde a acuerdos anteriores: loop automático, detalle cerrable y panel mobile que sustituye al timeline. Pegar el HTML exportado no resuelve ese desajuste ni conserva por sí mismo el contrato de datos, la degradación progresiva o los gates del proyecto.
+El proyecto ya disponía de una aplicación Astro, un consumidor curricular compartido, metadatos, CV web, CV PDF y pruebas. Su interacción respondía a acuerdos anteriores: loop automático, detalle cerrable y panel mobile que sustituía al timeline. Pegar el HTML exportado no resolvía ese desajuste ni conservaba por sí mismo el contrato de datos, la degradación progresiva o los gates del proyecto.
 
 La muestra de cuatro hitos usada en Stitch es parcial y temporal. Incluye extensiones y decisiones editoriales que el consumidor actual no presenta. Convertirla en la fuente de la aplicación ocultaría una sustitución curricular y confundiría fidelidad visual con aceptación de contenido o de P12.
 
@@ -228,12 +228,12 @@ La especificación maestra se ha reconciliado con este contrato el 2026-10-05. L
 - Consumo del enlace estándar de proyecto y aplazamiento explícito de las extensiones curriculares de la muestra.
 - Evidencia de selección, contenido, instancia, geometría, foco y responsive en lugar de requisitos históricos de cierre y loop; baseline y salidas actuales conservadas.
 
-La consolidación no acredita una implementación ya realizada ni una aceptación de P12. Las decisiones de fuente exacta, publicación deliberada y scroll vertical mobile se mantienen en sus ADRs existentes.
+La consolidación documental del 2026-10-05 precedió a la implementación. La aceptación posterior del titular se registra en el cierre de esta integración. Las decisiones de fuente exacta, publicación deliberada y scroll vertical mobile se mantienen en sus ADRs existentes.
 
 Las issues [#3](https://github.com/fraguio/profile-site/issues/3) y [#64](https://github.com/fraguio/profile-site/issues/64) son antecedentes de construcción y exploración. Esta especificación delimita la integración directa actual; las descripciones históricas incompatibles no gobiernan sus tickets.
 
-### Siguiente acción
+### Cierre y continuidad
 
-El punto 3 queda cerrado con la documentación normativa consolidada localmente y la spec publicada íntegramente en la issue #84. El issue permite consultar el contrato aprobado antes de enviar los archivos locales; no acredita implementación ni publicación del site.
+El 2026-10-06 el titular confirmó que la implementación de #84 había terminado y dio por terminada la integración de la UI diseñada en Stitch en la aplicación. Esta aceptación cierra el ciclo de integración y la issue #84 como completada. Las exportaciones y evaluaciones históricas de Stitch conservan sus estados propios.
 
-Tras cerrar el punto 3, detenerse para conformidad del usuario antes del punto 4 con `/to-tickets`. La implementación se iniciará después desde la spec y los tickets acordados, en una nueva sesión con contexto de arranque. Esta especificación no prescribe todavía el número ni la división definitiva de los tickets.
+Las siguientes mejoras parten de la aplicación integrada y vuelven al flujo de definición con alcance propio. Siguen pendientes la adaptación y curación de la Fuente curricular, la selección editorial definitiva, la compensación fina del scroll mobile y la apertura tipo persiana. La elección del siguiente incremento se acordará con el titular a partir de las necesidades del producto y de la Fuente curricular real.
