@@ -11,7 +11,7 @@
       "entity": "Laboratorio Ficticio",
       "startDate": "2025-02-03",
       "description": "Primera frase del proyecto. Segunda frase que debe conservarse íntegra hasta el final.",
-      "roles": ["Autora", "Desarrolladora"],
+      "roles": ["Autora", "Desarrolladora de herramientas de integración y plataformas distribuidas para equipos multidisciplinares"],
       "highlights": ["Entregó un ejemplo reproducible."],
       "keywords": ["Capacidad asociada con una etiqueta deliberadamente larga para comprobar wrapping"],
       "url": "https://projects.example.test/independent?source=resume#details"
@@ -31,6 +31,12 @@
       "skills": ["TypeScript"],
       "clientName": "Cliente aplazado",
       "projectName": "Título aplazado"
+    },
+    {
+      "name": "Empresa sin posición declarada",
+      "location": "Centro de investigación de sistemas distribuidos, Santiago de Compostela, Galicia, España",
+      "startDate": "2020",
+      "endDate": "2020"
     }
   ],
   "education": [

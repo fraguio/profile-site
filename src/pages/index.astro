@@ -14,6 +14,7 @@ const readPath = `${import.meta.env.BASE_URL}read/`;
 const pdfPath = `${import.meta.env.BASE_URL}cv/eduardo-nogueira-fraguio-cv.pdf`;
 const location = formattedLocation;
 const profiles = professionalProfiles;
+const monogram = resume.basics.name.trim().split(/\s+/u).map((part) => [...part][0]).join("");
 const title = `${resume.basics.name} | ${resume.basics.label}`;
 const description = `Trayectoria profesional de ${resume.basics.name}, ${resume.basics.label.toLowerCase()}.`;
 const canonicalUrl = Astro.url.href;
@@ -62,10 +63,14 @@ const structuredData = JSON.stringify({
     <PageMetadata {canonicalUrl} {description} {structuredData} {title} />
   </head>
   <body>
+    <div class="profile-frame">
     <header class="profile-navigation">
-      <span class="profile-navigation__name">{resume.basics.name}</span>
+      <div class="profile-navigation__brand">
+        <span class="profile-navigation__monogram" aria-hidden="true">{monogram}</span>
+        <span class="profile-navigation__separator" aria-hidden="true"></span>
+        <span class="profile-navigation__name">{resume.basics.name}</span>
+      </div>
       <nav aria-label="Navegación del perfil">
-        {timeline.length > 0 && <a href="#timeline-heading">Trayectoria</a>}
         <a href={readPath}>CV web</a>
         <a href={pdfPath} download>CV PDF</a>
         <a href={`mailto:${resume.basics.email}`}>Contacto</a>
@@ -97,6 +102,10 @@ const structuredData = JSON.stringify({
             ))}
           </nav>
         )}
+        <div class="profile-hero__accessibility">
+          <p><ProfileIcon name="keyboard" />Navegación por teclado</p>
+          <p><ProfileIcon name="reduced-motion" />Movimiento reducido compatible</p>
+        </div>
       </header>
       {timeline.length > 0 && (
         <section class="timeline" aria-labelledby="timeline-heading">
@@ -105,18 +114,17 @@ const structuredData = JSON.stringify({
             <legend>Filtrar trayectoria</legend>
             <div class="timeline__filter-options">
               {availableTimelineFilters.map((filter) => (
-                <label class="timeline__filter-option">
-                  <input
+                <button class="timeline__filter-option"
                     aria-label={filter.label}
                     aria-controls="timeline-rail"
-                    checked={filter.value === "all"}
+                    aria-pressed={filter.value === "all" ? "true" : "false"}
                     data-timeline-filter-label={filter.value === "all" ? "Toda la trayectoria" : filter.label}
                     name="timeline-filter"
-                    type="radio"
+                    type="button"
                     value={filter.value}
-                  />
+                  >
                   {filter.value === "work" ? "Experiencia" : filter.label}
-                </label>
+                </button>
               ))}
             </div>
           </fieldset>
@@ -140,19 +148,22 @@ const structuredData = JSON.stringify({
                       <span class="milestone__node" aria-hidden="true"></span>
                       <span class="milestone__period--compact" aria-hidden="true">
                         {milestone.startDate.slice(0, 4)}{milestone.endDate
-                          ? milestone.startDate.slice(0, 4) === milestone.endDate.slice(0, 4)
-                            ? "" : ` – ${milestone.endDate.slice(0, 4)}`
-                          : " – Actualidad"}
+                          ? milestone.startDate.slice(0, 4) !== milestone.endDate.slice(0, 4) && (
+                            <span class="milestone__period-end">{` – ${milestone.endDate.slice(0, 4)}`}</span>
+                          )
+                          : <span class="milestone__period-end"> – Actualidad</span>}
                       </span>
                       <div class="milestone__surface">
                         <div class="milestone__text">
-                          <p class="milestone__category">{milestone.categoryLabel}</p>
+                          <p class="milestone__category">{milestone.category === "work" ? "Experiencia" : milestone.category === "projects" ? "Proyecto" : milestone.categoryLabel}</p>
                           {milestone.title && <h3>{milestone.title}</h3>}
                           {milestone.entity && <p class="milestone__entity">{milestone.entity}</p>}
                         </div>
-                        <span class="milestone__chevron" aria-hidden="true">›</span>
+                        <span class="milestone__chevron" aria-hidden="true"><ProfileIcon name="chevron-right" /></span>
                       </div>
                       <p class="milestone__period">
+                        <ProfileIcon name="calendar" />
+                        <span>
                         <time datetime={milestone.startDate}>
                           {milestone.startDateLabel}
                         </time>
@@ -166,26 +177,24 @@ const structuredData = JSON.stringify({
                         ) : (
                           " - Actualidad"
                         )}
+                        </span>
                       </p>
+                      {milestone.location && <p class="milestone__location"><ProfileIcon name="location" /><span>{milestone.location}</span></p>}
+                      {(milestone.roles.length > 0 || milestone.position) && (
+                        <p class="milestone__role"><ProfileIcon name="role" /><span>
+                          {milestone.roles.length > 0
+                            ? `${milestone.roles.length === 1 ? "Rol" : "Roles"}: ${milestone.roles.join(", ")}`
+                            : `Rol: ${milestone.position}`}
+                        </span></p>
+                      )}
+                      {milestone.url && <a class="milestone__project-link" href={milestone.url}>Ver proyecto<ProfileIcon name="external-link" /></a>}
                     </div>
                     <div class="milestone__detail" data-contract="milestone-detail">
-                      {milestone.location && <p class="milestone__location">{milestone.location}</p>}
-                      {milestone.url && <a class="milestone__project-link" href={milestone.url}>Ver proyecto</a>}
                       {(milestone.description || milestone.summary) && (
                         <>
                           <h4>Descripción</h4>
                           {milestone.description && <p class="milestone__description">{milestone.description}</p>}
                           {milestone.summary && <p class="milestone__summary">{milestone.summary}</p>}
-                        </>
-                      )}
-                      {milestone.roles.length > 0 && (
-                        <>
-                          <h4>{milestone.roles.length === 1 ? "Rol" : "Roles"}</h4>
-                          <ul class="milestone__roles">
-                            {milestone.roles.map((role) => (
-                              <li>{role}</li>
-                            ))}
-                          </ul>
                         </>
                       )}
                       {milestone.highlights.length > 0 && (
@@ -217,6 +226,7 @@ const structuredData = JSON.stringify({
         </section>
       )}
     </main>
+    </div>
     <script>
       import "../lib/timeline";
     </script>

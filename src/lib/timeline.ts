@@ -16,11 +16,13 @@ if (filters && status && rail) {
     item,
     summary: item.querySelector<HTMLElement>('[data-contract="milestone-summary"]'),
     detail: item.querySelector<HTMLElement>('[data-contract="milestone-detail"]'),
+    metadata: document.createElement("div"),
     trigger: document.createElement("button"),
   }));
 
   if (entries.length > 0 && entries.every(({ summary, detail }) => summary && detail)) {
     const desktop = window.matchMedia("(min-width: 1024px)");
+    const hero = document.querySelector<HTMLElement>(".profile-hero");
     const experience = rail.parentElement!;
     const reader = document.createElement("aside");
     const readerArticle = document.createElement("article");
@@ -46,6 +48,9 @@ if (filters && status && rail) {
 
     function updateGeometry() {
       geometryFrame = 0;
+      if (hero) {
+        hero.dataset.scrollable = String(desktop.matches && hero.scrollHeight > hero.clientHeight + 1);
+      }
       for (const { surface, gradient } of scrollers) {
         const overflow = desktop.matches && surface.scrollHeight > surface.clientHeight + 1;
         surface.dataset.scrollable = String(overflow);
@@ -86,7 +91,7 @@ if (filters && status && rail) {
       const returnToMilestone = !desktop.matches && (focused === readerBody || focused === rail);
       reader.setAttribute("role", desktop.matches ? "complementary" : "region");
       readerBody.tabIndex = desktop.matches ? 0 : -1;
-      rail!.tabIndex = desktop.matches ? 0 : -1;
+      rail!.tabIndex = -1;
       if (desktop.matches) {
         experience.append(reader);
       } else {
@@ -104,10 +109,12 @@ if (filters && status && rail) {
       if (entry.item.hidden) return;
       selected.trigger.setAttribute("aria-pressed", "false");
       selected = entry;
+      reader.dataset.category = selected.item.dataset.timelineCategory;
       selected.trigger.setAttribute("aria-pressed", "true");
       reader.setAttribute("aria-label", `Detalle del hito: ${selected.trigger.getAttribute("aria-label")}`);
       readerBody.setAttribute("aria-label", `Lectura del hito: ${selected.trigger.getAttribute("aria-label")}`);
-      readerHeader.replaceChildren(...[...selected.trigger.children].map((child) => child.cloneNode(true)));
+      const metadata = selected.metadata.cloneNode(true);
+      readerHeader.replaceChildren(...[...selected.trigger.children].map((child) => child.cloneNode(true)), metadata);
       readerBody.replaceChildren(selected.detail!);
       placeDetail();
       readerBody.scrollTop = 0;
@@ -121,6 +128,8 @@ if (filters && status && rail) {
       trigger.setAttribute("aria-pressed", "false");
       trigger.setAttribute("aria-label", [...summary!.querySelectorAll(".milestone__category, h3, .milestone__entity, .milestone__period")]
         .map((element) => element.textContent?.trim().replace(/\s+/g, " ")).join(", "));
+      entry.metadata.className = "milestone__metadata";
+      entry.metadata.append(...summary!.querySelectorAll(".milestone__period, .milestone__location, .milestone__role, .milestone__project-link"));
       trigger.append(...summary!.childNodes);
       summary!.replaceWith(trigger);
       detail!.remove();
@@ -129,9 +138,12 @@ if (filters && status && rail) {
       });
     }
 
-    filters.addEventListener("change", (event) => {
+    filters.addEventListener("click", (event) => {
       const filter = event.target;
-      if (!(filter instanceof HTMLInputElement) || filter.name !== "timeline-filter") return;
+      if (!(filter instanceof HTMLButtonElement) || filter.name !== "timeline-filter") return;
+      for (const option of filters!.querySelectorAll<HTMLButtonElement>('button[name="timeline-filter"]')) {
+        option.setAttribute("aria-pressed", String(option === filter));
+      }
 
       const visible = entries.filter(({ item }) => {
         item.hidden = filter.value !== "all" && item.dataset.timelineCategory !== filter.value;
@@ -148,10 +160,15 @@ if (filters && status && rail) {
     document.documentElement.classList.add("timeline-enhanced");
     filters.hidden = false;
     const resizeObserver = new ResizeObserver(scheduleGeometry);
+    if (hero) {
+      resizeObserver.observe(hero);
+      for (const child of hero.children) resizeObserver.observe(child);
+    }
     for (const element of [rail, reader, readerBody, ...entries.flatMap(({ item, detail }) => [item, detail!])]) {
       resizeObserver.observe(element);
     }
     const contentObserver = new MutationObserver(scheduleGeometry);
+    if (hero) contentObserver.observe(hero, { childList: true, characterData: true, subtree: true });
     contentObserver.observe(rail, { childList: true, characterData: true, subtree: true });
     contentObserver.observe(readerBody, { childList: true, characterData: true, subtree: true });
     for (const { surface } of scrollers) surface.addEventListener("scroll", scheduleGeometry, { passive: true });

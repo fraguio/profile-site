@@ -52,16 +52,16 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900
     await rail.click({ position: { x: 2, y: 2 } });
     await page.mouse.move(0, 0);
     await expect(rail).toHaveCSS("scrollbar-color", transparent);
-    await page.getByRole("radio", { name: "Todo", exact: true }).focus();
+    await page.getByRole("button", { name: "Proyectos", exact: true }).focus();
     await page.keyboard.press("Tab");
-    await expect(rail).toBeFocused();
+    await expect(rail.locator('[data-contract="milestone-trigger"]').first()).toBeFocused();
     await expect(rail).not.toHaveCSS("scrollbar-color", transparent);
-    await page.keyboard.press("Control+End");
+    for (let index = 1; index < 6; index++) await page.keyboard.press("Tab");
     await expect(gradient).toBeHidden();
     await expect(rail.locator('[data-contract="milestone-trigger"]').last()).toBeInViewport();
-    await page.keyboard.press("Control+Home");
+    for (let index = 1; index < 6; index++) await page.keyboard.press("Shift+Tab");
     await expect(gradient).toBeVisible();
-    await page.getByRole("radio", { name: "Formación", exact: true }).click();
+    await page.getByRole("button", { name: "Formación", exact: true }).click();
     await expect(rail.locator('[data-timeline-category]:not([hidden])')).toHaveCount(1);
     await expect.poll(() => rail.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
     await expect(gradient).toBeHidden();
@@ -71,7 +71,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900
     await expect(rail).toHaveCSS("scrollbar-color", transparent);
     await body.hover();
     await expect(body).toHaveCSS("scrollbar-color", transparent);
-    await page.getByRole("radio", { name: "Todo", exact: true }).click();
+    await page.getByRole("button", { name: "Todo", exact: true }).click();
     await expect(gradient).toBeVisible();
   });
 }
@@ -151,9 +151,9 @@ for (const viewport of [
     await expectConnected();
     await page.getByRole("button", { name: /Proyecto Vigente/ }).click();
     await expectConnected();
-    await page.getByRole("radio", { name: "Formación", exact: true }).click();
+    await page.getByRole("button", { name: "Formación", exact: true }).click();
     await expect.poll(async () => (await endpoints()).display).toBe("none");
-    await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
+    await page.getByRole("button", { name: "Proyectos", exact: true }).click();
     await expectConnected();
     const measureGaps = () => rail.evaluate((list) => {
       const items = [...list.querySelectorAll('[data-timeline-category]:not([hidden])')];
@@ -168,7 +168,7 @@ for (const viewport of [
     await last.click();
     await expectConnected();
     for (const gap of await measureGaps()) expect(gap).toBeCloseTo(20, 0);
-    await page.getByRole("radio", { name: "Todo", exact: true }).click();
+    await page.getByRole("button", { name: "Todo", exact: true }).click();
     await expectConnected();
     // Cambio de contenido visible: el wrapping desplaza el centro del nodo sin cambiar el viewport.
     await last.locator("h3").evaluate((heading) => { heading.textContent += " con un título más largo que ocupa varias líneas y conserva todo su contenido"; });
@@ -187,9 +187,9 @@ for (const viewport of [
     await page.goto("./");
     await page.evaluate(() => document.fonts.ready);
     const filters = page.getByRole("group", { name: "Filtrar trayectoria" });
-    const options = filters.locator("label");
-    const boxes = await options.evaluateAll((labels) => labels.map((label) => {
-      const { x, y, width, height } = label.getBoundingClientRect();
+    const options = filters.getByRole("button");
+    const boxes = await options.evaluateAll((buttons) => buttons.map((button) => {
+      const { x, y, width, height } = button.getBoundingClientRect();
       return { x, y, width, height };
     }));
     for (const box of boxes) {
@@ -203,27 +203,88 @@ for (const viewport of [
       if (current.y === previous.y) expect(current.x - previous.x - previous.width).toBeCloseTo(8, 0);
       else expect(current.y - previous.y - previous.height).toBeCloseTo(8, 0);
     }
-    const all = page.getByRole("radio", { name: "Todo", exact: true });
-    await expect(all.locator("..")).toHaveCSS("background-color", "rgb(203, 213, 225)");
+    const all = page.getByRole("button", { name: "Todo", exact: true });
+    await expect(all).toHaveCSS("background-color", "rgb(203, 213, 225)");
     await all.focus();
-    await page.keyboard.press("ArrowRight");
-    const work = page.getByRole("radio", { name: "Experiencia profesional" });
+    await page.keyboard.press("Tab");
+    const work = page.getByRole("button", { name: "Experiencia profesional", exact: true });
     await expect(work).toBeFocused();
-    await expect(work.locator("..")).toHaveCSS("background-color", "rgb(224, 179, 84)");
-    await expect(work.locator("..")).toHaveCSS("box-shadow", "rgb(7, 19, 26) 0px 0px 0px 1px inset");
+    await expect(work).toHaveAttribute("aria-pressed", "false");
+    await expect(work).toHaveCSS("box-shadow", "rgb(201, 190, 166) 0px 0px 0px 1px inset");
+    await page.keyboard.press("Space");
+    await expect(work).toHaveCSS("background-color", "rgb(224, 179, 84)");
+    await expect(work).toHaveCSS("box-shadow", "rgb(7, 19, 26) 0px 0px 0px 1px inset");
     const first = page.getByRole("button", { name: /Arquitecta de software/ });
     await first.focus();
     await expect(first).toHaveCSS("outline-style", "none");
     await expect(first).toHaveCSS("outline-offset", "0px");
     await expect(first).toHaveCSS("box-shadow", "rgb(201, 190, 166) 0px 0px 0px 1px inset");
     await expect(first).toHaveAttribute("aria-pressed", "true");
-    await expect(work.locator("..")).toHaveCSS("box-shadow", "none");
-    await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
-    await expect(page.getByRole("radio", { name: "Proyectos", exact: true }).locator("..")).toHaveCSS("background-color", "rgb(129, 140, 248)");
-    await page.getByRole("radio", { name: "Formación", exact: true }).click();
-    await expect(page.getByRole("radio", { name: "Formación", exact: true }).locator("..")).toHaveCSS("background-color", "rgb(45, 212, 191)");
+    await expect(work).toHaveCSS("box-shadow", "rgba(0, 0, 0, 0.05) 0px 1px 2px 0px");
+    await page.getByRole("button", { name: "Proyectos", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Proyectos", exact: true })).toHaveCSS("background-color", "rgb(129, 140, 248)");
+    await page.getByRole("button", { name: "Formación", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Formación", exact: true })).toHaveCSS("background-color", "rgb(45, 212, 191)");
   });
 }
+
+test("la identidad desktop permite leer todo el contenido y muestra la barra solo por overflow y hover o teclado", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await page.goto("./");
+  await page.evaluate(() => document.fonts.ready);
+  const hero = page.locator(".profile-hero");
+  const transparent = "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)";
+  await expect.poll(() => hero.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeGreaterThan(1);
+  await expect(hero).toHaveCSS("scrollbar-width", "thin");
+  await expect(hero).toHaveCSS("scrollbar-gutter", "stable");
+  await page.mouse.move(0, 0);
+  await expect(hero).toHaveCSS("scrollbar-color", transparent);
+  await hero.hover();
+  await expect(hero).not.toHaveCSS("scrollbar-color", transparent);
+  await hero.click({ position: { x: 2, y: 2 } });
+  await page.mouse.move(0, 0);
+  await expect(hero).toHaveCSS("scrollbar-color", transparent);
+  await page.getByRole("link", { name: "Contacto", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Leer CV web", exact: true })).toBeFocused();
+  await expect(hero).not.toHaveCSS("scrollbar-color", transparent);
+  await hero.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+  await expect(hero.getByText("Movimiento reducido compatible", { exact: true })).toBeInViewport();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect.poll(() => hero.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+  await hero.hover();
+  await expect(hero).toHaveCSS("scrollbar-color", transparent);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(hero).toHaveCSS("overflow-y", "visible");
+});
+
+test("el detalle cambia el acento y los metadatos sin conservar valores del hito anterior", async ({ page }) => {
+  await page.goto("./");
+  const reader = page.locator('[data-contract="timeline-reader"]');
+  for (const [name, color, labelColor, role] of [
+    [/Arquitecta de software/, "rgb(224, 179, 84)", "rgb(245, 198, 103)", "Rol: Arquitecta de software"],
+    [/Proyecto Vigente/, "rgb(129, 140, 248)", "rgb(165, 180, 252)", "Rol: Responsable técnica"],
+    [/Grado en Ingeniería/, "rgb(45, 212, 191)", "rgb(94, 234, 212)", null],
+    [/Arquitecta de software/, "rgb(224, 179, 84)", "rgb(245, 198, 103)", "Rol: Arquitecta de software"],
+  ]) {
+    await page.getByRole("button", { name }).click();
+    await expect(reader.locator(".milestone__category")).toHaveCSS("color", labelColor);
+    for (const heading of await reader.getByRole("heading", { level: 4 }).all()) {
+      await expect(heading).toHaveCSS("color", color);
+      await expect(heading).toHaveCSS("text-transform", "uppercase");
+    }
+    const bullet = reader.locator(".milestone__highlights li").first();
+    expect(await bullet.evaluate((element) => {
+      const style = getComputedStyle(element, "::before");
+      return { color: style.backgroundColor, width: style.width, height: style.height };
+    })).toEqual({ color, width: "8px", height: "8px" });
+    await expect(reader.getByRole("heading", { name: /^Roles?$/ })).toHaveCount(0);
+    if (role) await expect(reader.getByText(role, { exact: true })).toBeVisible();
+    else await expect(reader.locator(".milestone__role")).toHaveCount(0);
+  }
+  await expect(reader).toContainText("enero de 2025 - Actualidad");
+  await expect(reader).not.toContainText("Responsable técnica");
+});
 
 test("la experiencia interactiva compone identidad y trayectoria en columnas en desktop", async ({
   page,
@@ -234,6 +295,9 @@ test("la experiencia interactiva compone identidad y trayectoria en columnas en 
   const hero = page.getByRole("heading", { name: "Alicia Ejemplo" });
   const timeline = page.getByRole("region", { name: "Trayectoria" });
   const readLink = page.getByRole("link", { name: "Leer CV web" });
+  const navigation = page.getByRole("navigation", { name: "Navegación del perfil" });
+  await expect(navigation.getByRole("link")).toHaveCount(3);
+  await expect(navigation.getByRole("link", { name: "Trayectoria", exact: true })).toHaveCount(0);
 
   await expect(page.getByRole("main")).toHaveCSS("display", "grid");
   await expect(page.getByRole("heading", { name: "Alicia Ejemplo" })).toBeInViewport();
@@ -257,7 +321,7 @@ test("la experiencia interactiva compone identidad y trayectoria en columnas en 
   expect(timelineBox).not.toBeNull();
   expect(timelineBox.x).toBeGreaterThan(heroBox.x + heroBox.width);
 
-  for (let index = 0; index < 5; index++) await page.keyboard.press("Tab");
+  for (let index = 0; index < 4; index++) await page.keyboard.press("Tab");
   await expect(readLink).toBeFocused();
   await expect(readLink).toHaveCSS("box-shadow", "rgb(201, 190, 166) 0px 0px 0px 1px inset");
   await page.keyboard.press("Enter");
@@ -308,7 +372,7 @@ test("la experiencia interactiva conserva el arbol completo al desactivar JavaSc
   });
   const page = await context.newPage();
 
-  await page.goto("http://127.0.0.1:4321/profile-site/");
+  await page.goto(test.info().project.use.baseURL);
 
   await expect(page.getByRole("heading", { name: "Alicia Ejemplo" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Leer CV web" })).toBeVisible();
@@ -336,7 +400,7 @@ test("el fallback desktop no muestra un lector y conserva todos los detalles", a
   });
   const page = await context.newPage();
 
-  await page.goto("http://127.0.0.1:4321/profile-site/");
+  await page.goto(test.info().project.use.baseURL);
 
   await expect(page.locator('[data-contract="timeline-reader"]')).toHaveCount(0);
   await expect(
@@ -356,9 +420,9 @@ test("el filtro inicial muestra la trayectoria combinada", async ({ page }) => {
 
   await expect(filters).toBeVisible();
   await expect(
-    page.getByRole("radio", { name: "Todo", exact: true }),
-  ).toBeChecked();
-  await expect(page.getByRole("radio")).toHaveCount(4);
+    page.getByRole("button", { name: "Todo", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(filters.getByRole("button")).toHaveCount(4);
   await expect(page.locator("[data-timeline-category]")).toHaveCount(6);
   await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(6);
 });
@@ -388,7 +452,7 @@ test("los filtros muestran cada categoria y anuncian el resultado sin persistirl
     ["education", "Formación", 1, "Se muestra 1 hito de formación."],
     ["all", "Todo", 6, "Se muestran 6 hitos de toda la trayectoria."],
   ]) {
-    await page.getByRole("radio", { name: label }).click();
+    await page.getByRole("button", { name: label, exact: true }).click();
 
     await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(
       count,
@@ -413,8 +477,8 @@ test("los filtros muestran cada categoria y anuncian el resultado sin persistirl
   await page.reload();
 
   await expect(
-    page.getByRole("radio", { name: "Todo", exact: true }),
-  ).toBeChecked();
+    page.getByRole("button", { name: "Todo", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(6);
   await expect(page.locator('[data-contract="milestone-trigger"]').first()).toHaveAttribute("aria-pressed", "true");
 });
@@ -424,9 +488,10 @@ test("el teclado cambia el filtro y conserva el foco sin desplazar el documento"
 }) => {
   await page.goto("./");
 
-  const allFilter = page.getByRole("radio", { name: "Todo", exact: true });
-  const workFilter = page.getByRole("radio", {
+  const allFilter = page.getByRole("button", { name: "Todo", exact: true });
+  const workFilter = page.getByRole("button", {
     name: "Experiencia profesional",
+    exact: true,
   });
   const timeline = page.getByRole("region", { name: "Trayectoria" });
   const rail = page.locator('[data-contract="timeline-rail"]');
@@ -436,9 +501,13 @@ test("el teclado cambia el filtro y conserva el foco sin desplazar el documento"
   expect(await rail.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 
   await allFilter.focus();
-  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Tab");
+  await expect(workFilter).toBeFocused();
+  await expect(allFilter).toHaveAttribute("aria-pressed", "true");
+  await expect(rail.getByRole("article")).toHaveCount(6);
+  await page.keyboard.press("Enter");
 
-  await expect(workFilter).toBeChecked();
+  await expect(workFilter).toHaveAttribute("aria-pressed", "true");
   await expect(workFilter).toBeFocused();
   await expect(workFilter).toBeInViewport();
   await expect(page.getByRole("status")).toHaveText(
@@ -451,6 +520,19 @@ test("el teclado cambia el filtro y conserva el foco sin desplazar el documento"
   );
   expect(await page.evaluate(() => window.scrollY)).toBe(initialScrollTop);
   await expect(rail.locator('[data-contract="milestone-trigger"][aria-pressed="true"]')).toHaveCount(1);
+  await page.keyboard.press("Tab");
+  const educationFilter = page.getByRole("button", { name: "Formación", exact: true });
+  await expect(educationFilter).toBeFocused();
+  await expect(workFilter).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Space");
+  await expect(educationFilter).toHaveAttribute("aria-pressed", "true");
+  await expect(educationFilter).toBeFocused();
+  await expect(page.getByRole("status")).toHaveText("Se muestra 1 hito de formación.");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Proyectos", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: /Grado en Ingeniería/ })).toBeFocused();
+  await expect(rail).not.toBeFocused();
 });
 
 test.describe("con entrada touch", () => {
@@ -459,7 +541,7 @@ test.describe("con entrada touch", () => {
   test("el filtro responde al toque", async ({ page }) => {
     await page.goto("./");
 
-    await page.getByRole("radio", { name: "Proyectos" }).tap();
+    await page.getByRole("button", { name: "Proyectos", exact: true }).tap();
 
     await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(3);
   });
@@ -485,7 +567,7 @@ test.describe("lector lateral desktop", () => {
 
     await expect(firstMilestone).toHaveAttribute("aria-pressed", "true");
     await expect(reader).toBeVisible();
-    await expect(firstMilestone).toHaveAccessibleName(/Experiencia profesional.*Arquitecta de software.*Laboratorio Vigente.*enero de 2025.*Actualidad/);
+    await expect(firstMilestone).toHaveAccessibleName(/Experiencia.*Arquitecta de software.*Laboratorio Vigente.*enero de 2025.*Actualidad/);
     await expect(firstMilestone).not.toHaveAttribute("aria-expanded");
 
     await firstMilestone.click({ force: true });
@@ -495,7 +577,7 @@ test.describe("lector lateral desktop", () => {
       page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]'),
     ).toHaveCount(1);
     await expect(reader).toBeVisible();
-    await expect(reader).toContainText("Experiencia profesional");
+    await expect(reader.locator(".milestone__category")).toHaveText("Experiencia");
     await expect(reader).toContainText("Arquitecta de software");
     await expect(reader).toContainText("Laboratorio Vigente");
     await expect(reader).toContainText("enero de 2025 - Actualidad");
@@ -547,12 +629,12 @@ test.describe("lector lateral desktop", () => {
 
     const readerNode = await reader.elementHandle();
     const detailNode = await reader.locator('[data-contract="milestone-detail"]').elementHandle();
-    const workFilter = page.getByRole("radio", { name: "Experiencia profesional" });
+    const workFilter = page.getByRole("button", { name: "Experiencia profesional", exact: true });
     await workFilter.click();
     await expect(workFilter).toBeFocused();
     await expect(milestone).toHaveAttribute("aria-pressed", "true");
     expect(await detailNode.evaluate((node) => node.isConnected)).toBe(true);
-    const projectsFilter = page.getByRole("radio", { name: "Proyectos", exact: true });
+    const projectsFilter = page.getByRole("button", { name: "Proyectos", exact: true });
     await projectsFilter.click();
     await expect(projectsFilter).toBeFocused();
     await expect(reader).toBeVisible();
@@ -570,19 +652,18 @@ test.describe("lector lateral desktop", () => {
       "Se muestran 3 hitos de proyectos.",
     );
     await page.keyboard.press("Tab");
-    await expect(page.getByRole("list", { name: "Hitos de la trayectoria", exact: true })).toBeFocused();
-    await page.keyboard.press("Tab");
     await expect(firstProject).toBeFocused();
-    const educationFilter = page.getByRole("radio", { name: "Formación" });
-    await educationFilter.focus();
-    for (const key of ["Space", "ArrowLeft", "ArrowLeft", "ArrowRight", "ArrowRight"]) {
-      await page.keyboard.press(key);
-      const checkedValue = await page.getByRole("radio", { checked: true }).inputValue();
+    for (const label of ["Formación", "Todo", "Experiencia profesional", "Proyectos", "Formación"]) {
+      const filter = page.getByRole("button", { name: label, exact: true });
+      await filter.focus();
+      await page.keyboard.press("Space");
+      const filterValue = await filter.getAttribute("value");
+      await expect(page.getByRole("group", { name: "Filtrar trayectoria" }).getByRole("button", { pressed: true })).toHaveCount(1);
       const selected = page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]');
       await expect(selected).toHaveCount(1);
       await expect(selected).toBeVisible();
-      if (checkedValue !== "all") {
-        expect(await selected.evaluate((node) => node.closest("[data-timeline-category]").dataset.timelineCategory)).toBe(checkedValue);
+      if (filterValue !== "all") {
+        expect(await selected.evaluate((node) => node.closest("[data-timeline-category]").dataset.timelineCategory)).toBe(filterValue);
       }
     }
   });
@@ -592,7 +673,7 @@ for (const focusTarget of ["hito", "proyecto"]) {
   test(`el breakpoint conserva instancia, estado y foco real en ${focusTarget}`, async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto("./");
-    await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
+    await page.getByRole("button", { name: "Proyectos", exact: true }).click();
     const trigger = page.getByRole("button", { name: /Proyecto Vigente/ });
     await trigger.click();
     const reader = page.locator('[data-contract="timeline-reader"]');
@@ -606,7 +687,7 @@ for (const focusTarget of ["hito", "proyecto"]) {
       await expect(focused).toBeFocused();
       await page.setViewportSize(viewport);
       await expect(reader).toHaveAttribute("role", viewport.width >= 1024 ? "complementary" : "region");
-      await expect(page.getByRole("radio", { name: "Proyectos", exact: true })).toBeChecked();
+      await expect(page.getByRole("button", { name: "Proyectos", exact: true })).toHaveAttribute("aria-pressed", "true");
       await expect(trigger).toHaveAttribute("aria-pressed", "true");
       await expect(focused).toBeFocused();
       expect(await focusedNode.evaluate((node) => node === document.activeElement)).toBe(true);
@@ -636,14 +717,13 @@ test("la experiencia interactiva no contiene vulneraciones Axe de nivel AA", asy
   expect(results.violations).toEqual([]);
 });
 
-for (const surface of ["timeline-reader-body", "timeline-rail"]) {
-  test(`el foco del scroller ${surface} retorna al hito al pasar a mobile`, async ({ page }) => {
+test("el foco del cuerpo desplazable del detalle retorna al hito al pasar a mobile", async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto("./");
-    await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
+    await page.getByRole("button", { name: "Proyectos", exact: true }).click();
     const trigger = page.getByRole("button", { name: /Proyecto Vigente/ });
     await trigger.click();
-    const scroller = page.locator(`[data-contract="${surface}"]`);
+    const scroller = page.locator('[data-contract="timeline-reader-body"]');
     await scroller.focus();
     await expect(scroller).toBeFocused();
     await page.setViewportSize({ width: 360, height: 800 });
@@ -652,18 +732,29 @@ for (const surface of ["timeline-reader-body", "timeline-rail"]) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(trigger).toBeFocused();
     await expect(scroller).toHaveAttribute("tabindex", "0");
-  });
-}
+});
 
 test("las acciones comunican la activacion sin depender solo del color", async ({
   page,
 }) => {
   await page.goto("./");
 
-  const contactLink = page.getByRole("link", { name: "Contactar" });
-
-  await contactLink.hover();
-  await page.mouse.down();
-  await expect(contactLink).toHaveCSS("text-decoration-line", "underline");
-  await page.mouse.up();
+  for (const name of ["Leer CV web", "Descargar CV PDF", "Contactar"]) {
+    const link = page.getByRole("link", { name, exact: true });
+    const initial = await link.evaluate((element) => getComputedStyle(element).backgroundColor);
+    await link.hover();
+    await expect(link).toHaveCSS("text-decoration-line", "none");
+    await expect(link).not.toHaveCSS("background-color", initial);
+    await expect(link).toHaveCSS("box-shadow", "none");
+    await page.mouse.down();
+    await expect(link).toHaveCSS("background-color", "rgb(24, 53, 71)");
+    await expect(link).toHaveCSS("text-decoration-line", "none");
+    await expect(link).toHaveCSS("box-shadow", "rgb(148, 163, 184) 0px 0px 0px 2px inset");
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
+    await page.keyboard.press("Tab");
+    await link.focus();
+    await link.hover();
+    await expect(link).toHaveCSS("box-shadow", "rgb(201, 190, 166) 0px 0px 0px 1px inset");
+  }
 });

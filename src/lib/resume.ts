@@ -67,6 +67,7 @@ type TimelineMilestone = {
   highlights: string[];
   location?: string;
   order: number;
+  position?: string;
   roles: string[];
   skills: string[];
   startDate: string;
@@ -221,6 +222,7 @@ function createTimeline(resume: Resume) {
       highlights: uniqueTexts(work.highlights),
       location: text(work.location),
       order: order++,
+      position: text(work.position),
       roles: [],
       skills: uniqueTexts(work.skills),
       startDate: work.startDate,

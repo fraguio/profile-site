@@ -18,7 +18,7 @@ for (const width of [360, 390]) {
       expect(box.width).toBeGreaterThanOrEqual(width - 64);
       await expect(body).toContainText("Integración continua y despliegue con fuentes curriculares reproducibles");
       expect(await body.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
-      expect((await header.boundingBox()).height).toBeLessThan(48);
+      await expect(header.getByText("Rol: Hito con contenido largo", { exact: true })).toBeVisible();
       const next = page.getByRole("button", { name: /Otra lectura extensa/ });
       await body.locator("li").last().scrollIntoViewIfNeeded();
       await next.scrollIntoViewIfNeeded();

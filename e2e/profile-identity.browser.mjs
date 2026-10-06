@@ -60,13 +60,14 @@ test("todas las acciones de identidad son alcanzables por Tab con foco interior"
   expect(names).toEqual(expect.arrayContaining(["Leer CV web", "Descargar CV PDF", "Contactar", "Sitio web", "GitHub", "LinkedIn", "Mastodon"]));
 });
 
-test("los enlaces profesionales comunican hover y activación sin depender del color", async ({ page }) => {
+test("los enlaces profesionales recuperan el hover de P11 y conservan la señal de activación", async ({ page }) => {
   await page.goto("./");
   const profiles = page.getByRole("navigation", { name: "Enlaces profesionales" });
   for (const name of ["Sitio web", "LinkedIn", "GitHub", "Mastodon"]) {
     const link = profiles.getByRole("link", { name, exact: true });
     await link.hover();
-    await expect(link).toHaveCSS("text-decoration-line", "underline");
+    await expect(link).toHaveCSS("text-decoration-line", "none");
+    await expect(link).toHaveCSS("color", "rgb(241, 245, 249)");
     await page.mouse.down();
     await expect(link).toHaveCSS("text-decoration-thickness", "2px");
     await page.mouse.move(0, 0);

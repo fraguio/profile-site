@@ -5,7 +5,7 @@ for (const javaScriptEnabled of [true, false]) {
     test(`identidad operativa sin hitos, JavaScript ${javaScriptEnabled}, ${viewport.width}px`, async ({ browser }) => {
       const context = await browser.newContext({ javaScriptEnabled, viewport });
       const page = await context.newPage();
-      await page.goto("http://127.0.0.1:4321/profile-site/");
+      await page.goto(test.info().project.use.baseURL);
       await expect(page.getByRole("heading", { name: "Alicia Ejemplo" })).toBeInViewport({ ratio: 1 });
       await expect(page.getByRole("link", { name: "Leer CV web" })).toBeInViewport({ ratio: 1 });
       await expect(page.getByRole("link", { name: "Contactar" })).toHaveAttribute("href", "mailto:alicia.ejemplo@example.test");

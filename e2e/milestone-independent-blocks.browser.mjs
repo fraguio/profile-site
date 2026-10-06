@@ -11,7 +11,9 @@ for (const width of [1440, 360, 390]) {
       const detail = page.getByRole(width >= 1024 ? "complementary" : "region", { name: /^Detalle del hito:/ });
       const open = (title) => openMilestone(page, title, "Space");
       await open("Proyecto con metadatos");
-      await expect(detail.getByRole("heading", { name: "Roles", exact: true })).toBeVisible();
+      const roles = detail.getByText("Roles: Autora, Desarrolladora de herramientas de integración y plataformas distribuidas para equipos multidisciplinares", { exact: true });
+      await roles.scrollIntoViewIfNeeded();
+      await expect(roles).toBeInViewport({ ratio: 0.99 });
       await expect(detail.getByText("Primera frase del proyecto. Segunda frase que debe conservarse íntegra hasta el final.", { exact: true })).toBeVisible();
       await expect(detail).toContainText("3 de febrero de 2025 - Actualidad");
       await expect(detail.locator("time")).toHaveCount(1);
@@ -40,6 +42,12 @@ for (const width of [1440, 360, 390]) {
       await expect(detail.getByRole("heading", { name: "Habilidades asociadas", exact: true })).toBeVisible();
       await expect(detail.getByRole("heading", { name: "Contenidos", exact: true })).toHaveCount(0);
       await expect(detail.getByText("Lectura técnica", { exact: true })).toBeVisible();
+      await open("Empresa sin posición declarada");
+      await expect(detail).toContainText("2020 - 2020");
+      await expect(detail.locator(".milestone__role")).toHaveCount(0);
+      const location = detail.getByText("Centro de investigación de sistemas distribuidos, Santiago de Compostela, Galicia, España", { exact: true });
+      await location.scrollIntoViewIfNeeded();
+      await expect(location).toBeInViewport({ ratio: 0.99 });
       await expect(page.locator("body")).not.toContainText("aplazad");
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await expect(detail).toBeVisible();
