@@ -1,6 +1,26 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+function timelineEndpoints(list) {
+  const style = getComputedStyle(list, "::before");
+  const origin = list.getBoundingClientRect();
+  const nodes = [...list.querySelectorAll('[data-timeline-category]:not([hidden]) .milestone__trigger .milestone__node')].map((node) => {
+    const box = node.getBoundingClientRect();
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  });
+  const x = origin.x + list.clientLeft + parseFloat(style.left) - list.scrollLeft + parseFloat(style.width) / 2;
+  const y = origin.y + list.clientTop + parseFloat(style.top) - list.scrollTop;
+  return { display: style.display, start: { x, y }, end: { x, y: y + parseFloat(style.height) }, nodes };
+}
+
+async function expectTimelineConnected(rail) {
+  await expect.poll(async () => {
+    const line = await rail.evaluate(timelineEndpoints);
+    return Math.max(Math.abs(line.start.x - line.nodes[0].x), Math.abs(line.start.y - line.nodes[0].y),
+      Math.abs(line.end.x - line.nodes.at(-1).x), Math.abs(line.end.y - line.nodes.at(-1).y));
+  }).toBeLessThan(1);
+}
+
 for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }]) {
   test(`timeline y detalle corto retiran señales cuando no hay overflow en ${viewport.width} × ${viewport.height}`, async ({ page }) => {
     test.info().annotations.push({ type: "fuente", description: "fictitious-resume.json; Todo → Formación → Todo; detalle corto y un resultado; B02" });
@@ -120,24 +140,8 @@ for (const viewport of [
     });
     await page.goto("./", { waitUntil: "domcontentloaded" });
     const rail = page.locator('[data-contract="timeline-rail"]');
-    const endpoints = () => rail.evaluate((list) => {
-      const style = getComputedStyle(list, "::before");
-      const origin = list.getBoundingClientRect();
-      const nodes = [...list.querySelectorAll('[data-timeline-category]:not([hidden]) .milestone__trigger .milestone__node')].map((node) => {
-        const box = node.getBoundingClientRect();
-        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-      });
-      const x = origin.x + list.clientLeft + parseFloat(style.left) - list.scrollLeft + parseFloat(style.width) / 2;
-      const y = origin.y + list.clientTop + parseFloat(style.top) - list.scrollTop;
-      return { display: style.display, start: { x, y }, end: { x, y: y + parseFloat(style.height) }, nodes };
-    });
-    const expectConnected = async () => {
-      await expect.poll(async () => {
-        const line = await endpoints();
-        return Math.max(Math.abs(line.start.x - line.nodes[0].x), Math.abs(line.start.y - line.nodes[0].y),
-          Math.abs(line.end.x - line.nodes.at(-1).x), Math.abs(line.end.y - line.nodes.at(-1).y));
-      }).toBeLessThan(1);
-    };
+    const endpoints = () => rail.evaluate(timelineEndpoints);
+    const expectConnected = () => expectTimelineConnected(rail);
     await expect(page.locator('[data-contract="milestone-trigger"]').first()).toBeVisible();
     await expectConnected();
     releaseFonts();
@@ -584,32 +588,41 @@ test.describe("lector lateral desktop", () => {
   });
 });
 
-test("el breakpoint recoloca la misma instancia conservando filtro, selección y contenido", async ({ page }) => {
-  await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto("./");
-  await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
-  const trigger = page.getByRole("button", { name: /Proyecto de Empate/ });
-  await trigger.click();
-  const reader = page.locator('[data-contract="timeline-reader"]');
-  const readerNode = await reader.elementHandle();
-  const detailNode = await reader.locator('[data-contract="milestone-detail"]').elementHandle();
-  for (const viewport of [{ width: 360, height: 800 }, { width: 1440, height: 900 }, { width: 390, height: 844 }]) {
-    await page.setViewportSize(viewport);
-    await expect(reader).toHaveAttribute("role", viewport.width >= 1024 ? "complementary" : "region");
-    await expect(page.getByRole("radio", { name: "Proyectos", exact: true })).toBeChecked();
-    await expect(trigger).toHaveAttribute("aria-pressed", "true");
-    await expect(trigger).toBeFocused();
-    await expect(reader).toContainText("Proyecto de Empate");
-    await expect(reader).toHaveCount(1);
-    expect(await readerNode.evaluate((node) => node.isConnected)).toBe(true);
-    expect(await detailNode.evaluate((node) => node.isConnected)).toBe(true);
-    if (viewport.width < 1024) {
-      expect(await trigger.evaluate((node) => node.nextElementSibling?.getAttribute("data-contract"))).toBe("timeline-reader");
-    } else {
-      expect(await reader.evaluate((node) => node.parentElement.contains(document.querySelector('[data-contract="timeline-rail"]')))).toBe(true);
+for (const focusTarget of ["hito", "proyecto"]) {
+  test(`el breakpoint conserva instancia, estado y foco real en ${focusTarget}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto("./");
+    await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
+    const trigger = page.getByRole("button", { name: /Proyecto Vigente/ });
+    await trigger.click();
+    const reader = page.locator('[data-contract="timeline-reader"]');
+    const readerNode = await reader.elementHandle();
+    const detailNode = await reader.locator('[data-contract="milestone-detail"]').elementHandle();
+    const focused = focusTarget === "hito" ? trigger : reader.getByRole("link", { name: "Ver proyecto", exact: true });
+    await focused.focus();
+    const focusedNode = await focused.elementHandle();
+    const content = await reader.locator('[data-contract="timeline-reader-body"]').textContent();
+    for (const viewport of [{ width: 360, height: 800 }, { width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+      await expect(focused).toBeFocused();
+      await page.setViewportSize(viewport);
+      await expect(reader).toHaveAttribute("role", viewport.width >= 1024 ? "complementary" : "region");
+      await expect(page.getByRole("radio", { name: "Proyectos", exact: true })).toBeChecked();
+      await expect(trigger).toHaveAttribute("aria-pressed", "true");
+      await expect(focused).toBeFocused();
+      expect(await focusedNode.evaluate((node) => node === document.activeElement)).toBe(true);
+      expect(await reader.locator('[data-contract="timeline-reader-body"]').textContent()).toBe(content);
+      await expect(reader).toHaveCount(1);
+      expect(await readerNode.evaluate((node) => node.isConnected)).toBe(true);
+      expect(await detailNode.evaluate((node) => node.isConnected)).toBe(true);
+      await expectTimelineConnected(page.locator('[data-contract="timeline-rail"]'));
+      if (viewport.width < 1024) {
+        expect(await trigger.evaluate((node) => node.nextElementSibling?.getAttribute("data-contract"))).toBe("timeline-reader");
+      } else {
+        expect(await reader.evaluate((node) => node.parentElement.contains(document.querySelector('[data-contract="timeline-rail"]')))).toBe(true);
+      }
     }
-  }
-});
+  });
+}
 
 test("la experiencia interactiva no contiene vulneraciones Axe de nivel AA", async ({
   page,
@@ -622,6 +635,25 @@ test("la experiencia interactiva no contiene vulneraciones Axe de nivel AA", asy
 
   expect(results.violations).toEqual([]);
 });
+
+for (const surface of ["timeline-reader-body", "timeline-rail"]) {
+  test(`el foco del scroller ${surface} retorna al hito al pasar a mobile`, async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto("./");
+    await page.getByRole("radio", { name: "Proyectos", exact: true }).click();
+    const trigger = page.getByRole("button", { name: /Proyecto Vigente/ });
+    await trigger.click();
+    const scroller = page.locator(`[data-contract="${surface}"]`);
+    await scroller.focus();
+    await expect(scroller).toBeFocused();
+    await page.setViewportSize({ width: 360, height: 800 });
+    await expect(trigger).toBeFocused();
+    await expect(scroller).toHaveAttribute("tabindex", "-1");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(trigger).toBeFocused();
+    await expect(scroller).toHaveAttribute("tabindex", "0");
+  });
+}
 
 test("las acciones comunican la activacion sin depender solo del color", async ({
   page,

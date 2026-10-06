@@ -2,7 +2,31 @@ import { expect, test } from "@playwright/test";
 
 for (const width of [360, 390]) {
   test.describe(`${width} px`, () => {
-    test.use({ viewport: { width, height: 844 } });
+    test.use({ viewport: { width, height: width === 360 ? 800 : 844 } });
+
+    test("la cabecera compacta conserva fechas y el cuerpo aprovecha la anchura de lectura", async ({ page }) => {
+      await page.goto("./");
+      const reader = page.getByRole("region", { name: /Detalle del hito:.*Hito con contenido largo/ });
+      const header = reader.locator('[data-contract="timeline-reader-header"]');
+      await expect(header.locator("h3")).toBeHidden();
+      await expect(header.locator(".milestone__category")).toBeHidden();
+      await expect(header.locator(".milestone__entity")).toBeHidden();
+      await expect(header.locator(".milestone__period")).toBeVisible();
+      await expect(header).toContainText("enero de 2025 - Actualidad");
+      const body = reader.locator('[data-contract="timeline-reader-body"]');
+      const box = await body.boundingBox();
+      expect(box.width).toBeGreaterThanOrEqual(width - 64);
+      await expect(body).toContainText("Integración continua y despliegue con fuentes curriculares reproducibles");
+      expect(await body.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
+      expect((await header.boundingBox()).height).toBeLessThan(48);
+      const next = page.getByRole("button", { name: /Otra lectura extensa/ });
+      await body.locator("li").last().scrollIntoViewIfNeeded();
+      await next.scrollIntoViewIfNeeded();
+      await expect(next).toBeInViewport();
+      await next.focus();
+      await page.keyboard.press("Enter");
+      await expect(next).toHaveAttribute("aria-pressed", "true");
+    });
 
     test("el detalle se intercala tras el hito y permite leer contenido largo con scroll del documento", async ({ page }) => {
       await page.goto("./");
