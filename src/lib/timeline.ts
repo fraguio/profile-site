@@ -82,12 +82,20 @@ if (filters && status && rail) {
     reader.append(readerArticle);
 
     function placeDetail() {
+      const focused = document.activeElement;
+      const returnToMilestone = !desktop.matches && (focused === readerBody || focused === rail);
       reader.setAttribute("role", desktop.matches ? "complementary" : "region");
       readerBody.tabIndex = desktop.matches ? 0 : -1;
+      rail!.tabIndex = desktop.matches ? 0 : -1;
       if (desktop.matches) {
         experience.append(reader);
       } else {
         selected.trigger.after(reader);
+      }
+      if (returnToMilestone) {
+        selected.trigger.focus({ preventScroll: true });
+      } else if (focused instanceof HTMLElement && reader.contains(focused)) {
+        focused.focus({ preventScroll: true });
       }
       scheduleGeometry();
     }
@@ -139,7 +147,6 @@ if (filters && status && rail) {
     select(selected);
     document.documentElement.classList.add("timeline-enhanced");
     filters.hidden = false;
-    rail.tabIndex = 0;
     const resizeObserver = new ResizeObserver(scheduleGeometry);
     for (const element of [rail, reader, readerBody, ...entries.flatMap(({ item, detail }) => [item, detail!])]) {
       resizeObserver.observe(element);

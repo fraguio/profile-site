@@ -506,8 +506,20 @@ input:focus-visible {
 
   .timeline__reader {
     position: relative;
-    margin-top: 1.5rem;
+    margin: 0.75rem 6px 0;
     background: #07131a;
+  }
+
+  .timeline__reader [data-contract="timeline-reader-header"] .milestone__surface {
+    display: none;
+  }
+
+  .timeline__reader .milestone__period {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.5;
   }
 }
 

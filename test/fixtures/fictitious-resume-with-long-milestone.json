@@ -11,7 +11,11 @@
       "position": "Hito con contenido largo",
       "startDate": "2025-01",
       "summary": "Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera. Este hito reúne una explicación extensa para verificar que el cuerpo del lector se desplaza sin mover su cabecera.",
-      "skills": ["TypeScript", "Astro"]
+      "highlights": [
+        "Documentó íntegramente las decisiones de arquitectura para que el siguiente equipo pudiera mantener el sistema sin perder el contexto de la entrega.",
+        "Referencia reproducible: https://docs.example.test/architecture/timeline"
+      ],
+      "skills": ["TypeScript", "Astro", "Coordinación de equipos multidisciplinares distribuidos", "Integración continua y despliegue con fuentes curriculares reproducibles"]
     },
     {
       "name": "Otro Laboratorio Ficticio",
