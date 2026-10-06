@@ -2,12 +2,12 @@
 
 ## Estado y autoridad
 
-- Estado actual: existe una aplicación Astro con Experiencia interactiva, CV web, generación de CV PDF, consumidor curricular y gates de validación. La integración de la nueva UI está especificada y pendiente de implementación; consolidar su contrato no acredita que el código ya lo cumpla.
-- Estado objetivo: integrar la UI aceptada del ciclo de Stitch mediante incrementos verificables sobre la aplicación existente.
-- Autoridad: este documento gobierna los contratos generales del producto. La [especificación de integración de la UI](integracion-ui-experiencia-interactiva.md) es normativa para el alcance inmediato de la Experiencia interactiva y desarrolla sus requisitos específicos de presentación, comportamiento y aceptación. `CONTEXT.md` define vocabulario y los ADRs registran decisiones concretas sin duplicar las especificaciones.
+- Estado actual: existe una aplicación Astro con Experiencia interactiva, CV web, generación de CV PDF, consumidor curricular y gates de validación. La integración de la UI diseñada en Stitch está implementada y aceptada por el titular, que la dio por terminada el 2026-10-06.
+- Continuidad: definir los siguientes incrementos sobre la aplicación integrada, con alcance y aceptación propios para las mejoras de UI y la adaptación de la Fuente curricular.
+- Autoridad: este documento gobierna los contratos generales del producto. La [especificación de integración de la UI](integracion-ui-experiencia-interactiva.md) es normativa para el alcance de la integración realizada de la Experiencia interactiva y desarrolla sus requisitos específicos de presentación, comportamiento y aceptación. `CONTEXT.md` define vocabulario y los ADRs registran decisiones concretas sin duplicar las especificaciones.
 - Identidad canónica: `fraguio/profile-site`.
 - Idioma público inicial: español.
-- Seguimiento de la integración: [issue #84](https://github.com/fraguio/profile-site/issues/84), con el contrato completo y `ready-for-agent`. La consolidación normativa está realizada en los archivos locales; su envío a GitHub sigue pendiente de petición explícita de commit y push.
+- Seguimiento de la integración: [issue #84](https://github.com/fraguio/profile-site/issues/84), cerrada como completada tras la confirmación del titular el 2026-10-06.
 
 Los documentos de investigación y las exportaciones de prototipos son antecedentes, no fuentes normativas de producción. Esta revisión y la especificación de integración sustituyen los acuerdos históricos incompatibles de loop obligatorio, detalle cerrable y sustitución del timeline mobile; los contratos curriculares, documentales y de publicación se conservan.
 
@@ -57,7 +57,7 @@ La sección superior `skills` puede existir en la fuente, pero no se muestra ni 
 
 La integración de la UI conserva los títulos, entidades, orden y contenido del consumidor actual. Presenta descripción y resumen completos, Contribuciones para los puntos de experiencia/proyectos, Contenidos para los cursos de formación y Habilidades asociadas para sus listas. Los bloques y metadatos son opcionales e independientes, sin valores inventados ni restos de otro hito.
 
-`projects.url` es un campo estándar opcional que la integración consumirá como acción Ver proyecto en la Experiencia interactiva. Una URL inválida falla en la validación del schema; si está ausente se omite la acción. Este alcance no amplía el contenido factual ni rediseña el CV web/PDF. La adaptación de `work.clientName`, `work.projectName`, `education.title` y `education.details`, sus reglas de precedencia y la curación de la fuente siguen pendientes; no se habilitan silenciosamente al trasladar la UI.
+`projects.url` es un campo estándar opcional que se consume como acción Ver proyecto en la Experiencia interactiva. Una URL inválida falla en la validación del schema; si está ausente se omite la acción. Este alcance no amplía el contenido factual ni rediseña el CV web/PDF. La adaptación de `work.clientName`, `work.projectName`, `education.title` y `education.details`, sus reglas de precedencia y la curación de la fuente siguen pendientes; no se habilitan silenciosamente al trasladar la UI.
 
 ### Habilidades asociadas
 
@@ -259,7 +259,7 @@ Desde que aterrizan la baseline y sus umbrales, se aplica la matriz de bloqueo a
 | Interactividad | Timeline estático, filtros, selección permanente, detalle responsive y degradación progresiva | Pruebas de estado, teclado, foco, responsive, reducción de movimiento y rendimiento verdes |
 | Mejora | Ajustes posteriores basados en evidencia | Comprobación del comportamiento afectado y resumen de entrega; decisión duradera solo cuando cambie un contrato |
 
-La nueva integración se verifica por incrementos conforme a su especificación y a la proporcionalidad definida en `AGENTS.md`. Los criterios de cierre de una fase no se convierten en entregables documentales de cada ajuste local; se aprovechan las pruebas y gates existentes. Se acepta la base integrada y los criterios P12 por separado; no se exige movimiento continuo. Al completar P12 se cierra la sesión de integración sin iniciar P13 ni anticipar el trabajo histórico P14.
+La integración de la UI quedó completada y aceptada por el titular el 2026-10-06. Los siguientes incrementos se verifican conforme a su especificación y a la proporcionalidad definida en `AGENTS.md`. Los criterios de cierre de una fase no se convierten en entregables documentales de cada ajuste local; se aprovechan las pruebas y gates existentes. La aceptación de la base integrada y la de los criterios P12 se registran por separado; no se exige movimiento continuo. Las mejoras posteriores vuelven al flujo de definición con alcance propio; P13 y el trabajo histórico P14 mantienen sus pendientes.
 
 Base y PDF describen el recorrido histórico de construcción. El build actual exige los dos HTML y el PDF, con sus CTAs, descarga y checks correspondientes; la integración conserva esas salidas y no vuelve a una fase sin PDF.
 
