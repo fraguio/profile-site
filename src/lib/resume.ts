@@ -25,11 +25,13 @@ type Resume = {
   education?: Array<{
     area?: string;
     courses?: string[];
+    details?: string[];
     endDate?: string;
     institution?: string;
     skills?: string[];
     startDate: string;
     studyType?: string;
+    title?: string;
   }>;
   projects?: Array<{
     description?: string;
@@ -43,12 +45,14 @@ type Resume = {
     url?: string;
   }>;
   work?: Array<{
+    clientName?: string;
     description?: string;
     endDate?: string;
     highlights?: string[];
     location?: string;
     name?: string;
     position?: string;
+    projectName?: string;
     skills?: string[];
     startDate: string;
     summary?: string;
@@ -176,7 +180,15 @@ function validateLocalRules(resume: ResumeRecord) {
       }
 
       if (section === "work" || section === "education") {
-        validateSkills(diagnostics, `${prefix}.skills`, record.skills);
+        validateNonEmptyStringArray(diagnostics, `${prefix}.skills`, record.skills);
+      }
+      for (const field of section === "work" ? ["clientName", "projectName"] : section === "education" ? ["title"] : []) {
+        if (record[field] !== undefined) {
+          validateNonEmptyString(diagnostics, `${prefix}.${field}`, record[field]);
+        }
+      }
+      if (section === "education") {
+        validateNonEmptyStringArray(diagnostics, `${prefix}.details`, record.details);
       }
     }
   }
@@ -184,24 +196,28 @@ function validateLocalRules(resume: ResumeRecord) {
   return diagnostics;
 }
 
-function validateSkills(diagnostics: string[], path: string, skills: unknown) {
-  if (skills === undefined) {
+function validateNonEmptyStringArray(diagnostics: string[], path: string, values: unknown) {
+  if (values === undefined) {
     return;
   }
 
-  if (!Array.isArray(skills)) {
+  if (!Array.isArray(values)) {
     diagnostics.push(
-      `${path}: ${formatValue(skills)} violates local rule "must be an array of non-empty strings".`,
+      `${path}: ${formatValue(values)} violates local rule "must be an array of non-empty strings".`,
     );
     return;
   }
 
-  for (const [index, skill] of skills.entries()) {
-    if (typeof skill !== "string" || skill.trim() === "") {
-      diagnostics.push(
-        `${path}[${index}]: ${formatValue(skill)} violates local rule "must be a non-empty string".`,
-      );
-    }
+  for (const [index, value] of values.entries()) {
+    validateNonEmptyString(diagnostics, `${path}[${index}]`, value);
+  }
+}
+
+function validateNonEmptyString(diagnostics: string[], path: string, value: unknown) {
+  if (typeof value !== "string" || value.trim() === "") {
+    diagnostics.push(
+      `${path}: ${formatValue(value)} violates local rule "must be a non-empty string".`,
+    );
   }
 }
 
@@ -210,7 +226,8 @@ function createTimeline(resume: Resume) {
   let order = 0;
 
   for (const work of resume.work ?? []) {
-    const title = text(work.position) ?? text(work.name);
+    const participationTitle = [text(work.clientName), text(work.projectName)].filter(Boolean).join(" — ") || undefined;
+    const title = participationTitle ?? text(work.position) ?? text(work.name);
 
     milestones.push({
       category: "work",
@@ -218,7 +235,7 @@ function createTimeline(resume: Resume) {
       description: text(work.description),
       endDate: work.endDate,
       endDateLabel: work.endDate ? formatDate(work.endDate) : undefined,
-      entity: title === work.name ? undefined : text(work.name),
+      entity: participationTitle ? text(work.name) : title === work.name ? undefined : text(work.name),
       highlights: uniqueTexts(work.highlights),
       location: text(work.location),
       order: order++,
@@ -233,7 +250,7 @@ function createTimeline(resume: Resume) {
   }
 
   for (const education of resume.education ?? []) {
-    const title = educationTitle(education);
+    const title = text(education.title) ?? educationTitle(education);
 
     milestones.push({
       category: "education",
@@ -242,7 +259,7 @@ function createTimeline(resume: Resume) {
       endDate: education.endDate,
       endDateLabel: education.endDate ? formatDate(education.endDate) : undefined,
       entity: title === education.institution ? undefined : text(education.institution),
-      highlights: uniqueTexts(education.courses),
+      highlights: education.details?.length ? [...education.details] : uniqueTexts(education.courses),
       location: undefined,
       order: order++,
       roles: [],

@@ -30,6 +30,7 @@ const availableTimelineFilters = timelineFilterOptions.filter(
     filter.value === "all" ||
     timeline.some((milestone) => milestone.category === filter.value),
 );
+const initialTimelineFilter = timeline.some((milestone) => milestone.category === "work") ? "work" : "all";
 const structuredData = JSON.stringify({
   "@context": "https://schema.org",
   "@graph": [
@@ -117,7 +118,7 @@ const structuredData = JSON.stringify({
                 <button class="timeline__filter-option"
                     aria-label={filter.label}
                     aria-controls="timeline-rail"
-                    aria-pressed={filter.value === "all" ? "true" : "false"}
+                     aria-pressed={filter.value === initialTimelineFilter ? "true" : "false"}
                     data-timeline-filter-label={filter.value === "all" ? "Toda la trayectoria" : filter.label}
                     name="timeline-filter"
                     type="button"

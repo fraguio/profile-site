@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { createPlaywrightConfig } from "./playwright.config.mjs";
 
 const fixturePath = fileURLToPath(
-  new URL("test/fixtures/valid-resume-with-local-skills.json", import.meta.url),
+  new URL("test/fixtures/valid-resume-without-work.json", import.meta.url),
 );
 
 export default createPlaywrightConfig({

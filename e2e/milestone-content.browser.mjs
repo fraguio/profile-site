@@ -12,6 +12,7 @@ for (const viewport of [
 
     test("los bloques curriculares conservan prosa independiente, contribuciones, contenidos y habilidades", async ({ page }) => {
       await page.goto("./");
+      await page.getByRole("button", { name: "Todo", exact: true }).click();
       const detail = page.getByRole(viewport.width >= 1024 ? "complementary" : "region", { name: /^Detalle del hito:/ });
       const open = (title) => openMilestone(page, title, "Enter");
       await open("Arquitecta de software");
@@ -43,6 +44,7 @@ for (const viewport of [
 
     test("Ver proyecto conserva el destino curricular y se abre mediante teclado", async ({ page }) => {
       await page.goto("./");
+      await page.getByRole("button", { name: "Proyectos", exact: true }).click();
       const trigger = page.getByRole("button").filter({ hasText: "Proyecto Vigente" });
       await trigger.focus();
       await page.keyboard.press("Enter");

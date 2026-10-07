@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { textFromPdf } from "../scripts/pdf-text.mjs";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 const fixturePath = fileURLToPath(
@@ -540,6 +541,73 @@ test("the contractual build accepts local work and education skills without top-
 
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
+
+test("las extensiones y sus fallbacks conservan los hechos entre HTML y CV PDF", async (t) => {
+  const outputDirectory = temporaryOutputDirectory(t);
+  const source = JSON.parse(readFileSync(fixturePathFor("valid-resume-with-independent-blocks.json"), "utf8"));
+  source.work.push(
+    { name: "Contratante del cliente", position: "Rol del cliente", clientName: "Cliente sin proyecto", startDate: "2019" },
+    { name: "Contratante del proyecto", position: "Rol del proyecto", projectName: "Proyecto sin cliente", startDate: "2018" },
+  );
+  source.education[1].courses = ["Curso de fallback con details vacío"];
+  const sourcePath = join(temporaryOutputDirectory(t), "resume.json");
+  writeFileSync(sourcePath, JSON.stringify(source));
+  const result = build(outputDirectory, {
+    PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+    RESUME_PATH: sourcePath,
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  const outputs = [
+    readFileSync(join(outputDirectory, "index.html"), "utf8"),
+    readFileSync(join(outputDirectory, "read", "index.html"), "utf8"),
+    (await textFromPdf(readFileSync(join(outputDirectory, "cv", "eduardo-nogueira-fraguio-cv.pdf")))).replace(/\s+/g, " "),
+  ];
+  for (const output of outputs) {
+    for (const content of [
+      "Cliente Ficticio — Integración de canales y plataformas distribuidas",
+      "Contratante Ficticia", "Participación sin prosa",
+      "Cliente sin proyecto", "Contratante del cliente", "Rol del cliente",
+      "Proyecto sin cliente", "Contratante del proyecto", "Rol del proyecto",
+      "Empresa sin posición declarada",
+      "Formación avanzada en integración de sistemas distribuidos",
+      "Diseño de APIs y contratos de integración.", "Despliegue y observabilidad de servicios.",
+      "Formación solo con habilidades", "Curso de fallback con details vacío",
+    ]) assert.ok(output.includes(content), `Expected content: ${content}`);
+    assert.equal((output.match(/Diseño de APIs y contratos de integración\./g) ?? []).length, 2);
+    assert.ok(!output.includes("Contenido independiente de la descripción."));
+  }
+});
+
+for (const [details, diagnostics] of [
+  [["", 42], [
+    'resume.education[0].details[0]: "" violates local rule "must be a non-empty string".',
+    'resume.education[0].details[1]: 42 violates local rule "must be a non-empty string".',
+  ]],
+  ["not an array", ['resume.education[0].details: "not an array" violates local rule "must be an array of non-empty strings".']],
+]) {
+  test(`el build rechaza las extensiones inválidas con details ${JSON.stringify(details)}`, (t) => {
+    const outputDirectory = temporaryOutputDirectory(t);
+    const source = JSON.parse(readFileSync(fixturePath, "utf8"));
+    Object.assign(source.work[0], { clientName: "   ", projectName: 42 });
+    Object.assign(source.education[0], { title: "", details });
+    const sourcePath = join(temporaryOutputDirectory(t), "invalid-resume.json");
+    writeFileSync(sourcePath, JSON.stringify(source));
+    const result = build(outputDirectory, {
+      PROFILE_SITE_BASE_URL: "https://fraguio.github.io/profile-site/",
+      RESUME_PATH: sourcePath,
+    });
+    assert.notEqual(result.status, 0);
+    for (const diagnostic of [
+      'resume.work[0].clientName: "   " violates local rule "must be a non-empty string".',
+      'resume.work[0].projectName: 42 violates local rule "must be a non-empty string".',
+      'resume.education[0].title: "" violates local rule "must be a non-empty string".',
+      ...diagnostics,
+    ]) {
+      assert.ok(`${result.stdout}\n${result.stderr}`.includes(diagnostic), `Expected diagnostic: ${diagnostic}\n${result.stdout}\n${result.stderr}`);
+    }
+    assert.equal(existsSync(join(outputDirectory, "index.html")), false);
+  });
+}
 
 for (const [description, fixture, diagnostic] of [
   [
