@@ -25,12 +25,13 @@
   "work": [
     {
       "position": "Participación sin prosa",
+      "name": "Contratante Ficticia",
       "startDate": "2023-04",
       "endDate": "2023-12-31",
       "highlights": ["Contribución independiente de la descripción."],
       "skills": ["TypeScript"],
-      "clientName": "Cliente aplazado",
-      "projectName": "Título aplazado"
+      "clientName": "Cliente Ficticio",
+      "projectName": "Integración de canales y plataformas distribuidas"
     },
     {
       "name": "Empresa sin posición declarada",
@@ -46,13 +47,14 @@
       "endDate": "2022",
       "courses": ["Contenido independiente de la descripción."],
       "skills": ["Diseño de sistemas"],
-      "title": "Formación aplazada",
-      "details": "Descripción de formación aplazada"
+      "title": "Formación avanzada en integración de sistemas distribuidos",
+      "details": ["Diseño de APIs y contratos de integración.", "Despliegue y observabilidad de servicios.", "Diseño de APIs y contratos de integración."]
     },
     {
       "area": "Formación solo con habilidades",
       "startDate": "2021",
       "endDate": "2021",
+      "details": [],
       "skills": ["Lectura técnica"]
     }
   ]

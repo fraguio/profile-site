@@ -43,7 +43,11 @@ if (filters && status && rail) {
       gradient.hidden = true;
       frame.append(gradient);
     }
-    let selected = entries[0];
+    const initialFilter = filters.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')!;
+    for (const { item } of entries) {
+      item.hidden = initialFilter.value !== "all" && item.dataset.timelineCategory !== initialFilter.value;
+    }
+    let selected = entries.find(({ item }) => !item.hidden)!;
     let geometryFrame = 0;
 
     function updateGeometry() {

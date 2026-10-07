@@ -6,10 +6,26 @@ for (const width of [1440, 360, 390]) {
   test.describe(`${width} px`, () => {
     test.use({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
 
+    test("cliente y proyecto identifican la participación sin sustituir contratante ni rol", async ({ page }) => {
+      await page.goto("./");
+      const trigger = page.getByRole("button", { name: /Cliente Ficticio — Integración de canales y plataformas distribuidas/ });
+      await expect(trigger).toHaveAttribute("aria-pressed", "true");
+      await expect(trigger).toContainText("Contratante Ficticia");
+      const detail = page.locator('[data-contract="timeline-reader"]');
+      await expect(detail).toContainText("Rol: Participación sin prosa");
+      await expect(detail.getByText("Contribución independiente de la descripción.", { exact: true })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.goto("read/");
+      const work = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "Cliente Ficticio — Integración de canales y plataformas distribuidas", exact: true }) });
+      await expect(work).toContainText("Contratante Ficticia");
+      await expect(work).toContainText("Rol: Participación sin prosa");
+    });
+
     test("el detalle limpia los datos ausentes y permite leer bloques sin prosa", async ({ page }) => {
       await page.goto("./");
       const detail = page.getByRole(width >= 1024 ? "complementary" : "region", { name: /^Detalle del hito:/ });
       const open = (title) => openMilestone(page, title, "Space");
+      await page.getByRole("button", { name: "Todo", exact: true }).click();
       await open("Proyecto con metadatos");
       const roles = detail.getByText("Roles: Autora, Desarrolladora de herramientas de integración y plataformas distribuidas para equipos multidisciplinares", { exact: true });
       await roles.scrollIntoViewIfNeeded();
@@ -29,14 +45,15 @@ for (const width of [1440, 360, 390]) {
       for (const value of ["Autora", "Desarrolladora", "Laboratorio Ficticio", "Primera frase", "Entregó un ejemplo", "Capacidad asociada"]) {
         await expect(detail).not.toContainText(value);
       }
-      await open("Participación sin prosa");
+      await open("Cliente Ficticio — Integración de canales y plataformas distribuidas");
       await expect(detail.getByRole("heading", { name: "Contribuciones", exact: true })).toBeVisible();
       await expect(detail.getByText("Contribución independiente de la descripción.", { exact: true })).toBeVisible();
       await expect(detail.getByRole("heading", { name: "Descripción", exact: true })).toHaveCount(0);
       await expect(detail.getByText("TypeScript", { exact: true })).toBeVisible();
-      await open("Formación sin prosa");
+      await open("Formación avanzada en integración de sistemas distribuidos");
       await expect(detail.getByRole("heading", { name: "Contenidos", exact: true })).toBeVisible();
-      await expect(detail.getByText("Contenido independiente de la descripción.", { exact: true })).toBeVisible();
+      await expect(detail.locator(".milestone__highlights li")).toHaveText(["Diseño de APIs y contratos de integración.", "Despliegue y observabilidad de servicios.", "Diseño de APIs y contratos de integración."]);
+      await expect(detail).not.toContainText("Contenido independiente de la descripción.");
       await expect(detail.getByRole("heading", { name: "Descripción", exact: true })).toHaveCount(0);
       await open("Formación solo con habilidades");
       await expect(detail.getByRole("heading", { name: "Habilidades asociadas", exact: true })).toBeVisible();
@@ -48,10 +65,13 @@ for (const width of [1440, 360, 390]) {
       const location = detail.getByText("Centro de investigación de sistemas distribuidos, Santiago de Compostela, Galicia, España", { exact: true });
       await location.scrollIntoViewIfNeeded();
       await expect(location).toBeInViewport({ ratio: 0.99 });
-      await expect(page.locator("body")).not.toContainText("aplazad");
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await expect(detail).toBeVisible();
       await expect(page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]')).toHaveCount(1);
+      await page.goto("read/");
+      const education = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "Formación avanzada en integración de sistemas distribuidos", exact: true }) });
+      await expect(education.getByRole("list").first().getByRole("listitem")).toHaveText(["Diseño de APIs y contratos de integración.", "Despliegue y observabilidad de servicios.", "Diseño de APIs y contratos de integración."]);
+      await expect(education).not.toContainText("Contenido independiente de la descripción.");
     });
   });
 }

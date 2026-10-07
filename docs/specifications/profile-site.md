@@ -55,9 +55,17 @@ Se renderizan solo `basics`, `work`, `education` y `projects`. Las demás seccio
 
 La sección superior `skills` puede existir en la fuente, pero no se muestra ni actúa como catálogo en esta versión.
 
-La integración de la UI conserva los títulos, entidades, orden y contenido del consumidor actual. Presenta descripción y resumen completos, Contribuciones para los puntos de experiencia/proyectos, Contenidos para los cursos de formación y Habilidades asociadas para sus listas. Los bloques y metadatos son opcionales e independientes, sin valores inventados ni restos de otro hito.
+El consumidor curricular compartido conserva el orden y el contenido factual entre las superficies. Presenta descripción y resumen completos, Contribuciones para los puntos de experiencia/proyectos, Contenidos para la formación y Habilidades asociadas para sus listas. Los bloques y metadatos son opcionales e independientes, sin valores inventados ni restos de otro hito.
 
-`projects.url` es un campo estándar opcional que se consume como acción Ver proyecto en la Experiencia interactiva. Una URL inválida falla en la validación del schema; si está ausente se omite la acción. Este alcance no amplía el contenido factual ni rediseña el CV web/PDF. La adaptación de `work.clientName`, `work.projectName`, `education.title` y `education.details`, sus reglas de precedencia y la curación de la fuente siguen pendientes; no se habilitan silenciosamente al trasladar la UI.
+`projects.url` es un campo estándar opcional que se consume como acción Ver proyecto en la Experiencia interactiva. Una URL inválida falla en la validación del schema; si está ausente se omite la acción. Este alcance no rediseña el CV web/PDF.
+
+Las extensiones locales habilitadas por #103 mantienen JSON Resume 1.3.1:
+
+- `work.clientName` y `work.projectName` son strings opcionales no vacíos. Los valores disponibles componen el título del hito, unidos por « — » cuando existen ambos; con uno solo se usa ese valor. `work.name` sigue identificando la contratante como entidad y `work.position` conserva el rol íntegro en el detalle y el CV web/PDF. Sin las extensiones se mantiene el título anterior: posición, o nombre cuando falta la posición.
+- `education.title` es un string opcional no vacío con prioridad sobre la composición estándar de `studyType`, `area` e `institution`.
+- `education.details` es un array opcional de strings no vacíos que admite una lista vacía. Con contenido sustituye a `courses` como Contenidos; ausente o vacío mantiene el consumo de `courses`, sin duplicar ambas listas.
+
+Estas extensiones reutilizan los diagnósticos locales de ruta, valor y regla. Los textos, listas y su orden, así como la precisión de fechas, proceden de la fuente. La ubicación personal no se utiliza como ubicación de hitos y Actualidad se deriva exclusivamente de la ausencia de fecha final. El ensayo local de cuatro hitos consume `.tmp/profile-data/resume.fixture.json` mediante `RESUME_PATH` explícito; el fixture temporal queda fuera de Git y no sustituye a los fixtures ficticios reproducibles. La curación completa de la trayectoria sigue pendiente.
 
 ### Habilidades asociadas
 
@@ -96,11 +104,11 @@ La referencia de CV web no amplía el alcance de la composición visual de la ex
 
 El timeline combina `work`, `education` y `projects` en una secuencia cronológica. Un elemento de cualquiera de esas secciones debe tener `startDate` válida; los elementos sin `endDate` se consideran vigentes y aparecen primero. El orden es descendente por fecha de finalización o vigencia, después por `startDate` descendente y, ante empate, conserva el orden de origen.
 
-El filtro inicial definitivo es `all`: muestra la trayectoria combinada. El valor `work` fue una propuesta provisional histórica y no forma parte del contrato. Los filtros disponibles corresponden a categorías con elementos; una categoría vacía no muestra control.
+El filtro inicial es Experiencia (`work`) cuando la fuente tiene experiencia profesional; en caso contrario es Todo (`all`). Los filtros disponibles corresponden a categorías con elementos; una categoría vacía no muestra control.
 
 Si el filtro incluye al hito seleccionado, conserva selección y contenido sin reconstrucción ni reinicio forzado de la lectura desktop. Si lo excluye, retira ese hito y su detalle y selecciona el primer resultado según el orden del consumidor. Los excluidos salen inmediatamente de la interacción y de Tab, también durante cambios rápidos. El foco permanece en el filtro activado y una región viva anuncia el resultado, sin traslado de foco ni desplazamiento programático desde el filtro hasta el detalle.
 
-Con hitos disponibles, el estado inicial selecciona el primero del timeline producido por el consumidor. Es una regla técnica provisional del incremento; la selección editorial definitiva sigue pendiente y no se impone `profile-site` sobre cualquier fuente. Si no hay hitos se omiten timeline, filtros y detalle. El estado de filtro, selección y posición vive solo en memoria del cliente y no se persiste ni se refleja en URL o historial.
+Con hitos disponibles, el estado inicial selecciona el primer resultado del filtro inicial según el orden cronológico del consumidor. En el ensayo de #103 es Mapfre — Integraciones WhatsApp / Genesys Cloud; no se codifica esa identificación sobre cualquier fuente. Si no hay hitos se omiten timeline, filtros y detalle. El estado de filtro, selección y posición vive solo en memoria del cliente y no se persiste ni se refleja en URL o historial.
 
 La selección comunica un estado único permanente y conserva las dimensiones del botón, su borde y el espacio reservado del chevron. El periodo aparece lateralmente en desktop y encima del hito en mobile. La línea conecta los centros reales de los nodos visibles, se recalcula con el layout definitivo y se oculta con un solo hito; el detalle no añade nodo.
 
@@ -273,7 +281,7 @@ Base y PDF describen el recorrido histórico de construcción. El build actual e
 | DATA-001 | Validar schema y reglas locales | Paso CI y diagnóstico de validación |
 | DATA-002 | Consumir revisión curricular exacta | Logs con `resolved_profile_data_sha` |
 | DATA-003 | Limitar publicaciones a revisiones integradas | Comprobación de alcanzabilidad desde `profile-data/main` |
-| INT-001 | Timeline con filtro inicial `all` | Prueba de render y estado cliente |
+| INT-001 | Timeline con filtro inicial `work`, o `all` sin experiencia | Prueba de render y estado cliente |
 | INT-002 | Selección permanente y detalle responsive accesible | Pruebas Playwright de foco, teclado, instancia única, lectura y breakpoint |
 | A11Y-001 | WCAG 2.2 AA como objetivo | Axe, pruebas de interacción y checklist manual |
 | SEO-001 | Metadatos por ruta | Check sobre ambos HTML generados |
@@ -285,7 +293,7 @@ Base y PDF describen el recorrido histórico de construcción. El build actual e
 
 - Posible migración futura desde el project site a un dominio propio.
 - Imagen estable de Open Graph posterior a la v1.
-- Selección editorial inicial definitiva, trayectoria completa y extensiones curriculares pendientes.
+- Curación de la trayectoria completa y extensiones curriculares adicionales al ensayo de #103.
 - P13: compensación de scroll mobile, alineación superior y conservación precisa de lectura al repetir selección, tras cerrar P12.
 - Apertura tipo persiana y su coordinación con scroll, foco y reducción de movimiento.
 

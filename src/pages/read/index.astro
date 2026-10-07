@@ -156,7 +156,8 @@ const sections = sectionDefinitions.map((section) => ({
                 <article>
                   <header>
                     {milestone.title && <h3>{milestone.title}</h3>}
-                    {milestone.entity && <p>{milestone.entity}</p>}
+                     {milestone.entity && <p>{milestone.entity}</p>}
+                     {milestone.position && <p>Rol: {milestone.position}</p>}
                     <p>
                       <time datetime={milestone.startDate}>
                         {milestone.startDateLabel}

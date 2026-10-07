@@ -28,6 +28,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900
     await page.goto("./");
     await page.evaluate(() => document.fonts.ready);
     const rail = page.getByRole("list", { name: "Hitos de la trayectoria", exact: true });
+    await page.getByRole("button", { name: "Todo", exact: true }).click();
     const gradient = rail.locator("..").locator(':scope > [aria-hidden="true"]');
     const body = page.locator('[data-contract="timeline-reader-body"]');
     const bodyGradient = body.locator("..").locator('[aria-hidden="true"]');
@@ -86,6 +87,7 @@ for (const viewport of [
     await page.goto("./");
     await page.evaluate(() => document.fonts.ready);
     const trigger = page.getByRole("button", { name: /Proyecto de Empate/ });
+    await page.getByRole("button", { name: "Todo", exact: true }).click();
     const measure = () => trigger.evaluate((button) => {
       const rect = (element) => {
         const { x, y, width, height } = element.getBoundingClientRect();
@@ -139,6 +141,7 @@ for (const viewport of [
       await route.continue();
     });
     await page.goto("./", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: "Todo", exact: true }).click();
     const rail = page.locator('[data-contract="timeline-rail"]');
     const endpoints = () => rail.evaluate(timelineEndpoints);
     const expectConnected = () => expectTimelineConnected(rail);
@@ -204,6 +207,7 @@ for (const viewport of [
       else expect(current.y - previous.y - previous.height).toBeCloseTo(8, 0);
     }
     const all = page.getByRole("button", { name: "Todo", exact: true });
+    await all.click();
     await expect(all).toHaveCSS("background-color", "rgb(203, 213, 225)");
     await all.focus();
     await page.keyboard.press("Tab");
@@ -260,6 +264,7 @@ test("la identidad desktop permite leer todo el contenido y muestra la barra sol
 
 test("el detalle cambia el acento y los metadatos sin conservar valores del hito anterior", async ({ page }) => {
   await page.goto("./");
+  await page.getByRole("button", { name: "Todo", exact: true }).click();
   const reader = page.locator('[data-contract="timeline-reader"]');
   for (const [name, color, labelColor, role] of [
     [/Arquitecta de software/, "rgb(224, 179, 84)", "rgb(245, 198, 103)", "Rol: Arquitecta de software"],
@@ -413,18 +418,20 @@ test("el fallback desktop no muestra un lector y conserva todos los detalles", a
   await context.close();
 });
 
-test("el filtro inicial muestra la trayectoria combinada", async ({ page }) => {
+test("el filtro inicial muestra Experiencia y selecciona su primer hito cronológico", async ({ page }) => {
   await page.goto("./");
 
   const filters = page.getByRole("group", { name: "Filtrar trayectoria" });
 
   await expect(filters).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Todo", exact: true }),
+    page.getByRole("button", { name: "Experiencia profesional", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(filters.getByRole("button")).toHaveCount(4);
   await expect(page.locator("[data-timeline-category]")).toHaveCount(6);
-  await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(6);
+  await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: /Arquitecta de software/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-contract="timeline-reader"]')).toHaveAccessibleName(/Detalle del hito:.*Arquitecta de software/);
 });
 
 test("los filtros muestran cada categoria y anuncian el resultado sin persistirlo", async ({
@@ -477,9 +484,9 @@ test("los filtros muestran cada categoria y anuncian el resultado sin persistirl
   await page.reload();
 
   await expect(
-    page.getByRole("button", { name: "Todo", exact: true }),
+    page.getByRole("button", { name: "Experiencia profesional", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(6);
+  await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(2);
   await expect(page.locator('[data-contract="milestone-trigger"]').first()).toHaveAttribute("aria-pressed", "true");
 });
 
@@ -497,6 +504,7 @@ test("el teclado cambia el filtro y conserva el foco sin desplazar el documento"
   const rail = page.locator('[data-contract="timeline-rail"]');
   const initialScrollTop = await page.evaluate(() => window.scrollY);
 
+  await allFilter.click();
   await rail.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
   expect(await rail.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 
@@ -555,6 +563,7 @@ test.describe("lector lateral desktop", () => {
   }) => {
     await page.goto("./");
 
+    await page.getByRole("button", { name: "Todo", exact: true }).click();
     const firstMilestone = page
       .locator('[data-contract="milestone-trigger"]')
       .filter({ hasText: "Arquitecta de software" });
