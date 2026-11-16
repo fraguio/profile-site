@@ -8,8 +8,9 @@
 - Identidad canónica: `fraguio/profile-site`.
 - Idioma público inicial: español.
 - Seguimiento de la integración: [issue #84](https://github.com/fraguio/profile-site/issues/84), cerrada como completada tras la confirmación del titular el 2026-10-06.
+- Mejora #107: el titular eligió **B · Marco adaptable** el 2026-11-15 y aceptó la integración completa el 2026-11-16, incluidos la entrada sin selección y el cierre mobile/tablet vertical, la reapertura desktop con ratón tras Escape sin contorno residual y las barras iniciales en la tablet real. Este contrato incorpora la integración aceptada; el seguimiento y sus antecedentes se conservan en [#107](https://github.com/fraguio/profile-site/issues/107).
 
-Los documentos de investigación y las exportaciones de prototipos son antecedentes, no fuentes normativas de producción. Esta revisión y la especificación de integración sustituyen los acuerdos históricos incompatibles de loop obligatorio, detalle cerrable y sustitución del timeline mobile; los contratos curriculares, documentales y de publicación se conservan.
+Los documentos de investigación y las exportaciones de prototipos son antecedentes, no fuentes normativas de producción. Esta revisión y la especificación de integración sustituyen los acuerdos históricos incompatibles de loop obligatorio y sustitución del timeline mobile. #107 sustituye la selección permanente de #84 por entrada sin selección y un detalle cerrable en todos los tamaños, con marco adaptable desktop; los contratos curriculares, documentales y de publicación se conservan.
 
 El prototipo publicado en [`5c53cc1cf27aa93c745237179290649d741eb891`](https://github.com/fraguio/profile-site/tree/5c53cc1cf27aa93c745237179290649d741eb891/prototype/premium-timeline) aporta evidencia de investigación para la interacción del timeline. Su [README](https://github.com/fraguio/profile-site/blob/5c53cc1cf27aa93c745237179290649d741eb891/prototype/premium-timeline/README.md) contiene el veredicto, la evidencia y las limitaciones; el prototipo no es código de producción ni fuente normativa.
 
@@ -94,7 +95,7 @@ El CTA de contacto abre `mailto:` hacia el email profesional. LinkedIn y GitHub,
 
 La [referencia visual de la v1](../design/profile-site-v1-reference.png) queda como antecedente. La base visual aceptada para esta integración es P11/intento-03 del ciclo de Stitch, identificada en la especificación de integración. Los candidatos P12 orientan sus correcciones sin considerarse aceptados. La experiencia conserva fondo oscuro, identidad serif, UI sans, navegación neutra y categorías dorada, turquesa y violeta, con las excepciones decorativas acordadas. No incorpora controles inertes; sus acciones usan los destinos funcionales derivados de la Fuente curricular y del base path público.
 
-Desde 1024 px, la composición mejorada dispone identidad, timeline y detalle permanente en tres regiones ajustadas al viewport. Timeline y cuerpo del detalle tienen scroll independiente cuando lo necesitan. El encaje conserva texto íntegro, jerarquía y dimensiones estables; no se obtiene truncando contenido o reduciendo incidentalmente la tipografía. Sin la mejora JavaScript se conserva la trayectoria completa con sus detalles, sin un lector vacío.
+Desde 1024 px, la composición mejorada entra con identidad y timeline, sin selección ni detalle abierto. El marco se centra y ajusta a esas dos regiones con los márgenes existentes. Seleccionar un hito expande el marco hasta la composición de tres regiones ajustada al viewport; identidad y timeline conservan sus anchuras. Timeline y cuerpo del detalle tienen scroll independiente cuando lo necesitan. El encaje conserva texto íntegro, jerarquía y dimensiones estables; no se obtiene truncando contenido o reduciendo incidentalmente la tipografía. Sin la mejora JavaScript se conserva la trayectoria completa con sus detalles, sin un lector vacío.
 
 Por debajo de 1024 px, el hero y el timeline son regiones consecutivas del mismo documento. El desplazamiento principal es vertical, libre y sin `scroll-snap`; no se presentan como pantallas laterales ni se fuerzan alturas rígidas. El hero puede crecer para conservar el resumen completo y ofrece un enlace textual visible `Explorar trayectoria` hacia el encabezado del timeline. La continuidad gráfica y, cuando el viewport lo permita, el inicio de la siguiente región refuerzan que existe contenido debajo sin depender de animación ni de un icono aislado. El detalle se intercala conforme a las reglas responsive siguientes.
 
@@ -106,21 +107,21 @@ El timeline combina `work`, `education` y `projects` en una secuencia cronológi
 
 El filtro inicial es Experiencia (`work`) cuando la fuente tiene experiencia profesional; en caso contrario es Todo (`all`). Los filtros disponibles corresponden a categorías con elementos; una categoría vacía no muestra control.
 
-Si el filtro incluye al hito seleccionado, conserva selección y contenido sin reconstrucción ni reinicio forzado de la lectura desktop. Si lo excluye, retira ese hito y su detalle y selecciona el primer resultado según el orden del consumidor. Los excluidos salen inmediatamente de la interacción y de Tab, también durante cambios rápidos. El foco permanece en el filtro activado y una región viva anuncia el resultado, sin traslado de foco ni desplazamiento programático desde el filtro hasta el detalle.
+Con el detalle cerrado, filtrar conserva la ausencia de selección y no lo abre. Si el filtro incluye al hito seleccionado, conserva selección y contenido sin reconstrucción ni reinicio forzado de la lectura desktop. Si lo excluye, retira ese hito y su detalle y selecciona el primer resultado según el orden del consumidor, manteniendo abierto el detalle. Los excluidos salen inmediatamente de la interacción y de Tab, también durante cambios rápidos. El foco permanece en el filtro activado y una región viva anuncia el resultado, sin traslado de foco ni desplazamiento programático desde el filtro hasta el detalle.
 
-Con hitos disponibles, el estado inicial selecciona el primer resultado del filtro inicial según el orden cronológico del consumidor. En el ensayo de #103 es Mapfre — Integraciones WhatsApp / Genesys Cloud; no se codifica esa identificación sobre cualquier fuente. Si no hay hitos se omiten timeline, filtros y detalle. El estado de filtro, selección y posición vive solo en memoria del cliente y no se persiste ni se refleja en URL o historial.
+Con hitos disponibles, todos los tamaños entran sin selección ni detalle abierto, también al recargar. Cambiar entre desktop y mobile conserva el estado abierto o cerrado y el filtro vigente, sin seleccionar automáticamente un hito. Si no hay hitos se omiten timeline, filtros y detalle. El estado de filtro, selección y posición vive solo en memoria del cliente y no se persiste ni se refleja en URL o historial.
 
-La selección comunica un estado único permanente y conserva las dimensiones del botón, su borde y el espacio reservado del chevron. El periodo aparece lateralmente en desktop y encima del hito en mobile. La línea conecta los centros reales de los nodos visibles, se recalcula con el layout definitivo y se oculta con un solo hito; el detalle no añade nodo.
+La selección comunica un estado único cuando hay un detalle abierto y conserva las dimensiones del botón, su borde y el espacio reservado del chevron. El periodo aparece lateralmente en desktop y encima del hito en mobile. La línea conecta los centros reales de los nodos visibles, se recalcula con el layout definitivo y se oculta con un solo hito; el detalle no añade nodo.
 
 ### Detalle y responsive
 
-Con la mejora JavaScript y hitos disponibles, el patrón es selección única permanente y una única instancia de detalle activo. No es un acordeón plegable ni permite quedar sin selección al activar el hito seleccionado.
+Con la mejora JavaScript y hitos disponibles, hay una única instancia de detalle y como máximo un hito seleccionado. El detalle se puede cerrar en desktop, mobile y tablet vertical; cerrado, queda fuera de la interacción y del árbol accesible. En mobile tampoco ocupa espacio en el documento. Activar el hito seleccionado no cierra ni deselecciona.
 
-En desktop, el timeline permanece estático y el detalle ocupa una región lateral estable. Su cabecera identifica categoría, título, entidad y metadatos disponibles, fuera del marco de lectura; su cuerpo desplazable contiene el contenido íntegro. Al cambiar de hito, el nuevo cuerpo empieza al principio. El marco único tiene padding de 12 px y refleja el foco del scroller con un indicador interior champán de 1 px. Barras y degradados dependen del overflow real y excluyen marco y gutter, conforme a la especificación de integración.
+En desktop, el timeline no tiene desplazamiento automático y el detalle entra lateralmente al seleccionar. Su cabecera identifica categoría, título, entidad y metadatos disponibles, fuera del marco de lectura; su cuerpo desplazable contiene el contenido íntegro. Al cambiar de hito, el nuevo cuerpo empieza al principio; repetir selección conserva instancia y lectura. El marco único tiene padding de 12 px y refleja el foco del scroller con un indicador interior champán de 1 px. Barras y degradados dependen del overflow real y excluyen marco y gutter, conforme a la especificación de integración.
 
 En mobile, el detalle es un bloque independiente inmediatamente posterior al botón del hito seleccionado y anterior al siguiente visible, también si el seleccionado es el último. La cabecera visual es compacta, mantiene metadatos y un nombre accesible específico sin repetir toda la identificación del hito precedente. Su altura es natural, utiliza la anchura de lectura de la región y conserva scroll normal del documento, sin scroll interno impuesto ni overflow horizontal. Sus enlaces son nativos y no se anidan en el botón. La inserción desplaza deliberadamente los hitos siguientes y es la excepción acordada a la estabilidad global.
 
-Se selecciona un hito por clic, `Enter` o `Space`, conservando el foco en el control activado. Elegir otro sustituye el detalle y limpia los bloques y atributos ausentes. Repetir selección no cierra ni deselecciona; no hay control de cierre ni cierre por `Esc`. Cruzar el breakpoint conserva filtro, selección, instancia y foco coherente sin destruir el detalle.
+Se selecciona un hito por clic, `Enter` o `Space`, conservando el foco en el control activado. Elegir otro sustituye el detalle y limpia los bloques y atributos ausentes. Todos los tamaños ofrecen el botón de texto exacto `Cerrar` con un icono SVG de `ProfileIcon`; `Escape` desde cualquier región invoca el mismo cierre cuando hay un detalle abierto. Ambos retiran la selección y devuelven el foco lógico al hito mediante `preventScroll`, permitiendo continuar con Tab desde él. En mobile y tablet vertical, Cerrar ocupa su propio espacio antes de los metadatos; retirar el detalle conserva el ajuste natural del documento, sin compensación ni scroll programático. En desktop, el cierre devuelve el marco al centro sin reiniciar el scroll del timeline y no deja contorno ni barra residuales: la siguiente interacción de teclado recupera las señales normales y un nuevo movimiento del puntero o scroll recupera el hover, sin reactivar el contorno. Cruzar el breakpoint conserva filtro, selección, instancia y foco coherente sin destruir el detalle, incluido el foco de Cerrar mientras sigue disponible; un control que deja de estar disponible devuelve el foco al hito.
 
 La compensación fina del scroll mobile, alineación superior y conservación precisa de lectura al repetir selección siguen pendientes de P13. No forman parte de la aceptación inmediata de P12 ni se implementan durante esta integración. La preferencia del titular por fecha e hito cerca del borde superior requiere acordar offsets, excepciones y límites en otro ciclo.
 
@@ -128,7 +129,7 @@ La compensación fina del scroll mobile, alineación superior y conservación pr
 
 El timeline no se mueve automáticamente. Se retiran el loop obligatorio y los controles de pausa, reanudación y cierre asociados a ese modelo. El HTML accesible base sigue siendo el que mejora el cliente; no se construye una trayectoria paralela.
 
-La selección, el filtrado y la recolocación no dependen de cargar una librería de animación. Con `prefers-reduced-motion`, cambios y recolocaciones son inmediatos. Esta integración no añade animaciones de altura.
+La selección, el filtrado y la recolocación no dependen de cargar una librería de animación. En desktop, marco, columnas, navegación y detalle coordinan apertura y cierre durante 550 ms. Con `prefers-reduced-motion`, cambios y recolocaciones son inmediatos. Esta integración no añade animaciones de altura.
 
 La apertura descendente tipo persiana es una preferencia futura, pendiente de efecto y coordinación con scroll, foco y reducción de movimiento. No se implementa ni se acredita durante esta etapa.
 
@@ -137,6 +138,8 @@ Drag & Drop queda fuera de alcance: la trayectoria no admite reordenación como 
 ### Degradación sin JavaScript
 
 Sin JavaScript, o si no se inicializa la mejora, `/` muestra la trayectoria completa, sus detalles y CTAs operativos. Filtros y selección solo se ofrecen cuando son funcionales. Nunca redirige automáticamente a `/read/`.
+
+La carga inicial y F5 no muestran fugazmente la composición base antes de la mejorada. La espera de inicialización tiene un máximo de 2 s; si vence, conserva el HTML completo y no aplica después una mejora tardía. Un fallo durante la inicialización restaura ese HTML. En tablet horizontal, las barras de identidad, timeline y detalle parten ocultas; con overflow responden al scroll y vuelven al reposo, o permanecen visibles por foco de teclado. El hover solo las activa con ratón y puntero fino.
 
 ## CV web, impresión y PDF
 
@@ -264,7 +267,7 @@ Desde que aterrizan la baseline y sus umbrales, se aplica la matriz de bloqueo a
 | --- | --- | --- |
 | Base | Astro, datos, los dos HTML, validación, SEO, a11y base y CI | Build contractual verde con fixture y `dist/index.html` y `dist/read/index.html` generados |
 | PDF | Tercer artefacto estable derivado del CV web | PDF publicado y checks de archivo, firma y páginas verdes |
-| Interactividad | Timeline estático, filtros, selección permanente, detalle responsive y degradación progresiva | Pruebas de estado, teclado, foco, responsive, reducción de movimiento y rendimiento verdes |
+| Interactividad | Timeline sin desplazamiento automático, filtros, detalle responsive y degradación progresiva | Pruebas de estado, teclado, foco, responsive, reducción de movimiento y rendimiento verdes |
 | Mejora | Ajustes posteriores basados en evidencia | Comprobación del comportamiento afectado y resumen de entrega; decisión duradera solo cuando cambie un contrato |
 
 La integración de la UI quedó completada y aceptada por el titular el 2026-10-06. Los siguientes incrementos se verifican conforme a su especificación y a la proporcionalidad definida en `AGENTS.md`. Los criterios de cierre de una fase no se convierten en entregables documentales de cada ajuste local; se aprovechan las pruebas y gates existentes. La aceptación de la base integrada y la de los criterios P12 se registran por separado; no se exige movimiento continuo. Las mejoras posteriores vuelven al flujo de definición con alcance propio; P13 y el trabajo histórico P14 mantienen sus pendientes.
@@ -282,7 +285,7 @@ Base y PDF describen el recorrido histórico de construcción. El build actual e
 | DATA-002 | Consumir revisión curricular exacta | Logs con `resolved_profile_data_sha` |
 | DATA-003 | Limitar publicaciones a revisiones integradas | Comprobación de alcanzabilidad desde `profile-data/main` |
 | INT-001 | Timeline con filtro inicial `work`, o `all` sin experiencia | Prueba de render y estado cliente |
-| INT-002 | Selección permanente y detalle responsive accesible | Pruebas Playwright de foco, teclado, instancia única, lectura y breakpoint |
+| INT-002 | Entrada sin selección y detalle único cerrable en todos los tamaños | Pruebas Playwright de foco, teclado, instancia única, lectura, marco adaptable y breakpoint |
 | A11Y-001 | WCAG 2.2 AA como objetivo | Axe, pruebas de interacción y checklist manual |
 | SEO-001 | Metadatos por ruta | Check sobre ambos HTML generados |
 | PERF-001 | Rendimiento con dos niveles | Baseline, canarios negativos, Lighthouse y budgets de build en summary |

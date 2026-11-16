@@ -7,15 +7,17 @@ const fixturePath = fileURLToPath(
 );
 
 export function createPlaywrightConfig({ fixturePath, testIgnore, testMatch }) {
+  const port = process.env.PLAYWRIGHT_PORT ?? "4321";
+  const baseURL = `http://127.0.0.1:${port}/profile-site/`;
   return defineConfig({
     testDir: "./e2e",
     ...(testIgnore && { testIgnore }),
     testMatch,
     use: {
-      baseURL: "http://127.0.0.1:4321/profile-site/",
+      baseURL,
     },
     webServer: {
-      command: "pnpm build && pnpm astro preview --host 127.0.0.1 --port 4321",
+      command: `pnpm build && pnpm astro preview --host 127.0.0.1 --port ${port}`,
       cwd: projectRoot,
       env: {
         ...process.env,
@@ -24,7 +26,7 @@ export function createPlaywrightConfig({ fixturePath, testIgnore, testMatch }) {
       },
       reuseExistingServer: false,
       timeout: 120_000,
-      url: "http://127.0.0.1:4321/profile-site/",
+      url: baseURL,
     },
   });
 }

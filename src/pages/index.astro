@@ -62,6 +62,14 @@ const structuredData = JSON.stringify({
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <PageMetadata {canonicalUrl} {description} {structuredData} {title} />
+    {timeline.length > 0 && <script is:inline>
+      // La espera está acotada: una mejora ausente deja disponible el HTML completo.
+      const root = document.documentElement;
+      root.dataset.timelineState = "loading";
+      window.setTimeout(() => {
+        if (root.dataset.timelineState === "loading") root.dataset.timelineState = "fallback";
+      }, 2000);
+    </script>}
   </head>
   <body>
     <div class="profile-frame">
@@ -135,6 +143,9 @@ const structuredData = JSON.stringify({
             data-contract="timeline-filter-status"
             role="status"
           ></p>
+          <template data-contract="timeline-close-template">
+            <button class="timeline__close" type="button">Cerrar<ProfileIcon name="close" /></button>
+          </template>
           <div class="timeline__experience">
             <ol
               aria-label="Hitos de la trayectoria"
