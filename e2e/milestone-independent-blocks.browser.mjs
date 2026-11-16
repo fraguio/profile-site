@@ -9,6 +9,7 @@ for (const width of [1440, 360, 390]) {
     test("cliente y proyecto identifican la participación sin sustituir contratante ni rol", async ({ page }) => {
       await page.goto("./");
       const trigger = page.getByRole("button", { name: /Cliente Ficticio — Integración de canales y plataformas distribuidas/ });
+      await trigger.click();
       await expect(trigger).toHaveAttribute("aria-pressed", "true");
       await expect(trigger).toContainText("Contratante Ficticia");
       const detail = page.locator('[data-contract="timeline-reader"]');

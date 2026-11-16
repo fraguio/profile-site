@@ -1,12 +1,16 @@
 import { expect, test } from "@playwright/test";
 
-test.use({ viewport: { width: 1440, height: 900 } });
+test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
+
+test.beforeEach(async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: /Hito con contenido largo/ }).click();
+});
 
 for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900 }]) {
   test(`las señales del detalle siguen el overflow y la modalidad de foco en ${viewport.width} × ${viewport.height}`, async ({ page }) => {
     test.info().annotations.push({ type: "fuente", description: "fictitious-resume-with-long-milestone.json; detalle largo → viewport amplio → contenido sin overflow; B02" });
     await page.setViewportSize(viewport);
-    await page.goto("./");
     const body = page.locator('[data-contract="timeline-reader-body"]');
     const frame = body.locator("..");
     const gradient = frame.locator('[aria-hidden="true"]');
@@ -33,6 +37,8 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900
     await expect(frame).toHaveCSS("box-shadow", "none");
     await page.locator('[data-contract="milestone-trigger"]').last().focus();
     await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Cerrar", exact: true })).toBeFocused();
+    await page.keyboard.press("Tab");
     await expect(body).toBeFocused();
     await expect(body).not.toHaveCSS("scrollbar-color", transparent);
     await page.keyboard.press("Control+End");
@@ -56,7 +62,6 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900
   test(`el marco desktop permite leer por teclado hasta el final en ${viewport.width} × ${viewport.height}`, async ({ page }) => {
     test.info().annotations.push({ type: "fuente", description: "fictitious-resume-with-long-milestone.json; primer hito; Todo; contenido largo" });
     await page.setViewportSize(viewport);
-    await page.goto("./");
     await page.evaluate(() => document.fonts.ready);
     const reader = page.locator('[data-contract="timeline-reader"]');
     const header = reader.locator('[data-contract="timeline-reader-header"]');
@@ -74,6 +79,8 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900
     const lastTrigger = page.locator('[data-contract="milestone-trigger"]').last();
     await lastTrigger.focus();
     await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Cerrar", exact: true })).toBeFocused();
+    await page.keyboard.press("Tab");
     await expect(body).toBeFocused();
     await expect(frame).toHaveCSS("box-shadow", "rgb(201, 190, 166) 0px 0px 0px 1px inset");
     await expect(frame).toHaveCSS("outline-style", "none");
@@ -89,8 +96,6 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900
 test("el lector mantiene fija su cabecera mientras desplaza el contenido largo", async ({
   page,
 }) => {
-  await page.goto("./");
-
   await page
     .locator('[data-contract="milestone-trigger"]')
     .filter({ hasText: "Hito con contenido largo" })
@@ -114,6 +119,9 @@ test("el lector mantiene fija su cabecera mientras desplaza el contenido largo",
 
   const detail = await body.locator('[data-contract="milestone-detail"]').elementHandle();
   const scrollTop = await body.evaluate((element) => element.scrollTop);
+  await page.getByRole("button", { name: /Hito con contenido largo/ }).click();
+  expect(await body.evaluate((element) => element.scrollTop)).toBe(scrollTop);
+  expect(await detail.evaluate((element) => element.isConnected)).toBe(true);
   const workFilter = page.getByRole("button", { name: "Experiencia profesional", exact: true });
   await workFilter.click();
   await expect(workFilter).toBeFocused();

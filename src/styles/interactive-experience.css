@@ -70,6 +70,10 @@ body {
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 25%);
 }
 
+html[data-timeline-state="loading"] .profile-frame {
+  visibility: hidden;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -556,6 +560,33 @@ input:focus-visible {
   display: none;
 }
 
+.timeline__close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid #284b60;
+  border-radius: 8px;
+  background: #122938;
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.timeline__close[hidden] { display: none; }
+.timeline__close:hover { background: #1b3b50; }
+.timeline__close:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px #c9bea6;
+}
+
+.timeline__reader .timeline__close svg { color: inherit; }
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -635,14 +666,39 @@ input:focus-visible {
 }
 
 @media (min-width: 1024px) {
+  .timeline-enhanced {
+    --timeline-expanded-width: min(calc(100vw - 32px), 90rem);
+    --timeline-motion-duration: 550ms;
+    --timeline-motion-easing: cubic-bezier(.22, .8, .24, 1);
+  }
+
   .timeline-enhanced body {
     height: 100dvh;
   }
 
   .timeline-enhanced .profile-frame {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
+    width: var(--timeline-expanded-width);
     height: 100%;
+    overflow: hidden;
+  }
+
+  .timeline-enhanced[data-timeline-detail-open="false"] .profile-frame {
+    width: calc(var(--timeline-expanded-width) - var(--timeline-reader-space, 0px));
+  }
+
+  .timeline-enhanced[data-timeline-motion="ready"] .profile-frame {
+    transition: width var(--timeline-motion-duration) var(--timeline-motion-easing);
+  }
+
+  .timeline-enhanced[data-timeline-motion="ready"] .profile-navigation {
+    transition: column-gap var(--timeline-motion-duration) var(--timeline-motion-easing);
+  }
+
+  .timeline-enhanced[data-timeline-detail-open="false"] .profile-navigation {
+    column-gap: 18px;
   }
 
   .timeline-enhanced .profile-hero {
@@ -661,12 +717,18 @@ input:focus-visible {
   }
 
   .timeline-enhanced .profile-navigation {
+    grid-template-columns: minmax(max-content, 1fr) max-content minmax(0, 0.5fr);
     width: min(100%, 90rem);
   }
 
+  .timeline-enhanced .profile-navigation__name { white-space: nowrap; }
+
   .timeline-enhanced .interactive-experience {
+    width: calc(var(--timeline-expanded-width) - 2px);
     min-height: 0;
+    margin-inline: 0;
     padding: 20px 28px;
+    overflow: hidden;
   }
 
   .timeline-enhanced .timeline {
@@ -735,11 +797,12 @@ input:focus-visible {
     scrollbar-color: transparent transparent;
   }
 
-  .timeline-enhanced :is(.profile-hero, .timeline__rail, [data-contract="timeline-reader-body"])[data-scrollable="true"] {
+  .timeline-enhanced :is(.profile-hero, .timeline__rail, [data-contract="timeline-reader-body"])[data-scrollable="true"]:is([data-scrolling="true"], :focus-visible, :has(:focus-visible)) {
     scrollbar-color: rgb(148 163 184 / 40%) transparent;
   }
 
   .timeline__reader {
+    position: relative;
     grid-column: 2;
     grid-row: 1 / 3;
     min-height: 0;
@@ -748,6 +811,30 @@ input:focus-visible {
     border: 1px solid #142d3c;
     border-radius: 16px;
     background: rgb(10 26 35 / 70%);
+    transform: translateX(calc(100% + 28px));
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .timeline-enhanced[data-timeline-motion="ready"] .timeline__reader {
+    transition: transform var(--timeline-motion-duration) var(--timeline-motion-easing), opacity 350ms, visibility 0s var(--timeline-motion-duration);
+  }
+
+  .timeline-enhanced[data-timeline-detail-open="true"] .timeline__reader {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .timeline__reader .milestone__category { padding-right: 90px; }
+
+  .timeline-enhanced[data-timeline-focus-resting] .milestone__trigger:focus-visible {
+    box-shadow: none;
+  }
+
+  .timeline-enhanced[data-timeline-focus-resting] .timeline__rail[data-scrollable]:is(:hover, :focus-visible, :has(:focus-visible)) {
+    scrollbar-color: transparent transparent;
   }
 
   .timeline__reader-content {
@@ -809,12 +896,18 @@ input:focus-visible {
 }
 
 @media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
-  .timeline-enhanced :is(.profile-hero, .timeline__rail, [data-contract="timeline-reader-body"])[data-scrollable] {
-    scrollbar-color: transparent transparent;
-  }
-
   .timeline-enhanced :is(.profile-hero, .timeline__rail, [data-contract="timeline-reader-body"])[data-scrollable="true"]:is(:hover, :focus-visible, :has(:focus-visible)) {
     scrollbar-color: rgb(148 163 184 / 40%) transparent;
+  }
+
+  .timeline-enhanced[data-timeline-focus-resting="pointer"] .timeline__rail[data-scrollable="true"]:hover {
+    scrollbar-color: rgb(148 163 184 / 40%) transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-enhanced :is(.profile-frame, .profile-navigation, .timeline__reader) {
+    transition: none !important;
   }
 }
 

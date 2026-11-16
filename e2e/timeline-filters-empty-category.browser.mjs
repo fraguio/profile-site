@@ -10,7 +10,8 @@ test("sin experiencia se inicia en Todo y se omiten las categorías vacías", as
   await expect(page.getByRole("button", { name: "Formación", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Proyectos", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Todo", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: /Grado en Ingeniería/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: /Grado en Ingeniería/ })).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("button", { name: /Grado en Ingeniería/ }).click();
   const detail = page.locator('[data-contract="timeline-reader"]');
   await expect(detail).toContainText("Arquitectura de sistemas");
   await page.getByRole("button", { name: "Formación", exact: true }).click();

@@ -1,5 +1,11 @@
 export {};
 
+const root = document.documentElement;
+const timeline = document.querySelector<HTMLElement>(".timeline");
+const fallback = timeline?.cloneNode(true);
+let geometryFrame = 0;
+
+try {
 const filters = document.querySelector<HTMLFieldSetElement>(
   '[data-contract="timeline-filters"]',
 );
@@ -10,7 +16,7 @@ const rail = document.querySelector<HTMLOListElement>(
   '[data-contract="timeline-rail"]',
 );
 
-if (filters && status && rail) {
+if (filters && status && rail && document.documentElement.dataset.timelineState !== "fallback") {
   const milestones = [...rail.querySelectorAll<HTMLElement>("[data-timeline-category]")];
   const entries = milestones.map((item) => ({
     item,
@@ -21,6 +27,7 @@ if (filters && status && rail) {
   }));
 
   if (entries.length > 0 && entries.every(({ summary, detail }) => summary && detail)) {
+    type Entry = typeof entries[number];
     const desktop = window.matchMedia("(min-width: 1024px)");
     const hero = document.querySelector<HTMLElement>(".profile-hero");
     const experience = rail.parentElement!;
@@ -29,6 +36,8 @@ if (filters && status && rail) {
     const readerHeader = document.createElement("header");
     const readerFrame = document.createElement("div");
     const readerBody = document.createElement("div");
+    const closeTemplate = document.querySelector<HTMLTemplateElement>('[data-contract="timeline-close-template"]')!;
+    const closeButton = closeTemplate.content.querySelector("button")!.cloneNode(true) as HTMLButtonElement;
     const railFrame = document.createElement("div");
     railFrame.className = "timeline__rail-frame";
     rail.before(railFrame);
@@ -47,13 +56,22 @@ if (filters && status && rail) {
     for (const { item } of entries) {
       item.hidden = initialFilter.value !== "all" && item.dataset.timelineCategory !== initialFilter.value;
     }
-    let selected = entries.find(({ item }) => !item.hidden)!;
-    let geometryFrame = 0;
+    let selected: Entry | undefined;
+
+    function updateDetailState() {
+      root.dataset.timelineDetailOpen = String(Boolean(selected));
+      reader.inert = !selected;
+      reader.setAttribute("aria-hidden", String(!selected));
+    }
 
     function updateGeometry() {
       geometryFrame = 0;
       if (hero) {
         hero.dataset.scrollable = String(desktop.matches && hero.scrollHeight > hero.clientHeight + 1);
+      }
+      if (desktop.matches) {
+        const gap = parseFloat(getComputedStyle(timeline!).columnGap);
+        root.style.setProperty("--timeline-reader-space", `${reader.getBoundingClientRect().width + gap}px`);
       }
       for (const { surface, gradient } of scrollers) {
         const overflow = desktop.matches && surface.scrollHeight > surface.clientHeight + 1;
@@ -79,6 +97,7 @@ if (filters && status && rail) {
       if (!geometryFrame) geometryFrame = requestAnimationFrame(updateGeometry);
     }
 
+    reader.id = "timeline-detail";
     reader.className = "timeline__reader";
     reader.dataset.contract = "timeline-reader";
     readerArticle.className = "timeline__reader-content";
@@ -87,31 +106,38 @@ if (filters && status && rail) {
     readerBody.dataset.contract = "timeline-reader-body";
     readerBody.setAttribute("role", "region");
     readerFrame.prepend(readerBody);
-    readerArticle.append(readerHeader, readerFrame);
+    readerArticle.append(closeButton, readerHeader, readerFrame);
     reader.append(readerArticle);
 
     function placeDetail() {
+      if (!desktop.matches && !selected) {
+        select(entries.find(({ item }) => !item.hidden)!);
+        return;
+      }
       const focused = document.activeElement;
-      const returnToMilestone = !desktop.matches && (focused === readerBody || focused === rail);
+      const returnToMilestone = !desktop.matches && (focused === readerBody || focused === rail || focused === closeButton);
       reader.setAttribute("role", desktop.matches ? "complementary" : "region");
-      readerBody.tabIndex = desktop.matches ? 0 : -1;
+      readerBody.tabIndex = desktop.matches && selected ? 0 : -1;
+      closeButton.hidden = !desktop.matches;
       rail!.tabIndex = -1;
       if (desktop.matches) {
-        experience.append(reader);
+        if (reader.parentElement !== experience) experience.append(reader);
       } else {
-        selected.trigger.after(reader);
+        selected!.trigger.after(reader);
       }
       if (returnToMilestone) {
-        selected.trigger.focus({ preventScroll: true });
+        selected?.trigger.focus({ preventScroll: true });
       } else if (focused instanceof HTMLElement && reader.contains(focused)) {
         focused.focus({ preventScroll: true });
       }
+      updateDetailState();
       scheduleGeometry();
     }
 
-    function select(entry: typeof selected) {
+    function select(entry: Entry) {
       if (entry.item.hidden) return;
-      selected.trigger.setAttribute("aria-pressed", "false");
+      delete root.dataset.timelineFocusResting;
+      selected?.trigger.setAttribute("aria-pressed", "false");
       selected = entry;
       reader.dataset.category = selected.item.dataset.timelineCategory;
       selected.trigger.setAttribute("aria-pressed", "true");
@@ -124,12 +150,26 @@ if (filters && status && rail) {
       readerBody.scrollTop = 0;
     }
 
+    function closeDetail() {
+      if (!desktop.matches || !selected) return;
+      const trigger = selected.trigger;
+      trigger.setAttribute("aria-pressed", "false");
+      selected = undefined;
+      readerBody.tabIndex = -1;
+      // Retiene el foco lógico sin señales causadas por el propio cierre.
+      root.dataset.timelineFocusResting = "idle";
+      trigger.focus({ preventScroll: true });
+      updateDetailState();
+      scheduleGeometry();
+    }
+
     for (const entry of entries) {
       const { summary, detail, trigger } = entry;
       trigger.type = "button";
       trigger.className = "milestone__trigger";
       trigger.dataset.contract = "milestone-trigger";
       trigger.setAttribute("aria-pressed", "false");
+      trigger.setAttribute("aria-controls", reader.id);
       trigger.setAttribute("aria-label", [...summary!.querySelectorAll(".milestone__category, h3, .milestone__entity, .milestone__period")]
         .map((element) => element.textContent?.trim().replace(/\s+/g, " ")).join(", "));
       entry.metadata.className = "milestone__metadata";
@@ -153,16 +193,16 @@ if (filters && status && rail) {
         item.hidden = filter.value !== "all" && item.dataset.timelineCategory !== filter.value;
         return !item.hidden;
       });
-      if (selected.item.hidden) select(visible[0]);
+      if (selected?.item.hidden) select(visible[0]);
       const count = visible.length;
       status.textContent = `Se ${count === 1 ? "muestra" : "muestran"} ${count} ${count === 1 ? "hito" : "hitos"} de ${filter.dataset.timelineFilterLabel?.toLowerCase()}.`;
       scheduleGeometry();
     });
 
-    desktop.addEventListener("change", placeDetail);
-    select(selected);
-    document.documentElement.classList.add("timeline-enhanced");
+    root.classList.add("timeline-enhanced");
     filters.hidden = false;
+    placeDetail();
+    updateGeometry();
     const resizeObserver = new ResizeObserver(scheduleGeometry);
     if (hero) {
       resizeObserver.observe(hero);
@@ -175,9 +215,46 @@ if (filters && status && rail) {
     if (hero) contentObserver.observe(hero, { childList: true, characterData: true, subtree: true });
     contentObserver.observe(rail, { childList: true, characterData: true, subtree: true });
     contentObserver.observe(readerBody, { childList: true, characterData: true, subtree: true });
-    for (const { surface } of scrollers) surface.addEventListener("scroll", scheduleGeometry, { passive: true });
+    for (const surface of [hero, ...scrollers.map(({ surface }) => surface)]) {
+      if (!surface) continue;
+      let scrollIdleTimer = 0;
+      surface.addEventListener("scroll", () => {
+        scheduleGeometry();
+        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+        surface.dataset.scrolling = "true";
+        window.clearTimeout(scrollIdleTimer);
+        scrollIdleTimer = window.setTimeout(() => { delete surface.dataset.scrolling; }, 700);
+      }, { passive: true });
+    }
     window.addEventListener("resize", scheduleGeometry);
     document.fonts.ready.then(scheduleGeometry);
     document.fonts.addEventListener("loadingdone", scheduleGeometry);
+    desktop.addEventListener("change", placeDetail);
+    closeButton.addEventListener("click", closeDetail);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && desktop.matches && selected) {
+        event.preventDefault();
+        closeDetail();
+      } else if (event.key !== "Escape") {
+        delete root.dataset.timelineFocusResting;
+      }
+    });
+    document.addEventListener("pointerdown", () => { delete root.dataset.timelineFocusResting; });
+    function resumePointerFeedback() {
+      if (root.dataset.timelineFocusResting === "idle") root.dataset.timelineFocusResting = "pointer";
+    }
+    document.addEventListener("pointermove", resumePointerFeedback, { passive: true });
+    document.addEventListener("wheel", resumePointerFeedback, { passive: true });
+    requestAnimationFrame(() => requestAnimationFrame(() => { root.dataset.timelineMotion = "ready"; }));
   }
+}
+root.dataset.timelineState = root.classList.contains("timeline-enhanced") ? "ready" : "fallback";
+} catch {
+  // Una inicialización incompleta nunca sustituye el documento accesible de origen.
+  cancelAnimationFrame(geometryFrame);
+  if (fallback) timeline?.replaceWith(fallback);
+  root.classList.remove("timeline-enhanced");
+  delete root.dataset.timelineDetailOpen;
+  root.style.removeProperty("--timeline-reader-space");
+  root.dataset.timelineState = "fallback";
 }

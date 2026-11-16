@@ -1,6 +1,120 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+for (const width of [1024, 1366, 1440, 1920]) {
+  test(`el marco adaptable entra cerrado, anima sin estrechar columnas y retorna al centro a ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("./");
+    await page.evaluate(() => document.fonts.ready);
+    const frame = page.locator(".profile-frame");
+    const reader = page.locator('[data-contract="timeline-reader"]');
+    const trigger = page.getByRole("button", { name: /Arquitecta de software/ });
+    await expect(trigger).toHaveAttribute("aria-pressed", "false");
+    await expect(reader).toBeHidden();
+    const measure = () => page.evaluate(() => {
+      const box = (selector) => {
+        const { x, y, width, height } = document.querySelector(selector).getBoundingClientRect();
+        return { x, y, width, height };
+      };
+      return { frame: box(".profile-frame"), hero: box(".profile-hero"), rail: box(".timeline__rail-frame"), nav: box(".profile-navigation") };
+    });
+    const closed = await measure();
+    expect(closed.frame.x + closed.frame.width / 2).toBeCloseTo(width / 2, 0);
+    await trigger.evaluate((node) => node.addEventListener("click", () => {
+      window.openingFrames = [];
+      const sample = () => {
+        window.openingFrames.push(document.querySelector(".profile-frame").getBoundingClientRect().width);
+        if (window.openingFrames.length < 12) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    }, { once: true }));
+    await trigger.click();
+    await expect(reader).toBeVisible();
+    await expect.poll(() => frame.evaluate((node) => node.getBoundingClientRect().width)).toBe(Math.min(width - 32, 1440));
+    const open = await measure();
+    expect(open.frame.width - closed.frame.width).toBeGreaterThan(300);
+    expect(open.hero.width).toBe(closed.hero.width);
+    expect(open.rail.width).toBe(closed.rail.width);
+    expect(open.nav.height).toBe(closed.nav.height);
+    expect(open.hero.y).toBe(closed.hero.y);
+    expect((await page.evaluate(() => window.openingFrames)).some(value => value > closed.frame.width + 1 && value < open.frame.width - 1)).toBe(true);
+    const close = page.getByRole("button", { name: "Cerrar", exact: true });
+    await expect(close.locator('svg[aria-hidden="true"]')).toHaveCount(1);
+    await close.click();
+    await expect(reader).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveAttribute("aria-pressed", "false");
+    await expect.poll(() => frame.evaluate((node) => node.getBoundingClientRect().width)).toBe(closed.frame.width);
+    expect(await measure()).toEqual(closed);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  });
+}
+
+test("Escape global y Cerrar dejan el mismo reposo visual y permiten continuar con Tab y hover", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("./");
+  const trigger = page.getByRole("button", { name: /Arquitecta de software/ });
+  const rail = page.locator('[data-contract="timeline-rail"]');
+  const reader = page.locator('[data-contract="timeline-reader"]');
+  const body = page.locator('[data-contract="timeline-reader-body"]');
+  await rail.locator("h3").first().evaluate(node => { node.textContent += " con plataformas distribuidas y proyectos de integración".repeat(10); });
+  const transparent = "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)";
+  for (const origin of ["hito", "filtro", "cuerpo", "identidad", "botón"]) {
+    await trigger.click();
+    const top = await rail.evaluate(node => node.scrollTop);
+    await rail.hover();
+    if (origin === "botón") await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+    else {
+      const target = origin === "hito" ? trigger : origin === "filtro" ? page.getByRole("button", { name: "Experiencia profesional", exact: true }) : origin === "cuerpo" ? body : page.getByRole("link", { name: "Leer CV web", exact: true });
+      await target.focus();
+      await page.keyboard.press("Escape");
+    }
+    await expect(reader).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveCSS("box-shadow", "none");
+    await expect(rail).toHaveCSS("scrollbar-color", transparent);
+    expect(await rail.evaluate(node => node.scrollTop)).toBe(top);
+    await page.keyboard.press("Escape");
+    await expect(trigger).toHaveCSS("box-shadow", "none");
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: /Ingeniera de plataforma/ })).toBeFocused();
+    await expect(page.getByRole("button", { name: /Ingeniera de plataforma/ })).not.toHaveCSS("box-shadow", "none");
+    await page.keyboard.press("Shift+Tab");
+    await expect(trigger).toBeFocused();
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Escape");
+    await page.mouse.move(0, 0);
+    await rail.hover();
+    await expect(rail).not.toHaveCSS("scrollbar-color", transparent);
+    await expect(trigger).toHaveCSS("box-shadow", "none");
+    await page.mouse.move(0, 0);
+    await expect(rail).toHaveCSS("scrollbar-color", transparent);
+  }
+});
+
+test("el breakpoint abre el primer resultado al salir del reposo desktop y retira el foco de Cerrar en mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("./");
+  await page.getByRole("button", { name: "Proyectos", exact: true }).click();
+  const reader = page.locator('[data-contract="timeline-reader"]');
+  const instance = await reader.elementHandle();
+  await expect(reader).toBeHidden();
+  await page.setViewportSize({ width: 360, height: 800 });
+  const trigger = page.getByRole("button", { name: /Proyecto Vigente/ });
+  await expect(trigger).toHaveAttribute("aria-pressed", "true");
+  await expect(reader).toBeVisible();
+  expect(await trigger.evaluate(node => node.nextElementSibling?.dataset.contract)).toBe("timeline-reader");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const close = page.getByRole("button", { name: "Cerrar", exact: true });
+  await close.focus();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(trigger).toBeFocused();
+  await expect(close).toBeHidden();
+  expect(await instance.evaluate(node => node.isConnected)).toBe(true);
+});
+
 function timelineEndpoints(list) {
   const style = getComputedStyle(list, "::before");
   const origin = list.getBoundingClientRect();
@@ -29,6 +143,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1440, height: 900
     await page.evaluate(() => document.fonts.ready);
     const rail = page.getByRole("list", { name: "Hitos de la trayectoria", exact: true });
     await page.getByRole("button", { name: "Todo", exact: true }).click();
+    await page.getByRole("button", { name: /Arquitecta de software/ }).click();
     const gradient = rail.locator("..").locator(':scope > [aria-hidden="true"]');
     const body = page.locator('[data-contract="timeline-reader-body"]');
     const bodyGradient = body.locator("..").locator('[aria-hidden="true"]');
@@ -223,6 +338,7 @@ for (const viewport of [
     await expect(first).toHaveCSS("outline-style", "none");
     await expect(first).toHaveCSS("outline-offset", "0px");
     await expect(first).toHaveCSS("box-shadow", "rgb(201, 190, 166) 0px 0px 0px 1px inset");
+    await page.keyboard.press("Enter");
     await expect(first).toHaveAttribute("aria-pressed", "true");
     await expect(work).toHaveCSS("box-shadow", "rgba(0, 0, 0, 0.05) 0px 1px 2px 0px");
     await page.getByRole("button", { name: "Proyectos", exact: true }).click();
@@ -418,7 +534,7 @@ test("el fallback desktop no muestra un lector y conserva todos los detalles", a
   await context.close();
 });
 
-test("el filtro inicial muestra Experiencia y selecciona su primer hito cronológico", async ({ page }) => {
+test("el filtro inicial muestra Experiencia sin abrir el detalle desktop", async ({ page }) => {
   await page.goto("./");
 
   const filters = page.getByRole("group", { name: "Filtrar trayectoria" });
@@ -430,8 +546,8 @@ test("el filtro inicial muestra Experiencia y selecciona su primer hito cronoló
   await expect(filters.getByRole("button")).toHaveCount(4);
   await expect(page.locator("[data-timeline-category]")).toHaveCount(6);
   await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(2);
-  await expect(page.getByRole("button", { name: /Arquitecta de software/ })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator('[data-contract="timeline-reader"]')).toHaveAccessibleName(/Detalle del hito:.*Arquitecta de software/);
+  await expect(page.locator('[data-contract="milestone-trigger"][aria-pressed="true"]')).toHaveCount(0);
+  await expect(page.locator('[data-contract="timeline-reader"]')).toBeHidden();
 });
 
 test("los filtros muestran cada categoria y anuncian el resultado sin persistirlo", async ({
@@ -487,7 +603,7 @@ test("los filtros muestran cada categoria y anuncian el resultado sin persistirl
     page.getByRole("button", { name: "Experiencia profesional", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("[data-timeline-category]:not([hidden])")).toHaveCount(2);
-  await expect(page.locator('[data-contract="milestone-trigger"]').first()).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-contract="milestone-trigger"]').first()).toHaveAttribute("aria-pressed", "false");
 });
 
 test("el teclado cambia el filtro y conserva el foco sin desplazar el documento", async ({
@@ -527,7 +643,7 @@ test("el teclado cambia el filtro y conserva el foco sin desplazar el documento"
     "work",
   );
   expect(await page.evaluate(() => window.scrollY)).toBe(initialScrollTop);
-  await expect(rail.locator('[data-contract="milestone-trigger"][aria-pressed="true"]')).toHaveCount(1);
+  await expect(rail.locator('[data-contract="milestone-trigger"][aria-pressed="true"]')).toHaveCount(0);
   await page.keyboard.press("Tab");
   const educationFilter = page.getByRole("button", { name: "Formación", exact: true });
   await expect(educationFilter).toBeFocused();
@@ -546,6 +662,28 @@ test("el teclado cambia el filtro y conserva el foco sin desplazar el documento"
 test.describe("con entrada touch", () => {
   test.use({ hasTouch: true });
 
+  test("las barras de tablet parten ocultas, responden al scroll y vuelven al reposo", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 500 });
+    await page.goto("./");
+    await page.getByRole("button", { name: /Arquitecta de software/ }).click();
+    await page.evaluate(() => document.fonts.ready);
+    expect(await page.evaluate(() => matchMedia("(hover: hover) and (pointer: fine)").matches)).toBe(false);
+    const surfaces = page.locator('.profile-hero, .timeline__rail, [data-contract="timeline-reader-body"]');
+    const transparent = "rgba(0, 0, 0, 0) rgba(0, 0, 0, 0)";
+    for (const surface of await surfaces.all()) {
+      await expect.poll(() => surface.evaluate((node) => node.scrollHeight - node.clientHeight)).toBeGreaterThan(1);
+      await expect(surface).toHaveCSS("scrollbar-color", transparent);
+      await surface.evaluate((node) => { node.scrollTop = 20; });
+      await expect(surface).not.toHaveCSS("scrollbar-color", transparent);
+      await expect.poll(() => surface.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+      await expect(surface).toHaveCSS("scrollbar-color", transparent);
+    }
+    await page.keyboard.press("Tab");
+    const body = page.locator('[data-contract="timeline-reader-body"]');
+    await body.focus();
+    await expect(body).not.toHaveCSS("scrollbar-color", transparent);
+  });
+
   test("el filtro responde al toque", async ({ page }) => {
     await page.goto("./");
 
@@ -556,9 +694,9 @@ test.describe("con entrada touch", () => {
 });
 
 test.describe("lector lateral desktop", () => {
-  test.use({ viewport: { width: 1440, height: 900 } });
+  test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
 
-  test("selecciona inicialmente el primer hito y mantiene un detalle por clic, Enter, Espacio y Escape", async ({
+  test("abre un detalle por clic, Enter o Espacio, conserva la repetición y cierra con Escape", async ({
     page,
   }) => {
     await page.goto("./");
@@ -572,14 +710,14 @@ test.describe("lector lateral desktop", () => {
       .filter({ hasText: "Proyecto Vigente" });
     const reader = page.locator('[data-contract="timeline-reader"]');
     const rail = page.locator('[data-contract="timeline-rail"]');
-    const initialRailBox = await rail.boundingBox();
 
-    await expect(firstMilestone).toHaveAttribute("aria-pressed", "true");
-    await expect(reader).toBeVisible();
+    await expect(firstMilestone).toHaveAttribute("aria-pressed", "false");
+    await expect(reader).toBeHidden();
     await expect(firstMilestone).toHaveAccessibleName(/Experiencia.*Arquitecta de software.*Laboratorio Vigente.*enero de 2025.*Actualidad/);
     await expect(firstMilestone).not.toHaveAttribute("aria-expanded");
 
     await firstMilestone.click({ force: true });
+    const initialRailBox = await rail.boundingBox();
 
     await expect(firstMilestone).toHaveAttribute("aria-pressed", "true");
     await expect(
@@ -620,8 +758,8 @@ test.describe("lector lateral desktop", () => {
     await expect(reader).toBeVisible();
     await page.keyboard.press("Escape");
 
-    await expect(reader).toBeVisible();
-    await expect(secondMilestone).toHaveAttribute("aria-pressed", "true");
+    await expect(reader).toBeHidden();
+    await expect(secondMilestone).toHaveAttribute("aria-pressed", "false");
     await expect(secondMilestone).toBeFocused();
     await expect(page.getByRole("button", { name: /Cerrar|Pausar|Reanudar/ })).toHaveCount(0);
   });
@@ -636,6 +774,7 @@ test.describe("lector lateral desktop", () => {
       .filter({ hasText: "Arquitecta de software" });
     const reader = page.locator('[data-contract="timeline-reader"]');
 
+    await milestone.click();
     const readerNode = await reader.elementHandle();
     const detailNode = await reader.locator('[data-contract="milestone-detail"]').elementHandle();
     const workFilter = page.getByRole("button", { name: "Experiencia profesional", exact: true });
