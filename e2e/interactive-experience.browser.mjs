@@ -114,6 +114,35 @@ for (const width of [360, 390, 768]) {
   });
 }
 
+test("reabrir con puntero el mismo hito tras Escape no muestra foco de teclado", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("./");
+  const trigger = page.getByRole("button", { name: /Arquitecta de software/ });
+  const reader = page.locator('[data-contract="timeline-reader"]');
+  await trigger.click();
+  await page.keyboard.press("Escape");
+  await expect(reader).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await expect(reader).toBeVisible();
+  await expect(trigger).toHaveCSS("box-shadow", "none");
+  await expect(trigger).toBeFocused();
+  await page.keyboard.press("Tab");
+  const next = page.getByRole("button", { name: /Ingeniera de plataforma/ });
+  await expect(next).toBeFocused();
+  await expect(next).not.toHaveCSS("box-shadow", "none");
+  await page.keyboard.press("Shift+Tab");
+  await expect(trigger).toBeFocused();
+  await expect(trigger).not.toHaveCSS("box-shadow", "none");
+  for (const key of ["Enter", "Space"]) {
+    await page.keyboard.press("Escape");
+    await page.keyboard.press(key);
+    await expect(reader).toBeVisible();
+    await expect(trigger).toBeFocused();
+    await expect(trigger).not.toHaveCSS("box-shadow", "none");
+  }
+});
+
 test("el breakpoint conserva el detalle cerrado y el foco de Cerrar cuando sigue disponible", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.emulateMedia({ reducedMotion: "reduce" });
