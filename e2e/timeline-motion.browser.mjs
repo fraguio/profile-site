@@ -98,8 +98,7 @@ for (const width of [1440, 390]) {
       await page.goto("./");
       const rail = page.locator('[data-contract="timeline-rail"]');
       const reader = page.locator('[data-contract="timeline-reader"]');
-      if (width >= 1024) await expect(reader).toBeHidden();
-      else await expect(reader).toBeVisible();
+      await expect(reader).toBeHidden();
       await expect(page.getByRole("button", { name: /Pausar|Reanudar|Cerrar/ })).toHaveCount(0);
       const trigger = page.locator('[data-contract="milestone-trigger"]').first();
       if (width >= 1024) {
@@ -113,9 +112,8 @@ for (const width of [1440, 390]) {
       await trigger.focus();
       await page.keyboard.press("Enter");
       await page.keyboard.press("Escape");
-      await expect(trigger).toHaveAttribute("aria-pressed", String(width < 1024));
-      if (width >= 1024) await expect(reader).toBeHidden();
-      else await expect(reader).toBeVisible();
+      await expect(trigger).toHaveAttribute("aria-pressed", "false");
+      await expect(reader).toBeHidden();
       if (reducedMotion === "reduce") {
         expect(await reader.evaluate((node) => node.getAnimations({ subtree: true }).length)).toBe(0);
       }

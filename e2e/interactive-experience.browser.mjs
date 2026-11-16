@@ -93,7 +93,28 @@ test("Escape global y Cerrar dejan el mismo reposo visual y permiten continuar c
   }
 });
 
-test("el breakpoint abre el primer resultado al salir del reposo desktop y retira el foco de Cerrar en mobile", async ({ page }) => {
+for (const width of [360, 390, 768]) {
+  test(`la entrada y la recarga mobile conservan el detalle cerrado al filtrar a ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 768 ? 1024 : 844 });
+    await page.goto("./");
+    const reader = page.locator('[data-contract="timeline-reader"]');
+    const selected = page.getByRole("button", { pressed: true }).and(page.locator('[data-contract="milestone-trigger"]'));
+    await expect(page.getByRole("button", { name: /Arquitecta de software/ })).toBeVisible();
+    await expect(selected).toHaveCount(0);
+    await expect(reader).toBeHidden();
+    await expect(page.getByRole("button", { name: "Cerrar", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Proyectos", exact: true }).click();
+    await expect(page.getByRole("button", { name: /Proyecto Vigente/ })).toBeVisible();
+    await expect(selected).toHaveCount(0);
+    await expect(reader).toBeHidden();
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Experiencia profesional", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(selected).toHaveCount(0);
+    await expect(reader).toBeHidden();
+  });
+}
+
+test("el breakpoint conserva el detalle cerrado y el foco de Cerrar cuando sigue disponible", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("./");
@@ -103,15 +124,22 @@ test("el breakpoint abre el primer resultado al salir del reposo desktop y retir
   await expect(reader).toBeHidden();
   await page.setViewportSize({ width: 360, height: 800 });
   const trigger = page.getByRole("button", { name: /Proyecto Vigente/ });
-  await expect(trigger).toHaveAttribute("aria-pressed", "true");
-  await expect(reader).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-pressed", "false");
+  await expect(reader).toBeHidden();
+  await trigger.click();
   expect(await trigger.evaluate(node => node.nextElementSibling?.dataset.contract)).toBe("timeline-reader");
   await page.setViewportSize({ width: 1440, height: 900 });
   const close = page.getByRole("button", { name: "Cerrar", exact: true });
   await close.focus();
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(close).toBeFocused();
+  await expect(close).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(reader).toBeHidden();
   await expect(trigger).toBeFocused();
-  await expect(close).toBeHidden();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(reader).toBeHidden();
+  await expect(trigger).toHaveAttribute("aria-pressed", "false");
   expect(await instance.evaluate(node => node.isConnected)).toBe(true);
 });
 

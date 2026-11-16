@@ -652,6 +652,17 @@ input:focus-visible {
     background: #07131a;
   }
 
+  .timeline-enhanced[data-timeline-detail-open="false"] .timeline__reader {
+    display: none;
+  }
+
+  .timeline__reader .timeline__close {
+    position: static;
+    display: flex;
+    width: max-content;
+    margin: 0 0 12px auto;
+  }
+
   .timeline__reader [data-contract="timeline-reader-header"] .milestone__surface {
     display: none;
   }

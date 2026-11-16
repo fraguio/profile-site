@@ -110,20 +110,15 @@ if (filters && status && rail && document.documentElement.dataset.timelineState 
     reader.append(readerArticle);
 
     function placeDetail() {
-      if (!desktop.matches && !selected) {
-        select(entries.find(({ item }) => !item.hidden)!);
-        return;
-      }
       const focused = document.activeElement;
-      const returnToMilestone = !desktop.matches && (focused === readerBody || focused === rail || focused === closeButton);
+      const returnToMilestone = !desktop.matches && (focused === readerBody || focused === rail);
       reader.setAttribute("role", desktop.matches ? "complementary" : "region");
       readerBody.tabIndex = desktop.matches && selected ? 0 : -1;
-      closeButton.hidden = !desktop.matches;
       rail!.tabIndex = -1;
-      if (desktop.matches) {
+      if (desktop.matches || !selected) {
         if (reader.parentElement !== experience) experience.append(reader);
       } else {
-        selected!.trigger.after(reader);
+        selected.trigger.after(reader);
       }
       if (returnToMilestone) {
         selected?.trigger.focus({ preventScroll: true });
@@ -151,7 +146,7 @@ if (filters && status && rail && document.documentElement.dataset.timelineState 
     }
 
     function closeDetail() {
-      if (!desktop.matches || !selected) return;
+      if (!selected) return;
       const trigger = selected.trigger;
       trigger.setAttribute("aria-pressed", "false");
       selected = undefined;
@@ -232,7 +227,7 @@ if (filters && status && rail && document.documentElement.dataset.timelineState 
     desktop.addEventListener("change", placeDetail);
     closeButton.addEventListener("click", closeDetail);
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && desktop.matches && selected) {
+      if (event.key === "Escape" && selected) {
         event.preventDefault();
         closeDetail();
       } else if (event.key !== "Escape") {

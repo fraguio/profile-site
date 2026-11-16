@@ -9,6 +9,7 @@
 - **Objeto:** documentar el contrato de la base visual y funcional integrada de la Experiencia interactiva, incluido el alcance estructural y de presentación de P12 resuelto mediante trabajo directo sobre el repositorio.
 - **Seguimiento:** [issue #84](https://github.com/fraguio/profile-site/issues/84), cerrada como completada tras la confirmación del titular el 2026-10-06.
 - **Evolución #107:** B · Marco adaptable, elegida por el titular el 2026-11-15, sustituye las reglas desktop de selección inicial permanente y ausencia de cierre. Este documento recoge el contrato actualizado; la aceptación final de la integración de [#107](https://github.com/fraguio/profile-site/issues/107#issuecomment-6899162270) sigue pendiente y es independiente del cierre histórico de #84.
+- **Ampliación mobile de #107:** el titular confirmó el 2026-11-16 entrada sin selección, cierre con Cerrar o Escape también en mobile/tablet vertical y retorno del foco al hito sin scroll programático. El estado cerrado se conserva al cruzar el breakpoint.
 
 ## Planteamiento del problema
 
@@ -20,7 +21,7 @@ La muestra de cuatro hitos usada en Stitch es parcial y temporal. Incluye extens
 
 ## Solución
 
-Adaptar la UI de referencia a la Experiencia interactiva existente: identidad y navegación operativas, filtros accesibles y un detalle único que se intercala tras el hito seleccionado en mobile. Desde #107, desktop entra con identidad y timeline centrados y sin selección; el marco se adapta al abrir o cerrar el detalle lateral. Mobile conserva selección única permanente.
+Adaptar la UI de referencia a la Experiencia interactiva existente: identidad y navegación operativas, filtros accesibles y un detalle único que se intercala tras el hito seleccionado en mobile. Desde #107, todos los tamaños entran sin selección y permiten cerrar el detalle. En desktop, identidad y timeline entran centrados y el marco se adapta al abrir o cerrar el detalle lateral.
 
 Usar el consumidor y la cadena de build del proyecto. Conservar la Fuente curricular elegida, su procedencia y el orden cronológico actual. Adaptar la presentación del contenido soportado y consumir explícitamente el enlace estándar de proyecto; mantener la adaptación curricular completa como trabajo independiente.
 
@@ -38,10 +39,10 @@ Verificar los comportamientos afectados por cada incremento aprovechando la apli
 8. Como visitante desktop, quiero desplazar el timeline o el cuerpo del detalle cuando lo necesitan, para acceder al contenido que no cabe en el viewport.
 9. Como visitante desktop, quiero ver señales de scroll ajustadas al overflow real, para entender cuándo queda contenido por leer.
 10. Como visitante, quiero que el timeline permanezca estático mientras no actúo sobre él, para controlar la exploración sin movimiento automático.
-11. Como visitante mobile, quiero empezar con un hito seleccionado y su detalle disponible, para comprender de inmediato la relación entre ambos.
+11. Como visitante mobile o de tablet vertical, quiero empezar sin selección ni detalle abierto, para elegir qué hito consultar.
 12. Como visitante, quiero seleccionar otro hito mediante clic, Enter o Espacio, para consultar su contenido con el dispositivo que utilizo.
 13. Como visitante, quiero que haya una sola selección y un solo detalle activo, para identificar inequívocamente qué estoy consultando.
-14. Como visitante, quiero que activar el hito seleccionado conserve el detalle y su lectura; en desktop quiero cerrarlo mediante Cerrar o Escape y recuperar la composición centrada.
+14. Como visitante, quiero que activar el hito seleccionado conserve el detalle y su lectura, y cerrarlo mediante Cerrar o Escape; en desktop el cierre recupera la composición centrada.
 15. Como visitante, quiero filtrar por Todo, Experiencia, Formación o Proyectos, para acotar la exploración a una categoría.
 16. Como visitante, quiero que no se ofrezcan filtros de categorías vacías, para evitar resultados sin hitos.
 17. Como visitante, quiero conservar el hito seleccionado cuando un filtro todavía lo incluye, para seguir consultándolo.
@@ -74,7 +75,7 @@ Verificar los comportamientos afectados por cada incremento aprovechando la apli
 - La integración afecta a la composición, los estilos y la mejora interactiva de la Experiencia interactiva. Reutiliza la carga curricular compartida, metadatos, acciones operativas, configuración pública y cadena de build.
 - No se incorpora una aplicación paralela ni un dataset embebido procedente del HTML de Stitch. El HTML exportado aporta referencia de identidad, composición y comportamiento, no una implementación de producción para pegar sin adaptación.
 - La mejora se aplica al HTML accesible generado por Astro. Sin JavaScript, o si no se inicializa la mejora, permanecen disponibles la trayectoria completa, sus detalles y las acciones nativas.
-- Los filtros y controles de selección solo se ofrecen cuando son operativos. Su inicialización no depende de cargar una librería de animación; se retiran el loop y sus controles de pausa y reanudación. #107 incorpora el cierre explícito del detalle desktop.
+- Los filtros y controles de selección solo se ofrecen cuando son operativos. Su inicialización no depende de cargar una librería de animación; se retiran el loop y sus controles de pausa y reanudación. #107 incorpora el cierre explícito del detalle en todos los tamaños.
 - La primera carga y F5 no pintan una composición intermedia. Una espera de hasta 2 s permite completar la mejora antes de mostrar el marco; al vencer se muestra el HTML completo y se descarta una mejora tardía. Si la inicialización falla después de empezar a transformar el DOM, restaura el HTML original. Sin JavaScript no existe esa espera.
 - Se conserva el vocabulario de [CONTEXT.md](https://github.com/fraguio/profile-site/blob/main/CONTEXT.md) y los contratos de las superficies públicas.
 
@@ -82,7 +83,7 @@ Verificar los comportamientos afectados por cada incremento aprovechando la apli
 
 - Se mantiene la adquisición y validación existentes: JSON Resume 1.3.1, reglas locales y una Fuente curricular explícita para cada build. Se respetan el [ADR de revisión curricular exacta](https://github.com/fraguio/profile-site/blob/main/docs/adr/0001-consumir-revision-curricular-exacta.md) y el [ADR de Publicación del perfil](https://github.com/fraguio/profile-site/blob/main/docs/adr/0006-publicar-el-perfil-explicitamente-desde-profile-site.md).
 - Se conserva el orden del timeline: hitos vigentes primero, finalización descendente, comienzo descendente y orden de origen ante empate. No se impone el orden ni los IDs de la muestra de Stitch sobre otra fuente.
-- Desde #103 el filtro inicial es Experiencia cuando existe esa categoría, o Todo si la fuente no tiene experiencia. Desde #107, desktop entra sin selección y mobile selecciona el primer resultado según el orden cronológico del consumidor; no se codifica una identificación como selección universal.
+- Desde #103 el filtro inicial es Experiencia cuando existe esa categoría, o Todo si la fuente no tiene experiencia. Desde #107, todos los tamaños entran sin selección ni detalle abierto, también al recargar.
 - Una fuente sin hitos conserva identidad y acciones, sin filtros, timeline o detalle vacíos. Una categoría sin hitos no crea filtro.
 - La descripción y el resumen de una participación se conservan completos, como párrafos independientes cuando ambos existen. Sus contribuciones y habilidades asociadas mantienen el contenido del consumidor. La formación presenta `details` con contenido, o sus cursos cuando falta o está vacío, como Contenidos; los proyectos conservan descripción, contribuciones, roles y habilidades.
 - Se admite la adaptación mínima del modelo de presentación para consumir `projects.url`, campo estándar opcional, y ofrecer Ver proyecto en el detalle. Se mantiene su validación de URL según el schema: un valor inválido falla en la validación existente; la acción se omite cuando el campo está ausente. No se utiliza un enlace de identidad como sustituto ni se transforma una URL ausente en una acción representada.
@@ -106,27 +107,27 @@ Verificar los comportamientos afectados por cada incremento aprovechando la apli
 
 ### 4. Selección y filtrado
 
-- Con hitos disponibles, hay como máximo una selección y una instancia de detalle. Mobile mantiene selección permanente; desktop permite la ausencia de selección. Los hitos son controles nativos operables por clic, Enter y Espacio, con nombre accesible que identifica categoría, título, entidad y periodo disponibles.
-- La selección comunica su estado, conserva el foco en el control activado y no se presenta como un acordeón plegable. Repetir selección no cierra. En desktop, Cerrar y Escape global ejecutan el mismo cierre, incluso durante la apertura: retiran selección e interacción del detalle, centran el marco y devuelven el foco lógico al hito sin reiniciar el scroll del timeline.
+- Con hitos disponibles, hay como máximo una selección y una instancia de detalle; todos los tamaños permiten la ausencia de selección. Los hitos son controles nativos operables por clic, Enter y Espacio, con nombre accesible que identifica categoría, título, entidad y periodo disponibles.
+- La selección comunica su estado, conserva el foco en el control activado y no se presenta como un acordeón plegable. Repetir selección no cierra. Cerrar y Escape global ejecutan el mismo cierre en todos los tamaños, incluso durante la apertura desktop: retiran selección e interacción del detalle y devuelven el foco lógico al hito con `preventScroll`. Tab continúa desde él. En desktop, el marco vuelve al centro sin reiniciar el scroll del timeline; en mobile, el documento se reajusta naturalmente al retirar el detalle, sin scroll programático ni compensación.
 - Al elegir otro hito, se sustituye el contenido del detalle y se retiran los bloques o atributos que no corresponden. El cuerpo desktop del nuevo detalle empieza al principio.
 - Activar el hito seleccionado conserva la instancia y la posición de lectura desktop. La compensación fina del documento mobile sigue siendo un pendiente P13.
 - Los filtros son botones nativos con `aria-pressed`, nombre de grupo y selección única. Todos se recorren con Tab; recibir foco no cambia los resultados. Clic, Enter y Espacio activan el filtro y conservan el foco en él, conforme a la decisión correctiva de #100 que sustituye la posibilidad de reutilizar radios de #84.
 - Desde el último filtro, Tab alcanza el primer hito visible sin detenerse en el contenedor del timeline. Los hitos permiten recorrer la trayectoria desplazable; el cuerpo desplazable del detalle desktop sigue siendo alcanzable por teclado.
-- Con el detalle desktop cerrado, filtrar no selecciona ni abre el detalle. Abierto, si el filtro incluye al seleccionado, se mantienen selección y contenido, sin reconstrucción ni reinicio forzado de la lectura desktop. Si lo excluye, desaparecen ese hito y su detalle y se selecciona el primer resultado según el orden del consumidor, manteniendo abierto el detalle.
+- Con el detalle cerrado, filtrar no selecciona ni abre el detalle. Abierto, si el filtro incluye al seleccionado, se mantienen selección y contenido, sin reconstrucción ni reinicio forzado de la lectura desktop. Si lo excluye, desaparecen ese hito y su detalle y se selecciona el primer resultado según el orden del consumidor, manteniendo abierto el detalle.
 - El foco permanece en el filtro activado. El resultado se anuncia mediante la región viva existente, sin mover el foco ni desplazar programáticamente al usuario desde los filtros hasta el detalle.
 - Los hitos excluidos salen inmediatamente de la interacción y de Tab; los cambios rápidos de filtro no permiten seleccionar un hito ajeno al resultado vigente.
 - Filtro y selección viven en memoria: no se persisten ni se reflejan en URL o historial.
 
 ### 5. Detalle y responsive
 
-- Hay una única instancia de detalle. Desktop la coloca en su región lateral y la excluye de la interacción y del árbol accesible cuando está cerrada; mobile la sitúa inmediatamente después del botón seleccionado y antes del siguiente hito visible, también cuando el seleccionado es el último.
-- El control desktop muestra exactamente Cerrar, acompañado de un SVG de cierre de `ProfileIcon`, con `viewBox="0 0 24 24"`, trazo y extremos redondeados y `aria-hidden`. No se muestra en mobile.
+- Hay una única instancia de detalle. Desktop la coloca en su región lateral; mobile, cuando está abierta, la sitúa inmediatamente después del botón seleccionado y antes del siguiente hito visible, también cuando el seleccionado es el último. Cerrada, queda fuera de la interacción y del árbol accesible en todos los tamaños, y en mobile no ocupa espacio en el documento.
+- El control muestra exactamente Cerrar en todos los tamaños, acompañado de un SVG de cierre de `ProfileIcon`, con `viewBox="0 0 24 24"`, trazo y extremos redondeados y `aria-hidden`. En mobile/tablet vertical ocupa su propio espacio antes de los metadatos, sin solaparlos.
 - El detalle es un bloque separado del botón. El enlace Ver proyecto es nativo y no queda dentro del control del hito.
 - La cabecera desktop identifica categoría, título y entidad. Mobile evita repetir esa cabecera visual completa, conserva los metadatos adicionales y mantiene un nombre accesible específico asociado al hito precedente.
 - El cuerpo presenta íntegros los párrafos, listas, roles y habilidades disponibles. Los bloques son independientes; un hito sin descripción puede mostrar contenidos o habilidades. Cambiar a un hito sin URL o sin listas retira sus valores previos del detalle activo.
 - Mobile aprovecha la anchura de la región para lectura. El detalle no se limita a la columna estrecha del título ni genera overflow horizontal; sus enlaces y etiquetas largas admiten wrapping.
 - La selección no altera borde, dimensiones ni anchura útil del botón: borde constante de 1 px y espacio del chevron reservado. La inserción del detalle mobile desplaza deliberadamente los hitos siguientes y es la excepción acordada a la estabilidad global.
-- Cambiar el breakpoint conserva filtro, selección, contenido e instancia única. Al entrar en mobile desde desktop cerrado se selecciona el primer resultado del filtro vigente. La recolocación no destruye el detalle ni pierde el foco de un elemento que sigue disponible. Si el elemento focalizado deja de ser un control pertinente para ese layout, incluido Cerrar, el retorno se hace al hito seleccionado sin scroll programático.
+- Cambiar el breakpoint conserva filtro, estado abierto o cerrado, selección, contenido e instancia única, sin seleccionar automáticamente un hito. La recolocación no destruye el detalle ni pierde el foco de un elemento que sigue disponible, incluido Cerrar. Si el elemento focalizado deja de ser un control pertinente para ese layout, el retorno se hace al hito seleccionado sin scroll programático.
 - La recolocación responsive no define una compensación del scroll mobile ni un offset superior; esas reglas siguen en P13.
 
 ### 6. Línea, marco, foco y señales de scroll
@@ -137,13 +138,13 @@ Verificar los comportamientos afectados por cada incremento aprovechando la apli
 - El foco del scroller desktop se refleja en su marco único. El enlace del proyecto y los otros controles conservan su indicador interior.
 - Se mantiene el objetivo WCAG 2.2 AA, con contraste de texto y controles, operación por teclado y estados reconocibles sin depender solo del color. Las excepciones decorativas no sustituyen los indicadores de estado.
 - Barras y degradados responden al overflow real. Las barras parten transparentes también en tablet horizontal. Con ratón y puntero fino aparecen por hover o foco visible de teclado; un clic no las mantiene al salir el puntero. Con entrada sin hover aparecen durante el scroll y vuelven al reposo tras 700 ms sin desplazamiento; el foco visible de teclado las mantiene. Si no hay overflow, no se muestra una señal residual.
-- Cerrar y Escape dejan el mismo reposo visual, sin contorno ni barra causados por el propio cierre. La siguiente interacción de teclado restablece las señales normales; un nuevo movimiento del puntero o scroll recupera el hover sin reactivar el contorno. Tab continúa desde el hito que cerró el detalle.
+- En desktop, Cerrar y Escape dejan el mismo reposo visual, sin contorno ni barra causados por el propio cierre. La siguiente interacción de teclado restablece las señales normales; un nuevo movimiento del puntero o scroll recupera el hover sin reactivar el contorno. Tab continúa desde el hito que cerró el detalle.
 - Los degradados se limitan a la superficie desplazable, excluyen marco y gutter y desaparecen al final del scroll o cuando no hay overflow. Mobile no presenta overlays de un scroller interno inexistente.
 - Se mantiene la corrección de distribución entre filas visibles de B01 y el comportamiento de barras de B02. Filtrar no deja márgenes residuales de filas ocultas.
 
 ### 7. Movimiento y contratos conservados
 
-- El timeline no tiene desplazamiento automático. La apertura y el cierre coordinan marco, columnas, navegación y detalle durante 550 ms, con entrada lateral del detalle. Esta integración no incorpora persiana ni transiciones de altura; con reducción de movimiento los cambios y recolocaciones son inmediatos.
+- El timeline no tiene desplazamiento automático. En desktop, la apertura y el cierre coordinan marco, columnas, navegación y detalle durante 550 ms, con entrada lateral del detalle. Esta integración no incorpora persiana ni transiciones de altura; con reducción de movimiento los cambios y recolocaciones son inmediatos.
 - El CV web y el CV PDF mantienen su composición, contenido factual actual, rutas y generación compartida. Incorporar el enlace de proyecto en la Experiencia interactiva no rediseña esas superficies ni modifica sus hechos curriculares.
 - Metadatos, enlaces públicos, validación y Publicación del perfil conservan los contratos vigentes. La integración local no inicia una publicación ni modifica la Revisión curricular publicada.
 - Se respetan los budgets y el evaluador de rendimiento existentes. Un cambio de umbrales requiere un trabajo explícito; no se recalibran para ocultar una regresión de la UI.
@@ -172,7 +173,7 @@ Esta matriz describe el cierre de la integración completa. Cada incremento comp
 | Área | Comprobación observable | Cobertura |
 | --- | --- | --- |
 | Identidad y acciones | Composición, nombre, resumen íntegro, tipografía, destinos funcionales y base path | Revisión visual en 1366 × 768, 1440 × 900, 360 × 800 y 390 × 844 al aceptar la composición integrada |
-| Selección y marco adaptable | Desktop cerrado al entrar, apertura por clic/Enter/Espacio, repetición sin reinicio, cierre equivalente por Cerrar/Escape; selección permanente mobile | Desktop 1024/1366/1440/1920 para marco y transición; mobile representativos; estados ausentes y largos donde cambien el layout |
+| Selección y marco adaptable | Entrada sin selección, filtrado cerrado sin apertura, apertura por clic/Enter/Espacio, repetición sin cierre y cierre equivalente por Cerrar/Escape en todos los tamaños | Desktop 1024/1366/1440/1920 para marco y transición; mobile 360/390 y tablet vertical 768; estados ausentes y largos donde cambien el layout |
 | Filtros | Compatible, excluyente, retorno a Todo, categoría vacía, cambios rápidos, foco y anuncio; excluidos fuera de Tab | Una matriz funcional focalizada y regresión responsive cuando haya cambio de wrapping |
 | Detalle y contenido | Orden hito → detalle → siguiente, último hito, texto íntegro, bloques independientes, roles, habilidades y URL de fuente | Mobile 360/390 para lectura y wrapping; desktop con detalle largo y sin overflow |
 | Geometría y línea | Botón estable antes/después, nodos conectados, línea oculta con un resultado y sin espacios residuales | Los cuatro viewports por el alcance responsive de la integración |
