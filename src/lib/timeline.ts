@@ -232,6 +232,7 @@ if (filters && status && rail && document.documentElement.dataset.timelineState 
     desktop.addEventListener("change", placeDetail);
     closeButton.addEventListener("click", closeDetail);
     document.addEventListener("keydown", (event) => {
+      root.dataset.timelineInputModality = "keyboard";
       if (event.key === "Escape" && desktop.matches && selected) {
         event.preventDefault();
         closeDetail();
@@ -239,7 +240,10 @@ if (filters && status && rail && document.documentElement.dataset.timelineState 
         delete root.dataset.timelineFocusResting;
       }
     });
-    document.addEventListener("pointerdown", () => { delete root.dataset.timelineFocusResting; });
+    document.addEventListener("pointerdown", () => {
+      root.dataset.timelineInputModality = "pointer";
+      delete root.dataset.timelineFocusResting;
+    });
     function resumePointerFeedback() {
       if (root.dataset.timelineFocusResting === "idle") root.dataset.timelineFocusResting = "pointer";
     }

@@ -829,7 +829,7 @@ input:focus-visible {
 
   .timeline__reader .milestone__category { padding-right: 90px; }
 
-  .timeline-enhanced[data-timeline-focus-resting] .milestone__trigger:focus-visible {
+  .timeline-enhanced:is([data-timeline-focus-resting], [data-timeline-input-modality="pointer"]) .milestone__trigger:focus-visible {
     box-shadow: none;
   }
 
