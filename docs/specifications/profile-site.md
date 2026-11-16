@@ -8,7 +8,7 @@
 - Identidad canónica: `fraguio/profile-site`.
 - Idioma público inicial: español.
 - Seguimiento de la integración: [issue #84](https://github.com/fraguio/profile-site/issues/84), cerrada como completada tras la confirmación del titular el 2026-10-06.
-- Mejora #107: el titular eligió **B · Marco adaptable** el 2026-11-15. Este contrato incorpora su integración; la aceptación final de esa integración sigue pendiente en [#107](https://github.com/fraguio/profile-site/issues/107#issuecomment-6899162270).
+- Mejora #107: el titular eligió **B · Marco adaptable** el 2026-11-15 y aceptó la integración completa el 2026-11-16, incluidos la entrada sin selección y el cierre mobile/tablet vertical, la reapertura desktop con ratón tras Escape sin contorno residual y las barras iniciales en la tablet real. Este contrato incorpora la integración aceptada; el seguimiento y sus antecedentes se conservan en [#107](https://github.com/fraguio/profile-site/issues/107).
 
 Los documentos de investigación y las exportaciones de prototipos son antecedentes, no fuentes normativas de producción. Esta revisión y la especificación de integración sustituyen los acuerdos históricos incompatibles de loop obligatorio y sustitución del timeline mobile. #107 sustituye la selección permanente de #84 por entrada sin selección y un detalle cerrable en todos los tamaños, con marco adaptable desktop; los contratos curriculares, documentales y de publicación se conservan.
 
